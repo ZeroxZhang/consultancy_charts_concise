@@ -7,7 +7,7 @@ description: >-
   风格材料；默认交付 HTML，可打印 PDF，不冒称原生可编辑 PPTX。
 ---
 
-# 咨询 deck 制作技能 · v3
+# 咨询 deck 制作技能 · v4
 
 目标是让决策者能独立读懂、核对并采取行动。公开咨询演示稿是参考样本，
 不是内部模板或“顶级质量”的认证。保留现有分页引擎，优先改进论证与信息设计。
@@ -16,6 +16,7 @@ description: >-
 
 - **一页一个主判断，可以有多个证据模块。** 不把“一页一观点”误写成一图、五条要点或固定两栏。
 - **密度是有效证据的密度。** 不靠缩字、重复标题、加装饰图或虚构数字填空。
+- **分析表达优先。** 借鉴 think-cell 的数据标注、对齐和结构表达；是否采用取决于读者的比较任务，不设风格覆盖率或复杂图配额。
 - **数据和判断分开。** 数据记录来源、时间、单位、分母、范围和核验状态；计算记录公式。
   未找到来源的事实保留缺口，不改贴 Illustrative 冒充证据。仅真正合成的数据标“示意数据”；
   作者建议标“建议”，主观评估标“分析判断”，估计值列方法与区间。
@@ -83,7 +84,7 @@ SCQA 是可选叙事框架，不强行用前三页铺背景。
 ### S4 · 分页与图表选型
 
 读取 `references/chart_matching.md`、`references/layout_templates.md`、
-`references/exhibit_system.md`，按需读取 `references/chart_cards.md` 对应 B 编号。
+`references/exhibit_system.md` 与 `references/analysis_exhibits.md`，按需读取 `references/chart_cards.md` 对应 B 编号。
 每页记录：
 `页号 | 主判断 | 证明责任 | 证据ID | 模块及关系 | A/B/D编号 | 布局变体 | 编码 | 候选/淘汰理由`。
 通常比较2–3种合理图型；唯一明确适配时直接采用。没有柱条线占比、饼图配额或复杂图配额。
@@ -102,6 +103,7 @@ SCQA 是可选叙事框架，不强行用前三页铺背景。
 4. 内容区各块 x/y/w/h 或显式 Grid 行列预算、字号、标签与连接线空间；
 5. 几何契约：字段→位置/长度/面积/颜色/线型；定性图声明档级而非假精度；
 6. Source/Note、估计方法、适用边界；评论列、KPI、takeaway 按需要使用，不固定必填。
+7. 图表精加工：关键比较的端点与公式、总量/份额的标签位置、标签过密时的回退方式；表格记录列单位和数据条量尺，图示声明箭头含义。
 
 reading 正文通常2–4个证据模块，但单个完整主展品也可以；封面、过渡页不套密度要求。
 发现大片空白先判断内容不足还是容器拉伸；补充必要分析、改布局或合页，禁止只加背景块。
@@ -110,10 +112,10 @@ reading 正文通常2–4个证据模块，但单个完整主展品也可以；�
 
 1. 用 `node scripts/apply_theme.cjs assets/deck_engine.html deck.html <theme_id>` 生成选定主题引擎，替换其示例页，保留翻页/缩放/总览/打印/深链逻辑。
 2. 将 `assets/consulting-layouts.css` 内联到 HTML；按布局变体组装证据区。
-3. `assets/exhibit-kit.js` 提供8种零依赖 SVG 配方；API见 `references/exhibit_system.md`。
+3. `assets/exhibit-kit.js` 提供10种零依赖 SVG 和1种 HTML 比较表；API见 `references/exhibit_system.md`。
    可在构建时调用并写入静态 SVG，打印和离线不依赖运行时。原生 ECharts 处理常规统计图，
    D3/ELK/Vega-Lite 等只按实际需求引入，不把外部仓库的整套默认皮肤混进来。
-4. 图表必须写单位、直接标签、必要图例、参考线、偏差/关键点注释；阅读型关键内容不能藏 hover。
+4. 图表必须写单位、直接标签、必要图例；按比较任务添加参考线、差异或关键点注释。差异由源数据计算，关键内容不能藏 hover；过密时扩容、改表或拆页，不缩放数据图形来迁就标签。
 5. 用 `scripts/qa_deck.cjs` 渲染每页、检查越界、导出PDF与截图；用可用图片工具实际逐页看图。
 6. 引擎改动额外检验1280×720与1024×768、#3深链、G/ESC、键盘、缩放、全屏、打印页数和断网。
 
@@ -122,6 +124,7 @@ reading 正文通常2–4个证据模块，但单个完整主展品也可以；�
 交给未参与制作的 QA 代理：成稿、证据库、视觉规范、`references/workflow_qa.md`、截图和PDF。
 不给作者自评分或“已经修好”的结论。代理必须独立阅读图像；工具看不到图时视觉状态为“未验收”。
 每页评估：证据充分性、阅读层级、布局/重心、编码与配色、图表完成度（评分锚点见QA）。
+按 `references/analysis_exhibits.md` 检查表达收益、注释计算与小片标签完整性；“很像think-cell”不能替代正确与可读。
 数字一致只是最低条件。数据排名误导、虚构精度、文字截断、重要证据缺失都是阻断项。
 Blocking/Major 修复后复验；无法修复则明确不通过，不将未目视改称有条件通过。
 若环境无子代理能力，如实标“作者自检，独立QA未执行”，不冒称独立通过。
@@ -131,6 +134,7 @@ Blocking/Major 修复后复验；无法修复则明确不通过，不将未目�
 - 证据与密度：`references/evidence_design.md`；`references/slide_anatomy.md`
 - 布局与组件：`references/layout_templates.md`；`references/exhibit_system.md`
 - 选图与编码：`references/chart_matching.md`；`references/chart_cards.md`
+- 分析语法与示例：`references/analysis_exhibits.md`；`assets/analysis_reference_deck.html`（六页合成数据，含v3前后对照及纯表格反例）
 - 语义配色：`references/color_and_type.md`
 - 论证：`references/storyline_method.md`；`references/logic_frameworks.md`
 - 样例：`references/worked_example.md`（原始数据示例）；`assets/reference_deck.html`（v2复合页实物）

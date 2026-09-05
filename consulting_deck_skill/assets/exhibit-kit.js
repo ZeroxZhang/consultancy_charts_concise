@@ -49,6 +49,46 @@
   }
   const scale=(d,a,b)=>v=>a+(v-d[0])/(d[1]-d[0])*(b-a);
   function rows(c,n){const y0=40,dy=(c.h-90)/n;if(dy<c.fs+12)throw new Error('行过多，请增加高度或拆分');return {y0,dy};}
+  // 统一数字格式；计算使用原值，四舍五入只发生在显示阶段。
+  function formatNumber(value, options={}) {
+    num(value,'value');
+    const decimals=options.decimals;
+    if(decimals!==undefined&&(!Number.isInteger(decimals)||decimals<0||decimals>6))throw new Error('decimals 须为0至6的整数');
+    const rounded=Number(value.toFixed(decimals===undefined?8:decimals));
+    const digits=new Intl.NumberFormat('en-US',{useGrouping:options.grouping!==false,minimumFractionDigits:decimals||0,maximumFractionDigits:decimals===undefined?8:decimals}).format(Math.abs(rounded));
+    return (rounded<0?'−':options.signed&&rounded>0?'+':'')+digits+(options.suffix||'');
+  }
+  function difference(start,end,options={}) {
+    num(start,'start');num(end,'end');let value=end-start,suffix=options.suffix||'';
+    const mode=options.mode||'absolute';
+    if(mode==='relative') {if(start<=0)throw new Error('相对变化需正基数；请改用绝对差');value=(end-start)/start*100;suffix='%';}
+    else if(mode==='pp') {
+      if(!['fraction','percent'].includes(options.basis))throw new Error('百分点需声明 basis: fraction 或 percent');
+      value*=options.basis==='fraction'?100:1;suffix='个百分点';
+    } else if(mode==='cagr') {
+      if(start<=0||end<=0||num(options.periods,'periods')<=0)throw new Error('CAGR 需正起止值和实际年数');
+      value=((end/start)**(1/options.periods)-1)*100;suffix='% CAGR';
+    } else if(mode!=='absolute')throw new Error('未知差异类型');
+    num(value,'difference');
+    return {value,label:formatNumber(value,{...options,suffix,signed:true})};
+  }
+  // 保守估宽用于选择布局，不声称取代浏览器字形测量。
+  const textWidth=(value,fs)=>Array.from(String(value)).reduce((n,ch)=>n+(/[\u0000-\u007f]/.test(ch)?.62:1),0)*fs;
+  function fittedText(c,x,y,value,width,anchor='start',color=c.p.ink,extra='') {
+    if(textWidth(value,c.fs)>width)throw new Error('标签空间不足，请扩容、简化措辞或改用表格：'+value);
+    c.text(x,y,value,anchor,color,extra);
+  }
+  function comparisonBracket(c,points,options) {
+    const {from,to}=options;
+    if(!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<=from||to>=points.length)throw new Error('comparison 需有效的 from < to 索引');
+    const a=points[from],b=points[to],result=difference(a.value,b.value,options);
+    let label=result.label;
+    if(options.showRelative)label+='（'+difference(a.value,b.value,{mode:'relative',decimals:options.decimals}).label+'）';
+    const center=(a.x+b.x)/2;
+    fittedText(c,center,24,label,2*Math.min(center-12,c.w-12-center),'middle',c.p.ink,'font-weight="700" data-role="comparison-label"');
+    c.line(a.x,40,b.x,40,c.p.ink);
+    c.line(a.x,40,a.x,49,c.p.ink);c.line(b.x,40,b.x,49,c.p.ink);
+  }
   function waterfall(s){
     const c=canvas(s),items=list(s.items,'items');let acc=0;
     const steps=items.map((d,i)=>{if(!['total','delta','subtotal'].includes(d.type))throw new Error('waterfall type 应为 total/delta/subtotal');let from,to;
@@ -56,17 +96,160 @@
       else if(d.type==='total'){from=0;to=num(d.value,'value');if(i>0&&Math.abs(to-acc)>1e-8*Math.max(1,Math.abs(acc)))throw new Error('总计不等于累计值');acc=to;}
       else {from=0;to=acc;if(d.value!==undefined&&Math.abs(num(d.value,'value')-acc)>1e-8)throw new Error('小计不等于累计值');}
       return {label:d.label,from,to,type:d.type,value:d.type==='delta'?to-from:to};});
-    const d=domain(steps.flatMap(x=>[x.from,x.to]),s.domain),y=scale(d,c.h-65,45),dx=(c.w-110)/items.length,bw=Math.min(76,dx*.65);if(dx<45)throw new Error('柱过多');
+    const d=domain(steps.flatMap(x=>[x.from,x.to]),s.domain),y=scale(d,c.h-65,s.comparison?90:45),dx=(c.w-110)/items.length,bw=Math.min(76,dx*.65);if(dx<45)throw new Error('柱过多');
+    if(c.h-65-(s.comparison?90:45)<70)throw new Error('瀑布绘图区不足');
     c.line(60,y(0),c.w-30,y(0));
-    steps.forEach((v,i)=>{const x=65+i*dx;c.rect(x,y(Math.max(v.from,v.to)),bw,Math.abs(y(v.from)-y(v.to)),v.type==='delta'?(v.value>=0?c.p.positive:c.p.negative):c.p.accent,`data-from="${v.from}" data-to="${v.to}"`);c.text(x+bw/2,y(Math.max(v.from,v.to))-8,(v.type==='delta'&&v.value>0?'+':'')+Number(v.value.toFixed(8)),'middle');c.text(x+bw/2,c.h-30,v.label,'middle');if(i<steps.length-1)c.line(x+bw,y(v.to),65+(i+1)*dx,y(v.to),c.p.grid,'stroke-dasharray="4 3"');});return c.end();
+    steps.forEach((v,i)=>{const x=65+i*dx;c.rect(x,y(Math.max(v.from,v.to)),bw,Math.abs(y(v.from)-y(v.to)),v.type==='delta'?(v.value>=0?c.p.positive:c.p.negative):c.p.accent,`data-from="${v.from}" data-to="${v.to}"`);
+      if(v.from===v.to)c.line(x,y(v.to),x+bw,y(v.to),c.p.ink);
+      fittedText(c,x+bw/2,y(Math.max(v.from,v.to))-8,formatNumber(v.value,{...s.format,signed:v.type==='delta'}),dx-6,'middle');
+      fittedText(c,x+bw/2,c.h-30,v.label,dx-6,'middle');
+      if(i<steps.length-1)c.line(x+bw,y(v.to),65+(i+1)*dx,y(v.to),c.p.grid,'stroke-dasharray="4 3"');});
+    if(s.comparison)comparisonBracket(c,steps.map((v,i)=>({x:65+i*dx+bw/2,value:v.to})),s.comparison);
+    return c.end();
   }
   function dumbbell(s){const c=canvas(s),data=list(s.items,'items');data.forEach(d=>{num(d.start,'start');num(d.end,'end');});const d=domain(data.flatMap(v=>[v.start,v.end]),s.domain),x=scale(d,190,c.w-85),r=rows(c,data.length);
     data.forEach((v,i)=>{const y=r.y0+i*r.dy+r.dy/2;c.text(15,y+5,v.label);c.line(x(v.start),y,x(v.end),y,c.p.grid,'stroke-width="4"');c.circle(x(v.start),y,6,'#FFFFFF',`stroke="${esc(c.p.muted)}" stroke-width="2" data-role="start"`);c.circle(x(v.end),y,7,c.p.accent,'data-role="end"');c.text(x(v.start),y-13,v.start,'middle',c.p.muted);c.text(x(v.end),y+25,v.end,'middle',c.p.accent);});c.circle(190,20,6,'#FFFFFF',`stroke="${esc(c.p.muted)}" stroke-width="2"`);c.text(203,25,s.startLabel||'起始','start',c.p.ink);c.circle(c.w-140,20,7,c.p.accent);c.text(c.w-127,25,s.endLabel||'结束','start',c.p.ink);return c.end();}
   function slope(s){const c=canvas(s),data=list(s.items,'items');data.forEach(d=>{num(d.start,'start');num(d.end,'end');});const d=domain(data.flatMap(v=>[v.start,v.end]),s.domain),y=scale(d,c.h-65,60);c.text(180,25,s.startLabel||'起始','middle');c.text(c.w-180,25,s.endLabel||'结束','middle');data.forEach((v,i)=>{const col=c.p.series[i%c.p.series.length];c.line(180,y(v.start),c.w-180,y(v.end),col,'stroke-width="2"');c.circle(180,y(v.start),4,col);c.circle(c.w-180,y(v.end),4,col);c.text(168,y(v.start)+5,v.label+' '+v.start,'end');c.text(c.w-168,y(v.end)+5,v.end);});return c.end();}
   function bullet(s){const c=canvas(s),data=list(s.items,'items'),r=rows(c,data.length);data.forEach((v,i)=>{num(v.value,'value');num(v.target,'target');num(v.max,'max');if(v.max<=0||v.value<0||v.target<0||v.value>v.max||v.target>v.max)throw new Error('bullet 值须位于0至max');const ranges=v.ranges===undefined?[v.max]:v.ranges;list(ranges,'ranges');let prev=0;ranges.forEach(n=>{num(n,'range');if(n<=prev||n>v.max)throw new Error('ranges 须严格递增且不超max');prev=n;});const x=scale([0,v.max],190,c.w-90),y=r.y0+i*r.dy+r.dy/2;c.text(15,y+5,v.label);prev=0;ranges.forEach((n,j)=>{c.rect(x(prev),y-15,x(n)-x(prev),30,(c.p.ranges||[c.p.surface,c.p.grid,c.p.grid])[Math.min(j,2)]);prev=n;});c.rect(x(0),y-6,x(v.value)-x(0),12,c.p.accent,`data-value="${v.value}"`);c.line(x(v.target),y-21,x(v.target),y+21,c.p.ink,'stroke-width="3" data-role="target"');c.text(c.w-75,y+5,v.value+' / '+v.target);});return c.end();}
   function heatmap(s){const c=canvas(s),rs=list(s.rows,'rows'),cs=list(s.columns,'columns'),vals=list(s.values,'values');if(vals.length!==rs.length||vals.some(r=>!Array.isArray(r)||r.length!==cs.length))throw new Error('矩阵尺寸不一致');vals.flat().forEach(v=>num(v,'cell'));const d=domain(vals.flat(),s.domain),cw=(c.w-200)/cs.length,ch=(c.h-95)/rs.length;if(cw<45||ch<32)throw new Error('热力表过密');cs.forEach((v,j)=>c.text(170+(j+.5)*cw,30,v,'middle'));rs.forEach((v,i)=>{c.text(12,55+(i+.5)*ch+5,v);vals[i].forEach((n,j)=>{const ratio=(n-d[0])/(d[1]-d[0]),a=c.p.sequential?1:.12+.78*ratio;let fill=c.p.accent;if(c.p.sequential){const seq=list(c.p.sequential,'palette.sequential'),pos=ratio*(seq.length-1),lo=Math.floor(pos),hi=Math.min(seq.length-1,lo+1),k=pos-lo;fill='rgb('+rgb(seq[lo]).map((v,i)=>Math.round(v*(1-k)+rgb(seq[hi])[i]*k)).join(',')+')';}c.rect(170+j*cw,55+i*ch,cw-3,ch-3,fill,`fill-opacity="${a}" data-value="${n}"`);c.text(170+(j+.5)*cw,55+(i+.5)*ch+5,n,'middle',cellText(fill,a,c.p.ink));});});return c.end();}
-  function mekko(s){const c=canvas(s),data=list(s.items,'items');data.forEach(v=>{list(v.segments,'segments').forEach(g=>{num(g.value,'value');if(g.value<0)throw new Error('Mekko不接受负数');});});const totals=data.map(v=>v.segments.reduce((a,g)=>a+g.value,0));if(totals.some(t=>t<=0))throw new Error('类别总量须大于0');const names=[...new Set(data.flatMap(v=>v.segments.map(g=>g.label)))];const total=totals.reduce((a,b)=>a+b,0),pw=c.w-80,ph=c.h-110;let x=40;data.forEach((v,i)=>{const width=pw*totals[i]/total;let y=45;v.segments.forEach((g,j)=>{const hh=ph*g.value/totals[i];c.rect(x,y,width,hh,c.p.series[names.indexOf(g.label)%c.p.series.length],`stroke="white" data-value="${g.value}" data-total="${totals[i]}"`);if(hh>=25&&width>=75)c.text(x+width/2,y+hh/2+5,g.label+' '+g.value,'middle',cellText(c.p.series[names.indexOf(g.label)%c.p.series.length],1,c.p.ink));y+=hh;});c.text(x+width/2,c.h-43,v.label,'middle');c.text(x+width/2,c.h-20,totals[i],'middle',c.p.muted);x+=width;});return c.end();}
+  // 构成图共用同一份数据契约：列内完整列出系列，面积/高度按原值计算。
+  function composition(s, variableWidth) {
+    const c=canvas(s),data=list(s.items,'items'),names=[];
+    const content=s.labelContent||'value';
+    if(!['value','share','both'].includes(content))throw new Error('labelContent 应为 value/share/both');
+    if(!['auto','table',undefined].includes(s.labels))throw new Error('labels 应为 auto/table');
+    data.forEach(v=>{
+      if(v.label===undefined||v.label===null||String(v.label).trim()==='')throw new Error('类别标签不能为空');
+      const seen=new Set();list(v.segments,'segments').forEach(g=>{
+        if(!g.label||seen.has(g.label))throw new Error('系列名称须非空且列内唯一');seen.add(g.label);
+        num(g.value,'value');if(g.value<0)throw new Error('构成图不接受负值');if(!names.includes(g.label))names.push(g.label);
+      });
+    });
+    data.forEach(v=>{if(v.segments.length!==names.length)throw new Error('每列须显式列出所有系列；零值填0，未知值不能当作0');});
+    const totals=data.map(v=>v.segments.reduce((a,g)=>a+g.value,0));
+    totals.forEach(v=>{num(v,'total');if(v<=0)throw new Error('类别总量须大于0');});
+    const total=num(totals.reduce((a,b)=>a+b,0),'total'),normalized=variableWidth||s.mode==='percent';
+    if(!variableWidth&&!['absolute','percent',undefined].includes(s.mode))throw new Error('stacked mode 应为 absolute/percent');
+    const top=s.comparison?92:52,left=60,pw=c.w-90-(variableWidth?0:90);
+    if(variableWidth&&s.comparison)throw new Error('Mekko 比较请用相邻表或份额图，避免给列宽添加含混标注');
+    const dx=pw/data.length,widths=totals.map(t=>variableWidth?pw*t/total:dx*.58);
+    const values=(g,i)=>content==='share'?formatNumber(g.value/totals[i]*100,{decimals:s.shareDecimals===undefined?0:s.shareDecimals,suffix:'%'}):formatNumber(g.value,s.format)+(content==='both'?' ('+formatNumber(g.value/totals[i]*100,{decimals:s.shareDecimals===undefined?0:s.shareDecimals,suffix:'%'})+')':'');
+    const max=normalized?1:Math.max(...totals);
+    let ph=c.h-top-72;
+    let useTable=s.labels==='table'||data.some((v,i)=>v.segments.some(g=>{
+      const hh=ph*(normalized?g.value/totals[i]:g.value)/max;
+      return hh<(variableWidth?c.fs*2.6:c.fs+8)||(variableWidth&&textWidth(g.label,c.fs)>widths[i]-14)||textWidth(values(g,i),c.fs)>widths[i]-14;
+    }));
+    const rowH=c.fs+13,tableH=useTable?(names.length+2)*rowH+20:0;
+    ph-=tableH;if(ph<90)throw new Error('图表与完整标签表装不下，请增加高度或拆页');
+    const tableLeft=140,tableCW=(c.w-tableLeft-20)/data.length;
+    let x=left;
+    if(normalized){c.text(left-8,top+5,'100%','end',c.p.muted);c.text(left-8,top+ph+5,'0','end',c.p.muted);}
+    const points=[];
+    data.forEach((v,i)=>{
+      const width=widths[i],xx=variableWidth?x:left+i*dx+(dx-width)/2;
+      const barH=ph*(normalized?1:totals[i]/max);let yy=top+ph;
+      points.push({x:xx+width/2,value:totals[i]});
+      // 同一系列跨列固定堆积顺序和颜色，第一系列从零基线起。
+      names.forEach((name,k)=>{
+        const g=v.segments.find(g=>g.label===name),hh=ph*(normalized?g.value/totals[i]:g.value)/max;
+        yy-=hh;const fill=c.p.series[k%c.p.series.length];
+        c.rect(xx,yy,width,hh,fill,`stroke="white" stroke-width="1" data-value="${g.value}" data-total="${totals[i]}"`);
+        if(!useTable){
+          const color=cellText(fill,1,c.p.ink);
+          if(variableWidth){c.text(xx+width/2,yy+hh/2-3,name,'middle',color);c.text(xx+width/2,yy+hh/2+c.fs+2,values(g,i),'middle',color);}
+          else {c.text(xx+width/2,yy+hh/2+c.fs/3,values(g,i),'middle',color);if(i===data.length-1)fittedText(c,xx+width+12,yy+hh/2+c.fs/3,name,c.w-xx-width-20);}
+        }
+      });
+      const label=useTable?String(i+1):v.label;
+      fittedText(c,xx+width/2,top+ph+24,label,variableWidth?Math.max(width-4,15):dx-8,'middle');
+      if(!useTable)fittedText(c,xx+width/2,top+ph-barH-12,formatNumber(totals[i],s.format),width,'middle',c.p.ink,'font-weight="700"');
+      if(variableWidth)x+=width;
+    });
+    if(useTable&&variableWidth){
+      for(let i=1;i<points.length;i++){
+        const required=(textWidth(i,c.fs)+textWidth(i+1,c.fs))/2+4;
+        if(points[i].x-points[i-1].x<required)throw new Error('Mekko窄列序号无法区分，请增宽或改用完整比较表');
+      }
+    }
+    c.line(left,top+ph,left+pw,top+ph,c.p.ink);
+    if(useTable){
+      const y=top+ph+58;
+      const tableHeading=content==='share'?'系列 / 份额':content==='both'?'原值 / 份额':'系列 / 原值';
+      fittedText(c,12,y,tableHeading,tableLeft-20);
+      data.forEach((v,i)=>fittedText(c,tableLeft+(i+.5)*tableCW,y,(i+1)+' '+v.label,tableCW-12,'middle'));
+      c.line(12,y+10,c.w-20,y+10,c.p.ink);
+      names.forEach((name,k)=>{
+        const yy=y+(k+1)*rowH;c.rect(12,yy-c.fs+2,8,c.fs,c.p.series[k%c.p.series.length]);
+        fittedText(c,26,yy,name,tableLeft-34);
+        data.forEach((v,i)=>fittedText(c,tableLeft+(i+.5)*tableCW,yy,values(v.segments.find(g=>g.label===name),i),tableCW-12,'middle'));
+      });
+      const yy=y+(names.length+1)*rowH;c.line(12,yy-rowH+9,c.w-20,yy-rowH+9,c.p.grid);
+      c.text(12,yy,'总量');data.forEach((v,i)=>fittedText(c,tableLeft+(i+.5)*tableCW,yy,formatNumber(totals[i],s.format),tableCW-12,'middle',c.p.ink,'font-weight="700"'));
+    }
+    if(s.comparison)comparisonBracket(c,points,s.comparison);
+    return c.end();
+  }
+  function mekko(s){return composition(s,true);}
+  function stacked(s){return composition(s,false);}
   function tree(s){const c=canvas(s);if(!s.root||typeof s.root!=='object')throw new Error('root 必填');const nodes=[],seen=new Set();let leaves=0,maxDepth=0;function visit(n,depth,parent){if(!n||typeof n!=='object'||seen.has(n))throw new Error('树含非法节点或循环');seen.add(n);const v={n,depth,parent};nodes.push(v);maxDepth=Math.max(maxDepth,depth);if(n.children!==undefined&&!Array.isArray(n.children))throw new Error('children 必须为数组');const children=n.children||[];if(children.length){v.children=children.map(ch=>visit(ch,depth+1,v));v.row=v.children.reduce((a,k)=>a+k.row,0)/v.children.length;}else v.row=leaves++;return v;}visit(s.root,0,null);const nw=Math.min(180,(c.w-60)/(maxDepth+1)-35),rh=(c.h-70)/leaves;if(nw<80||rh<42)throw new Error('树过密');const dx=(c.w-60)/(maxDepth+1);nodes.forEach(v=>{v.x=30+v.depth*dx;v.y=35+v.row*rh;});nodes.forEach(v=>{if(v.parent){const a=v.parent,mid=(a.x+nw+v.x)/2;c.out.push(`<path d="M ${a.x+nw} ${a.y+18} H ${mid} V ${v.y+18} H ${v.x}" fill="none" stroke="${esc(c.p.grid)}" stroke-width="2"/>`);}});nodes.forEach(v=>{c.rect(v.x,v.y,nw,36,v.depth===0?c.p.accent:c.p.surface);c.text(v.x+8,v.y+24,v.n.label,'start',v.depth===0?cellText(c.p.accent,1,c.p.ink):c.p.ink);});return c.end();}
   function swimlane(s){const c=canvas(s),lanes=list(s.lanes,'lanes'),stages=list(s.stages,'stages'),items=list(s.items,'items'),cw=(c.w-160)/stages.length,rh=(c.h-70)/lanes.length;if(cw<90||rh<55)throw new Error('泳道过密');const ids=new Map(),occupied=new Set();stages.forEach((v,i)=>c.text(150+(i+.5)*cw,26,v,'middle'));lanes.forEach((v,i)=>{c.text(12,50+(i+.5)*rh,v);c.line(140,40+(i+1)*rh,c.w-10,40+(i+1)*rh);});items.forEach(v=>{if(!Number.isInteger(v.lane)||v.lane<0||v.lane>=lanes.length||!Number.isInteger(v.stage)||v.stage<0||v.stage>=stages.length||!v.id||ids.has(v.id))throw new Error('节点id或行列非法');const cell=v.lane+':'+v.stage;if(occupied.has(cell))throw new Error('同一泳道阶段只能有一个节点；请拆分阶段');occupied.add(cell);ids.set(v.id,{...v,x:150+v.stage*cw+8,y:40+v.lane*rh+(rh-36)/2});});const edges=s.edges||[];if(!Array.isArray(edges))throw new Error('edges 必须是数组');edges.forEach(e=>{const a=ids.get(e.from),b=ids.get(e.to);if(!a||!b)throw new Error('连线引用未知节点');const ax=a.x+cw-26,ay=a.y+18,bx=b.x,by=b.y+18,mid=(ax+bx)/2;c.out.push(`<path d="M ${ax} ${ay} H ${mid} V ${by} H ${bx}" fill="none" stroke="${esc(c.p.muted)}" stroke-width="2"/>`);c.out.push(`<path d="M ${bx-6} ${by-4} L ${bx} ${by} L ${bx-6} ${by+4}" fill="none" stroke="${esc(c.p.muted)}"/>`);});ids.forEach(v=>{c.rect(v.x,v.y,cw-26,36,c.p.selected,`data-id="${esc(v.id)}"`);c.text(v.x+7,v.y+24,v.label);});return c.end();}
-  return {waterfall,dumbbell,slope,bullet,heatmap,mekko,tree,swimlane};
+  function comparisonTable(s) {
+    const columns=list(s.columns,'columns'),data=list(s.rows,'rows'),p=Object.assign({},p0,s.palette||{}),keys=new Set();
+    columns.forEach(col=>{
+      if(!col.key||keys.has(col.key)||!col.label)throw new Error('表格列需唯一key与label');keys.add(col.key);
+      if(!['text','number',undefined].includes(col.type))throw new Error('表格type 应为 text/number');
+      if(col.bar){
+        if(!Array.isArray(col.bar.domain)||col.bar.domain.length!==2||col.bar.domain[0]>=col.bar.domain[1])throw new Error('数据条需显式非零范围domain');domain([0],col.bar.domain);
+        if(![undefined,'value','delta'].includes(col.bar.role))throw new Error('数据条role 应为value/delta');
+      }
+      if((col.bar||col.derive)&&col.type!=='number')throw new Error('数据条和计算列须为number');
+    });
+    const cell=(row,col)=>{
+      let value=row.values[col.key],display;
+      if(col.derive){
+        const a=row.values[col.derive.from],b=row.values[col.derive.to];
+        if(a==null||b==null)value=null;
+        else {const d=difference(a,b,{...col.derive,...col.format});value=d.value;display=d.label;}
+      }
+      if(value==null)return '<td'+(col.type==='number'?' class="num"':'')+'><span aria-label="缺失">—</span></td>';
+      if(col.type!=='number')return '<td>'+esc(value)+'</td>';
+      num(value,'table cell');display=display===undefined?formatNumber(value,col.format):display;
+      let bar='';
+      if(col.bar){
+        const d=domain([0,value],col.bar.domain),x=scale(d,1,159),a=x(0),b=x(value);
+        const role=col.bar.role||(col.derive?'delta':'value'),fill=role==='delta'?(value<0?p.negative:p.positive):p.accent;
+        bar=`<svg class="table-bar" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 14" preserveAspectRatio="none" aria-hidden="true"><line x1="1" y1="7" x2="159" y2="7" stroke="${esc(p.grid)}"/><rect x="${Math.min(a,b)}" y="3" width="${Math.abs(b-a)}" height="8" fill="${esc(fill)}" data-value="${value}"/><line x1="${a}" y1="1" x2="${a}" y2="14" stroke="${esc(p.ink)}"/></svg>`;
+      }
+      return '<td class="num">'+esc(display)+bar+'</td>';
+    };
+    return `<table class="data-table analytical-table">${s.title?'<caption>'+esc(s.title)+'</caption>':''}<thead><tr>${columns.map(col=>'<th scope="col"'+(col.type==='number'?' class="num"':'')+'>'+esc(col.label)+(col.unit?'<span class="column-unit">'+esc(col.unit)+'</span>':'')+(col.bar?'<span class="column-unit">量尺 '+esc(formatNumber(col.bar.domain[0]))+' 至 '+esc(formatNumber(col.bar.domain[1]))+'</span>':'')+'</th>').join('')}</tr></thead><tbody>${data.map(row=>{
+      if(row.kind==='group'){if(!row.label)throw new Error('分组需label');return '<tr class="group"><th colspan="'+columns.length+'" scope="rowgroup">'+esc(row.label)+'</th></tr>';}
+      if(![undefined,'data','total'].includes(row.kind)||!row.values)throw new Error('表格行需values，kind 应为data/total/group');
+      return '<tr'+(row.kind==='total'?' class="total"':row.selected?' class="selected"':'')+'>'+columns.map(col=>cell(row,col)).join('')+'</tr>';
+    }).join('')}</tbody></table>`;
+  }
+  function wrappedText(c,x,y,value,width,maxLines=3,color=c.p.ink) {
+    if(value===undefined||value===null||String(value).trim()==='')throw new Error('流程文字不能为空');
+    const lines=[];let line='';
+    for(const ch of String(value)){if(ch==='\n'||textWidth(line+ch,c.fs)>width){lines.push(line);line=ch==='\n'?'':ch;}else line+=ch;}
+    if(line)lines.push(line);if(lines.length>maxLines)throw new Error('流程文字过长，请拆分或扩容：'+value);
+    lines.forEach((t,i)=>c.text(x,y+i*(c.fs+7),t,'start',color));
+  }
+  function processFlow(s) {
+    const c=canvas(s),stages=list(s.stages,'stages'),transitions=list(s.transitions,'transitions');
+    if(stages.length<2||transitions.length!==stages.length-1)throw new Error('线性流程需至少2阶段和逐段转换条件');
+    const left=90,gap=48,cw=(c.w-left-20-gap*(stages.length-1))/stages.length;
+    const rh=(c.h-120)/3;if(cw<140||rh<68)throw new Error('流程画布不足，请增加尺寸或拆页');
+    const fields=[['owner','责任'],['output','交付'],['gate','放行条件']];
+    fields.forEach(([key,label],r)=>{const yy=110+r*rh;c.text(8,yy,label,'start',c.p.muted);c.line(left,yy-24,c.w-20,yy-24,c.p.grid);});
+    stages.forEach((v,i)=>{
+      const x=left+i*(cw+gap);c.line(x,29,x+cw,29,c.p.ink,'stroke-width="2"');
+      wrappedText(c,x,55,v.label,cw,1,c.p.ink);
+      fields.forEach(([key],r)=>wrappedText(c,x,110+r*rh,v[key],cw,Math.floor((rh-14)/(c.fs+7))));
+      if(i<stages.length-1){const ax=x+cw+7,bx=ax+gap-14;c.line(ax,51,bx,51,c.p.muted);c.out.push(`<path d="M ${bx-5} 47 L ${bx} 51 L ${bx-5} 55" fill="none" stroke="${esc(c.p.muted)}"/>`);fittedText(c,(ax+bx)/2,76,transitions[i],gap-2,'middle',c.p.muted);}
+    });
+    return c.end();
+  }
+  return {waterfall,dumbbell,slope,bullet,heatmap,mekko,tree,swimlane,stacked,comparisonTable,processFlow,formatNumber,difference};
 });

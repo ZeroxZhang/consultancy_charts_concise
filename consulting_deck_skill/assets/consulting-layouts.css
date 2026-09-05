@@ -35,3 +35,14 @@
 .status-good{color:var(--good);background:var(--good-soft)}
 .status-risk{color:var(--risk);background:var(--risk-soft)}
 .status-caution{color:var(--caution);background:var(--caution-soft)}
+
+/* 分析表保留行列语义，数据条只作数值的冗余编码。 */
+.analytical-table caption{text-align:left;font-size:19px;font-weight:700;color:var(--ink);padding-bottom:12px}
+.analytical-table .column-unit{display:block;font-size:12px;font-weight:400;color:var(--gray-2);margin-top:4px}
+.analytical-table .table-bar{display:block;width:100%;height:14px;margin-top:5px}
+.analytical-table .total td{border-top:2px solid var(--brand);border-bottom:0;font-weight:700}
+.analytical-table .group th{padding:7px 9px;border-bottom:1px solid var(--gray-3);background:var(--gray-4)}
+/* 用于图表内注释已充分的页面，避免外围重色块抢占证据层级。 */
+.reading.analytical .exhibit h2{border-top:0;padding-top:0}
+.reading.analytical .exhibit .annotation{background:transparent;border-left:0;border-top:1px solid var(--gray-3);padding:10px 0 0}
+.reading.analytical .decision-strip{background:transparent;color:var(--ink);border-top:2px solid var(--brand);padding:12px 0 0}

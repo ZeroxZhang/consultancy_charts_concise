@@ -22,6 +22,7 @@ consulting_deck_skill/  实战化执行层：SKILL.md 主编排 + references/ �
                      the skill itself: orchestration + condensed references + engine/assets + verification scripts
 iteration_v2/        v2 迭代记录、备份、基线截图与验收产物 · v2 iteration records & QA artifacts
 iteration_v3_color/  v3 配色迭代记录、三套同内容样稿与独立 QA · v3 color iteration records & QA
+iteration_v4_thinkcell/  v4 分析表达升级、前后对照与验收 · v4 analytical exhibits & QA
 ```
 
 数据流：`research_notes`（证据）→ `report`（方法论）→ `skill`（执行）。修改下层结论时需沿链检查上层是否受影响。
@@ -36,7 +37,8 @@ Data flow: `research_notes` (evidence) → `report` (methodology) → `skill` (e
 - **证据纪律** / Evidence discipline — 页面上每个数字必须来自用户素材或调研来源，否则保留待核缺口；仅真正合成数据标 Illustrative，分析判断与建议分别标注。
 - **图表与图标** / Charts & icons — ECharts 5（瀑布图、Mekko 等复合图表配方内置引擎）；IconPark 图标（ESM 加载，离线降级到引擎内置 SVG 迷你集）。
 - **三套配色主题** / Three color themes — 麦肯锡风格（默认）、BCG 风格、埃森哲风格；S0 一次询问，已有选择持续继承。
-- **原创 SVG 组件** / Original SVG components — `assets/exhibit-kit.js` 8 种基础 SVG + `assets/consulting-layouts.css` 阅读型复合页样式。
+- **分析表达组件** / Analytical exhibits — `assets/exhibit-kit.js` 10 种 SVG + 1 种 HTML 比较表；支持派生差异标注、构成标签与完整表格回退。
+- **分析表达样稿** / Analytical reference deck — `assets/analysis_reference_deck.html`：6 页合成数据，含v3前后对照与保留普通表格的反例。
 - **离线样稿** / Offline sample deck — `assets/reference_deck.html`：9 页可离线打开的样稿，覆盖全部引擎能力。
 - **编号体系** / Shared numbering — A-01…A-11 消息类型匹配矩阵、B-01…B-56 图表卡片、D-01…D-12 页面原型、E-01…E-16 QA 清单、M-01…M-10 流行说法证伪结论；`report/` ↔ `references/` ↔ `SKILL.md` 三处口径一致。
 
@@ -81,6 +83,8 @@ cp -R consulting_deck_skill ~/.claude/skills/consulting_deck_skill
 |---|---|
 | `scripts/test_engine.cjs` | 引擎 headless Chrome 三连测（DOM 完整性 / 深链 / 打印） |
 | `scripts/test_exhibit_kit.cjs` | SVG 组件数值编码验证 |
+| `scripts/test_analysis_exhibits.cjs` | 差异计算、构成比例、标签回退、表格量尺与输入边界 |
+| `scripts/build_analysis_reference.cjs` | 重建6页分析表达样稿（支持三套主题） |
 | `scripts/build_reference_deck.cjs` | 重建 9 页样稿（`--theme=bcg\|accenture` 切换主题） |
 | `scripts/qa_deck.cjs <html> <renders>` | 逐页渲染图与 PDF；自动 PASS 不能替代看图 |
 | `scripts/test_themes.cjs` | 主题隔离、对比度与快照验证 |
@@ -92,6 +96,7 @@ cp -R consulting_deck_skill ~/.claude/skills/consulting_deck_skill
 - **v1** — 基础引擎与 8 阶段工作流（备份、基线与验收产物见 `iteration_v2/`）。Baseline engine & workflow.
 - **v2** — 原创 SVG 组件（exhibit-kit）、9 页样稿、浏览器验收脚本；取消统一字数/要点上限，阅读型密度按证明责任。Original SVG components, 9-page sample deck, browser QA scripts; density is evidence-driven.
 - **v3** — 三套内置配色主题（mckinsey 默认 / bcg / accenture），`assets/deck-themes.js` 为色值唯一来源；三套同内容样稿与独立 QA 见 `iteration_v3_color/`。Three built-in color themes; `deck-themes.js` is the single source of truth.
+- **v4** — 按信息任务借鉴think-cell的分析表达：数据派生注释、堆积图、Mekko完整标签回退、比较表与阶段门禁；六页对照样稿和验收见 `iteration_v4_thinkcell/`。Information-led analytical exhibits, computed annotations, complete label fallback and comparison tables.
 
 ## 免责声明 · Disclaimer
 
