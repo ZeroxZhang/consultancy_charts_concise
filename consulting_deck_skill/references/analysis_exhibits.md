@@ -1,4 +1,4 @@
-# 分析图表的表达语法 · v4
+# 分析图表的表达语法 · v5
 
 适用：S4 选型、S5 规格、S6 精加工、S7 验收。目标是让读者少心算、少查图例、少在图和文字之间往返。
 think-cell 是能力参照；下述规则为本项目独立适配，不是官方模板或必须采用的外观。
@@ -63,7 +63,9 @@ API和运行方式见 `exhibit_system.md`；示例见 `assets/analysis_reference
 `node scripts/build_analysis_reference.cjs` 重建。六页涵盖同数据对照和应当保留普通表格的反例。
 新增数值与输入边界测试：`node scripts/test_analysis_exhibits.cjs`。
 
-当前支持单段瀑布、普通/100%堆积、百分轴Mekko、比较表、线性阶段流程；未实现堆积瀑布、单位轴Mekko、任意标签自动避让或任意网络路由。
+高频定量图先用`EChartsRecipes`生成option；online模式由ECharts 6 SVG renderer渲染，offline模式由`render_echarts_svg.cjs`生成静态SVG。配方只解决数据契约和可复用呈现，页面仍须按`chart_matching.md`确认输入结构、读者操作、密度与回退。
+
+ExhibitKit当前支持单段瀑布、普通/100%堆积、百分轴Mekko、比较表、线性阶段流程等；EChartsRecipes支持9种高频统计/关系配方。仍未实现堆积瀑布、单位轴Mekko、任意标签自动避让或任意网络路由。
 不复制 think-cell 编辑器、PowerPoint/Excel 联动或可编辑PPTX功能。
 
 ## 官方参照与适配边界

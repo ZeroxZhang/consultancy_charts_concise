@@ -1,7 +1,7 @@
 /* 咨询阅读型页面组件；内联到deck，不替换导航引擎。 */
 .slide.reading{padding:32px 40px 26px;--fs-body:17px;--fs-note:12px}
 .reading .slide__title{font-size:30px;line-height:1.22;margin:0 0 8px;max-width:1180px}
-.reading .slide__tracker{top:12px;font-size:11px;color:var(--gray-2)}
+.reading .slide__tracker{top:12px;font-size:12px;color:var(--gray-2)}
 .reading .slide__body{margin-top:16px;gap:20px}
 .reading .source{margin-top:12px;line-height:1.35;color:var(--gray-2)}
 .reading .slide__page{font-size:12px}

@@ -53,4 +53,4 @@ const stages=[{label:'验证',owner:'业务',output:'清单',gate:'准入通过'
 assert.match(kit.processFlow({stages,transitions:['通过']}),/准入通过/);
 assert.throws(()=>kit.processFlow({stages,transitions:['通过','通过']}),/条件/);
 assert.throws(()=>kit.processFlow({stages:[{...stages[0],output:'信息'.repeat(200)},stages[1]],transitions:['通过']}),/过长/);
-console.log('v4 PASS: differences, CAGR intervals, signed/zero values, shared scales, composition geometry, complete fallback, theme compatibility and invalid inputs');
+console.log('v5 PASS: differences, CAGR intervals, signed/zero values, shared scales, composition geometry, complete fallback, theme compatibility and invalid inputs');

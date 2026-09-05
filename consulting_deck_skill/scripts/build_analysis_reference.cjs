@@ -37,7 +37,7 @@ page('口径不同的增长信号，保留表格更准确','反例：相同的�
 let html=fs.readFileSync(path.join(root,'assets/deck_engine.html'),'utf8');html=html.slice(html.indexOf('<!DOCTYPE html>'));
 const start=html.indexOf('<section class="slide'),end=html.indexOf('</div></div><!-- /stage /viewport -->');if(start<0||end<start)throw Error('引擎边界缺失');
 html=html.slice(0,start)+slides.join('\n')+'\n'+html.slice(end);
-const css=fs.readFileSync(path.join(root,'assets/consulting-layouts.css'),'utf8')+'\n.reading .slide__body{grid-template-rows:minmax(0,1fr) auto}.analytical .graphic{align-items:flex-start}.analytical .graphic>svg{height:auto;max-height:100%}.analytical .data-table{font-size:16px}.analytical .data-table td{padding:13px 9px}.analytical .slide__sticker{font-size:11px}';
+const css=fs.readFileSync(path.join(root,'assets/consulting-layouts.css'),'utf8')+'\n.reading .slide__body{grid-template-rows:minmax(0,1fr) auto}.analytical .graphic{align-items:flex-start}.analytical .graphic>svg{height:auto;max-height:100%}.analytical .data-table{font-size:16px}.analytical .data-table td{padding:13px 9px}.analytical .slide__sticker{font-size:12px}';
 html=html.replace('</style>',css+'\n</style>').replace('<title>Deck Title</title>','<title>分析表达升级 · 六页验证样稿</title>');
 html=html.replace(/<script src="[^"]+"><\/script>/g,'').replace(/<script type="module">[\s\S]*?<\/script>/g,'');
 html=html.replace("if(!window.echarts){ document.body.classList.add('no-charts'); return; }","if(!window.echarts){ if(document.querySelector('.chart')) document.body.classList.add('no-charts'); return; }");

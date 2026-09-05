@@ -6,7 +6,8 @@
  1. 复制本文件为 deck.html；
  2. 用 deck-themes.js 将所选主题 CSS 注入 deck-theme 样式区；字体/字号仍由 visual_spec.md 定义；
  3. 按 page_specs.md 逐页替换 <main> 中的示例页（保留页面结构模式与 class 约定）；
- 4. 图表：用 <div class="chart" data-opt='...ECharts option JSON...'></div>；
+ 4. 图表：优先用 <div class="chart" data-recipe="rankedBar" data-spec='...JSON...'></div>；
+    没有标准配方时才用 data-opt 写原生ECharts option；
     颜色用 "@accent" / "@cat-1" 等语义引用，未知 token 报错；数据先写好再填（每个数字挂 Source）；
  5. 图标：icon('Trend') —— IconPark 在线加载，离线自动降级到内置迷你集；
  6. 引擎功能（全部已实现，勿重写）：
@@ -17,7 +18,7 @@
     - URL 深链：#3 直达第 3 页；打印/导出 PDF = 每页一张（Chrome 打印可选纸张尺寸）
     - 图表懒加载 + 断网降级提示
  7. 尺寸切换：把 <body> 的 data-ratio 改为 "4x3" 即 4:3（默认 16:9 无需写）。
- 8. CDN：ECharts 用 jsDelivr；国内不可达时改 bootcdn/unpkg 备选行（见下方注释）。
+ 8. CDN：ECharts 6.1.0用jsDelivr；offline-self-contained应通过Node SSR写入静态SVG。
  9. 示例页数据全部为 Illustrative（虚构），且已通过 E-08 复核（瀑布贡献和 = 起止差）。
 ════════════════════════════════════════════════════════════════════════════
 -->
@@ -27,9 +28,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Deck Title</title>
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-<!-- 国内备选：<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.5.1/echarts.min.js"></script> -->
-<!-- 其他备选：<script src="https://unpkg.com/echarts@5.5.1/dist/echarts.min.js"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@6.1.0/dist/echarts.min.js"></script>
+<!-- 其他备选：<script src="https://unpkg.com/echarts@6.1.0/dist/echarts.min.js"></script> -->
+<script src="./echarts-recipes.js"></script>
+<script src="./chart-runtime.js"></script>
 <style>
 /* ══════════════ 设计 token（S2 visual_spec 落点；构建时替换为品牌值）══════════════ */
 :root{
@@ -92,10 +94,10 @@ body.overview .slide.active{outline-color:var(--accent);outline-width:3px}
 body.no-charts #nocharts{display:block}
 
 /* ══════════════ 页面骨架组件（咨询页标准元素）══════════════ */
-.slide__tracker{position:absolute;top:12px;left:var(--margin);font-size:10px;color:var(--gray-2);
+.slide__tracker{position:absolute;top:12px;left:var(--margin);font-size:12px;color:var(--gray-2);
   letter-spacing:.08em;text-transform:uppercase}
-.slide__page{position:absolute;bottom:10px;right:var(--margin);font:11px/1 var(--font-num);color:var(--gray-2)}
-.slide__sticker{position:absolute;top:10px;right:var(--margin);font-size:10px;color:var(--gray-1);
+.slide__page{position:absolute;bottom:10px;right:var(--margin);font:12px/1 var(--font-num);color:var(--gray-2)}
+.slide__sticker{position:absolute;top:10px;right:var(--margin);font-size:12px;color:var(--gray-1);
   border:1px solid var(--gray-3);padding:2px 8px;border-radius:2px;letter-spacing:.05em}
 .slide__title{font-family:var(--font-title);font-size:var(--fs-title);font-weight:700;
   line-height:1.25;color:var(--brand);letter-spacing:.01em;margin-bottom:6px}
@@ -109,7 +111,7 @@ body.no-charts #nocharts{display:block}
   margin-top:12px;
 }
 .takeaway b{color:var(--brand)}
-.takeaway .tag{font-size:10px;color:var(--gray-2);letter-spacing:.08em;margin-right:8px}
+.takeaway .tag{font-size:12px;color:var(--gray-2);letter-spacing:.08em;margin-right:8px}
 .bullets{display:flex;flex-direction:column;gap:10px;justify-content:flex-start}
 .bullet{font-size:var(--fs-body);line-height:1.45;color:var(--gray-1)}
 .bullet b{color:var(--ink)}
@@ -225,18 +227,14 @@ body.no-charts #nocharts{display:block}
   <h1 class="slide__title">线下商超失速最重：销量 −18%，是行业降幅的 3 倍以上</h1>
   <p class="slide__lead">2025 年分渠道销量同比变化（%，Indexed 2024=100）</p>
   <div class="slide__body" style="grid-template-columns:2fr 1fr">
-    <div class="chart" data-opt='{
-      "grid":{"left":8,"right":56,"top":24,"bottom":8,"containLabel":true},
-      "xAxis":{"type":"value","max":135,"splitLine":{"show":false},"axisLine":{"show":false},"axisTick":{"show":false},"axisLabel":{"color":"@gray-2","fontSize":11}},
-      "yAxis":{"type":"category","inverse":true,"data":["线下商超","经销","电商","行业大盘"],"axisLine":{"show":false},"axisTick":{"show":false},"axisLabel":{"color":"@ink","fontSize":13}},
-      "series":[{"type":"bar","barWidth":26,"data":[
-          {"value":82,"itemStyle":{"color":"@risk"},"label":{"show":true,"position":"right","formatter":"−18%","color":"@risk","fontWeight":700,"fontSize":12}},
-          {"value":97,"itemStyle":{"color":"@gray-3"},"label":{"show":true,"position":"right","formatter":"−3%","color":"@gray-1","fontSize":12}},
-          {"value":125,"itemStyle":{"color":"@gray-3"},"label":{"show":true,"position":"right","formatter":"+25%","color":"@gray-1","fontSize":12}},
-          {"value":95,"itemStyle":{"color":"@gray-3"},"label":{"show":true,"position":"right","formatter":"−5%","color":"@gray-1","fontSize":12}}
-        ],
-        "markLine":{"symbol":"none","silent":true,"lineStyle":{"color":"@gray-3","type":"dashed"},"label":{"formatter":"2024 基线 = 100","position":"insideEndTop","color":"@gray-2","fontSize":10},"data":[{"xAxis":100}]}
-      }]
+    <div class="chart" data-recipe="rankedBar" data-spec='{
+      "sort":"none","max":135,"baseline":100,"baselineLabel":"2024 基线 = 100",
+      "items":[
+        {"label":"线下商超","value":82,"display":"−18%","role":"risk","selected":true},
+        {"label":"经销","value":97,"display":"−3%","role":"neutral"},
+        {"label":"电商","value":125,"display":"+25%","role":"neutral"},
+        {"label":"行业大盘","value":95,"display":"−5%","role":"neutral"}
+      ]
     }'></div>
     <div class="bullets">
       <div class="bullet"><b>商超是唯一失血点</b>——2025 年销量 −18%（同比），单渠道拖累收入约 1.1 亿。</div>
@@ -317,9 +315,9 @@ body.no-charts #nocharts{display:block}
       <g><circle cx="880" cy="150" r="46" fill="var(--accent)" fill-opacity=".14" stroke="var(--accent)" stroke-width="2.5"/><text x="880" y="156" font-size="15" font-weight="700" fill="var(--brand)" text-anchor="middle">电商</text><text x="880" y="200" font-size="11" fill="var(--gray-1)" text-anchor="middle">2.0 亿</text></g>
       <g><circle cx="840" cy="330" r="30" fill="var(--gray-3)" fill-opacity=".6" stroke="var(--gray-2)" stroke-width="1.5"/><text x="840" y="336" font-size="15" fill="var(--gray-1)" text-anchor="middle">经销</text><text x="840" y="374" font-size="11" fill="var(--gray-1)" text-anchor="middle">3.1 亿</text></g>
       <!-- 迁移箭头 -->
-      <line x1="300" y1="430" x2="820" y2="180" stroke="var(--brand)" stroke-width="3" marker-end="url(#arrow)"/>
+      <line x1="300" y1="380" x2="820" y2="180" stroke="var(--brand)" stroke-width="3" marker-end="url(#arrow)"/>
       <defs><marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="var(--brand)"/></marker></defs>
-      <text x="560" y="440" font-size="13" fill="var(--brand)" font-weight="700" text-anchor="middle">目标路径：2 年内渠道组合重心</text>
+      <text x="505" y="350" font-size="13" fill="var(--brand)" font-weight="700" text-anchor="middle">目标路径：2 年内渠道组合重心</text>
     </svg>
   </div>
   <div class="source"><b>Source:</b> 项目组测算 + 行业协会数据; <b>Note:</b> 气泡面积代表 2025 年营收规模；数据为示意（Illustrative）。</div>
@@ -419,6 +417,7 @@ body.no-charts #nocharts{display:block}
   /* 咨询图表主题：白底、浅灰轴、无默认粗网格（c-4 修复：注册并真正使用）*/
   function token(name, fallback){ return getComputedStyle(document.body).getPropertyValue(name).trim() || fallback; }
   function palette(){ return [1,2,3,4,5,6].map(function(i){return token('--cat-'+i);}); }
+  function runtimeTokens(){var css=getComputedStyle(document.documentElement),out={};for(var i=0;i<css.length;i++){var k=css[i];if(k.indexOf('--')===0)out[k.slice(2)]=css.getPropertyValue(k).trim();}return out;}
   /* JSON 中仅完整的 @role 字符串会解析；缺失角色直接报错，避免静默回退成错误色。 */
   function resolveTokens(value){
     if(typeof value==='string' && /^@[a-z][a-z0-9-]*$/.test(value)){
@@ -439,14 +438,37 @@ body.no-charts #nocharts{display:block}
   /* 图表懒初始化/补尺寸：首次 init，之后 resize（容器从 display:none 变为可见后尺寸才正确）*/
   function initChartFromEl(el){
     if(!window.echarts || !el.clientWidth || !el.clientHeight || !el.getClientRects().length) return;
-    if(el._chart){ el._chart.resize(); return; }
+    if(el._chart){
+      if(el._chart.getWidth()===el.clientWidth&&el._chart.getHeight()===el.clientHeight){el._chart.resize();return;}
+      el._chart.dispose();el._chart=null; // 逻辑容器变更时重新预算和验收，不能只拉伸旧计划。
+    }
     try{
       if(el.id==='waterfall-demo'){ initWaterfall(el); return; }
-      var opt=resolveTokens(JSON.parse(el.getAttribute('data-opt')));
+      var raw,opt;
+      if(el.getAttribute('data-recipe')){
+        if(!window.ChartRuntime) throw new Error('ChartRuntime未加载');
+        var plan=ChartRuntime.prepare(el.getAttribute('data-recipe'),JSON.parse(el.getAttribute('data-spec')||'{}'),{width:el.clientWidth,height:el.clientHeight,tokens:runtimeTokens()});
+        var pageAttr=el.getAttribute('data-recipe-page'),pageIndex=pageAttr===null?0:Number(pageAttr);
+        if(!Number.isInteger(pageIndex)||pageIndex<0)throw new Error('配方页号必须是从0起的整数');
+        // 总是先用首页探测最终布局；实际验收可能把一张图转成多页表。
+        opt=plan.pages[0].option;
+      }else{
+        raw=JSON.parse(el.getAttribute('data-opt'));
+        opt=window.ChartRuntime?ChartRuntime.options(raw,runtimeTokens()):resolveTokens(raw);
+      }
       opt.animation=false;
       if(!opt.textStyle){opt.textStyle={fontFamily:getComputedStyle(document.documentElement).getPropertyValue('--font-body')};}
-      var c=echarts.init(el, THEME_NAME, {renderer:'svg'}); c.setOption(opt); el._chart=c;
-    }catch(err){ console.error('chart parse error',err); }
+      var c=echarts.init(el, null, {renderer:'svg'});c.setOption(opt);
+      if(plan){
+        var checked=ChartRuntime.check(c,plan,0);
+        if(checked.pages.length>1&&pageAttr===null)throw new Error('最终布局需'+checked.pages.length+'页，请拆页并设置data-recipe-page');
+        if(!checked.pages[pageIndex])throw new Error('配方页号超出最终范围');
+        if(checked!==plan||pageIndex!==0)c.setOption(checked.pages[pageIndex].option,true);
+        ChartRuntime.check(c,checked,pageIndex);
+        el._plan=checked;el.dataset.renderKind=checked.pages[pageIndex].kind;
+      }
+      el._chart=c;delete el.dataset.chartError;
+    }catch(err){if(c)c.dispose();el.dataset.chartError=err.message;el.textContent='图表待处理：'+err.message;console.error('chart parse error',err);}
   }
   /* 瀑布图以显式起止值绘制；允许跨零，兼容旧 abs 类型。 */
   function buildWaterfall(items){
@@ -472,7 +494,7 @@ body.no-charts #nocharts{display:block}
       animation:false, tooltip:{show:false},
       grid:{left:40,right:30,top:40,bottom:30,containLabel:true},
       xAxis:{type:'category',data:cats,axisLine:{lineStyle:{color:token('--gray-3')}},axisTick:{show:false},axisLabel:{color:token('--ink'),fontSize:14}},
-      yAxis:{type:'value',min:lo<0?lo-pad:0,max:hi+pad,splitLine:{lineStyle:{color:token('--gray-4')}},axisLabel:{color:token('--gray-2'),fontSize:14}},
+      yAxis:{type:'value',min:lo<0?lo-pad:0,max:hi+pad,splitLine:{lineStyle:{color:token('--gray-4')}},axisLabel:{color:token('--gray-2'),fontSize:14,formatter:function(v){return Number(v.toFixed(1));}}},
       series:[{type:'custom',encode:{x:0,y:[1,2]},data:data,
         renderItem:function(params,api){
           var i=api.value(0),from=api.value(1),to=api.value(2),value=api.value(3),delta=api.value(4);

@@ -43,7 +43,7 @@ engine=engine.slice(engine.indexOf('<!DOCTYPE html>'));
 engine='<!-- v2设计验证：前6页沿用用户材料且未重核，后3页为合成数据；全部静态SVG/HTML。 -->\n'+engine;
 let a=engine.indexOf('<section class="slide'),z=engine.indexOf('</div></div><!-- /stage /viewport -->');
 if(a<0||z<a)throw Error('引擎页面边界缺失');engine=engine.slice(0,a)+slides.join('\n')+'\n'+engine.slice(z);
-const css=fs.readFileSync(path.join(root,'assets/consulting-layouts.css'),'utf8')+`\n:root{--fs-note:12px;--font-title:Arial,'PingFang SC','Microsoft YaHei',sans-serif}.reading .slide__body{grid-template-rows:minmax(0,1fr) auto}.reading .slide__sticker{font-size:11px}.reading .data-table{font-size:15px}.reading .data-table td{padding:11px 9px}`;
+const css=fs.readFileSync(path.join(root,'assets/consulting-layouts.css'),'utf8')+`\n:root{--fs-note:12px;--font-title:Arial,'PingFang SC','Microsoft YaHei',sans-serif}.reading .slide__body{grid-template-rows:minmax(0,1fr) auto}.reading .slide__sticker{font-size:12px}.reading .data-table{font-size:15px}.reading .data-table td{padding:11px 9px}`;
 engine=engine.replace('</style>',css+'\n</style>').replace('<title>Deck Title</title>','<title>咨询Deck v2 · 改版验证与图示样例</title>');
 // 本样稿全部为静态SVG/HTML，去除无需使用的外部库，实现真正离线自包含。
 engine=engine.replace(/<script src="[^"]+"><\/script>/g,'').replace(/<script type="module">[\s\S]*?<\/script>/g,'');

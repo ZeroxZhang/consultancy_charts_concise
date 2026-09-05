@@ -28,7 +28,7 @@ for(const accent of ['#176B91','#AED6EE','#FFE000','#111111']){
  assert.equal(cells.length,5);
  cells.forEach(m=>{const alpha=+m[2],bg=lum(channels(m[1]).map(v=>alpha*v+(1-alpha)*255)),fg=lum(channels(m[3]));assert.ok((Math.max(bg,fg)+.05)/(Math.min(bg,fg)+.05)>=4.5,'热力标签对比度不足');});
 }
-console.log('8 exhibits: geometry, signed waterfall, area proportionality, escaping and invalid-input checks passed.');
+console.log('ExhibitKit core geometry, signed waterfall, area proportionality, escaping and invalid-input checks passed.');
 
 assert.throws(()=>kit.tree({root:{children:[{label:'child'}]}}),/文字标签/);
 assert.throws(()=>kit.dumbbell({items:[{start:1,end:2}]}),/文字标签/);

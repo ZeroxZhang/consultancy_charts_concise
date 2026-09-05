@@ -2,12 +2,13 @@
 name: consulting-deck-skill
 description: >-
   制作与迭代咨询风格的战略汇报、董事会材料、研究型 reading deck 和商业演示。
-  从简报、证据与 storyline 出发，用复合图表、表格和关系图生成固定尺寸分页 HTML，
+  从简报、大量原始数据或文本证据与 storyline 出发，选择并生成高密度复合图表、表格和关系图，
+  将输入结构、读者比较任务、图型与渲染路径显式匹配后生成固定尺寸分页 HTML，
   并执行逐页渲染、证据与视觉验收。适用于咨询级 PPT/deck、McKinsey/BCG/Accenture
   风格材料；默认交付 HTML，可打印 PDF，不冒称原生可编辑 PPTX。
 ---
 
-# 咨询 deck 制作技能 · v4
+# 咨询 deck 制作技能 · v5
 
 目标是让决策者能独立读懂、核对并采取行动。公开咨询演示稿是参考样本，
 不是内部模板或“顶级质量”的认证。保留现有分页引擎，优先改进论证与信息设计。
@@ -16,6 +17,7 @@ description: >-
 
 - **一页一个主判断，可以有多个证据模块。** 不把“一页一观点”误写成一图、五条要点或固定两栏。
 - **密度是有效证据的密度。** 不靠缩字、重复标题、加装饰图或虚构数字填空。
+- **大量输入先结构化再图示化。** 先识别数据表、时间序列、矩阵、层级、节点边、任务责任或文本论证结构，再按读者操作选图；材料多本身不是使用复杂图的理由。
 - **分析表达优先。** 借鉴 think-cell 的数据标注、对齐和结构表达；是否采用取决于读者的比较任务，不设风格覆盖率或复杂图配额。
 - **数据和判断分开。** 数据记录来源、时间、单位、分母、范围和核验状态；计算记录公式。
   未找到来源的事实保留缺口，不改贴 Illustrative 冒充证据。仅真正合成的数据标“示意数据”；
@@ -29,7 +31,7 @@ description: >-
 | 阶段 | 输出 | 进入下一阶段的条件 |
 |---|---|---|
 | S0 简报 | brief.md | 明确受众、要做的决定、reading/presentation、范围、素材、截止日期 |
-| S1 证据研究 | evidence.json + research_notes.md | 主判断有可追溯证据；缺口、推断、口径差异显式列出 |
+| S1 证据与输入建模 | source_inventory.json + evidence.json + research_notes.md | 原始材料有清单；主判断有原子证据；输入结构、缺口、推断和口径差异显式列出 |
 | S2 视觉系统 | visual_spec.md | 语义色登记表、字号、页面预算、媒介与依赖模式明确 |
 | S3 storyline | ghost_deck.md | 主判断→证据→决策的横向链闭合；必要的新方向已向用户确认 |
 | S4 分页与选型 | page_plan.md | 每页确定证明责任、证据模块、关系、主视觉、候选图及布局 |
@@ -65,6 +67,9 @@ description: >-
 同一期间/范围/指标才可直接排名；公司样本不能替代行业；相关不证明因果。
 报告发布日期在截止日期之后的资料不得用于当时视角的事实。
 
+用户提供大量文件时先生成`source_inventory.json`：文件/表/工作表、范围或页码、行列数、字段、单位、时间粒度、主键候选、缺失/异常、可抽取关系与处理状态。文本按主张/证据/反证/边界/来源定位拆分；只有明确语料范围和编码规则后，文本频次才能进入统计图。
+对每组可视化候选数据标记`input_shape: I-01..I-15`和`comparability`；未知口径不得进入共轴、排序、相减、份额、流量或同一色阶。
+
 ### S2 · 视觉系统
 
 读取 `references/color_and_type.md` 与 `references/slide_anatomy.md`；品牌依据见 `references/theme_research.md`。
@@ -86,11 +91,13 @@ SCQA 是可选叙事框架，不强行用前三页铺背景。
 读取 `references/chart_matching.md`、`references/layout_templates.md`、
 `references/exhibit_system.md` 与 `references/analysis_exhibits.md`，按需读取 `references/chart_cards.md` 对应 B 编号。
 每页记录：
-`页号 | 主判断 | 证明责任 | 证据ID | 模块及关系 | A/B/D编号 | 布局变体 | 编码 | 候选/淘汰理由`。
-通常比较2–3种合理图型；唯一明确适配时直接采用。没有柱条线占比、饼图配额或复杂图配额。
+`页号 | 主判断 | 证明责任 | 证据ID | 输入结构I编号 | 读者操作A编号 | 模块关系 | 候选图型 | render_route | recipe/B编号 | 布局 | 密度与标签计划 | 回退触发器 | 候选/淘汰理由`。
+
+先做可比性门禁，再按`输入结构 → 读者操作 → 候选图型 → 页面组合 → 实现路径 → 容量回退`路由。通常比较2–3种合理图型；唯一明确适配时直接采用。没有柱条线占比、饼图配额或复杂图配额。
 主动考虑：哑铃/坡度/子弹图、区间图、Mekko、热力矩阵、小倍数、驱动树、泳道、决策树、
 旅程、价值链、因果环、地图流向、带数据条的比较表。复杂度必须由真实关系或变量支撑。
 多样性审核用于发现“不同问题被套成同一版式”，不以变换图型本身为目标。
+大量文本优先抽取共同维度、关系边、责任/交付/条件或主张—证据—边界；无法形成这些结构时保留高质量表格/文字，不强行信息图。
 
 ### S5 · 逐页设计
 
@@ -104,6 +111,7 @@ SCQA 是可选叙事框架，不强行用前三页铺背景。
 5. 几何契约：字段→位置/长度/面积/颜色/线型；定性图声明档级而非假精度；
 6. Source/Note、估计方法、适用边界；评论列、KPI、takeaway 按需要使用，不固定必填。
 7. 图表精加工：关键比较的端点与公式、总量/份额的标签位置、标签过密时的回退方式；表格记录列单位和数据条量尺，图示声明箭头含义。
+8. 路由契约：`input_shape`、`reader_operation`、`comparability`、`render_route`、`recipe`、候选淘汰理由、项数/系列数/节点数与`fallback_trigger`。
 
 reading 正文通常2–4个证据模块，但单个完整主展品也可以；封面、过渡页不套密度要求。
 发现大片空白先判断内容不足还是容器拉伸；补充必要分析、改布局或合页，禁止只加背景块。
@@ -112,12 +120,12 @@ reading 正文通常2–4个证据模块，但单个完整主展品也可以；�
 
 1. 用 `node scripts/apply_theme.cjs assets/deck_engine.html deck.html <theme_id>` 生成选定主题引擎，替换其示例页，保留翻页/缩放/总览/打印/深链逻辑。
 2. 将 `assets/consulting-layouts.css` 内联到 HTML；按布局变体组装证据区。
-3. `assets/exhibit-kit.js` 提供10种零依赖 SVG 和1种 HTML 比较表；API见 `references/exhibit_system.md`。
-   可在构建时调用并写入静态 SVG，打印和离线不依赖运行时。原生 ECharts 处理常规统计图，
-   D3/ELK/Vega-Lite 等只按实际需求引入，不把外部仓库的整套默认皮肤混进来。
-4. 图表必须写单位、直接标签、必要图例；按比较任务添加参考线、差异或关键点注释。差异由源数据计算，关键内容不能藏 hover；过密时扩容、改表或拆页，不缩放数据图形来迁就标签。
-5. 用 `scripts/qa_deck.cjs` 渲染每页、检查越界、导出PDF与截图；用可用图片工具实际逐页看图。
-6. 引擎改动额外检验1280×720与1024×768、#3深链、G/ESC、键盘、缩放、全屏、打印页数和断网。
+3. 高频定量图走`assets/chart-runtime.js`：`prepare`按真实容器预算构建配方，渲染后必须`check`实际文字；若返回新计划，重绘并再次验收。`echarts-recipes.js`只是底层option构建器，单独调用不代表容量或视觉通过。浏览器引擎固定ECharts 6.1.0、SVG renderer，已接入完整路径。
+4. offline-self-contained优先`npm ci`安装固定依赖后运行`node scripts/render_echarts_svg.cjs input.json output.svg`，脚本执行同一主题/预算/文字验收。需要多页时显式加`--paginate`并嵌入全部输出；浏览器用`data-recipe-page`逐一安排返回页，不能只显示第一页。完整表也装不下则明确报错，作者继续拆分，不能缩字。
+5. `assets/exhibit-kit.js`提供10种零依赖SVG和1种HTML比较表，用于咨询特定校验与静态图示。ECharts原生/custom series处理其他坐标系、统计和关系图；HTML/CSS处理高文本密度表格；D3/ELK/Vega-Lite只按真实需要引入。
+6. 图表必须写单位、直接标签、必要图例；按比较任务添加参考线、差异或关键点注释。差异由源数据计算，关键内容不能藏 hover；过密时执行规格中的回退，不缩放数据图形来迁就标签。
+7. 用`scripts/test_echarts_recipes.cjs`、`test_theme_browser.cjs`和既有组件测试验证数值几何、主题、浏览器/SSR；大量输入另跑`test_dense_inputs.cjs`。用`qa_deck.cjs`渲染每页、检查越界/有效数据字号、PDF标题与页数、离线内容一致性；用可用图片工具实际逐页看图。自动文字验收不能代替证据核验、数据点遮挡或整体视觉判断。
+8. 引擎改动额外检验1280×720与1024×768、#3深链、G/ESC、键盘、缩放、全屏、打印页数和断网。
 
 ### S7 · 独立质量验收
 
@@ -133,10 +141,11 @@ Blocking/Major 修复后复验；无法修复则明确不通过，不将未目�
 
 - 证据与密度：`references/evidence_design.md`；`references/slide_anatomy.md`
 - 布局与组件：`references/layout_templates.md`；`references/exhibit_system.md`
-- 选图与编码：`references/chart_matching.md`；`references/chart_cards.md`
+- 高密度输入、选图与编码：`references/chart_matching.md`；`references/chart_cards.md`
 - 分析语法与示例：`references/analysis_exhibits.md`；`assets/analysis_reference_deck.html`（六页合成数据，含v3前后对照及纯表格反例）
 - 语义配色：`references/color_and_type.md`
 - 论证：`references/storyline_method.md`；`references/logic_frameworks.md`
 - 样例：`references/worked_example.md`（原始数据示例）；`assets/reference_deck.html`（v2复合页实物）
+- 大量输入实测：`assets/dense-input-example/`；`scripts/build_dense_reference.cjs <输出目录>`生成六页离线样稿及来源清单、原子证据、派生公式、选型计划。固定合成夹具，非通用文件抽取器；文本编码和选型仍由作者判断。
 - 验收：`references/workflow_qa.md`；`assets/subagent_prompts.md`
 - 对标证据与边界：`references/benchmark_findings.md`

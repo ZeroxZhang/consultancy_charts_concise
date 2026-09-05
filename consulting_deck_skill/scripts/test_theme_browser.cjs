@@ -1,10 +1,37 @@
-/* 真浏览器验证CSS、SVG与ECharts均使用选定主题。 */
-const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{pathToFileURL}=require('node:url'),assert=require('node:assert/strict'),themes=require('../assets/deck-themes.js');
+/* 实际加载主题引擎与共用runtime，检查九种配方的浏览器/SSR一致性。 */
+const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),assert=require('node:assert/strict'),{pathToFileURL}=require('node:url'),{execFileSync}=require('node:child_process');
+const themes=require('../assets/deck-themes.js'),cases=require('../assets/recipe-examples.json'),{render}=require('./render_echarts_svg.cjs');
 const pw=require(process.env.PLAYWRIGHT_MODULE||'playwright');
-(async()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'deck-themes-')),browser=await pw.chromium.launch({channel:'chrome',headless:true});try{
-const engine=fs.readFileSync(path.resolve(__dirname,'../assets/deck_engine.html'),'utf8');
-for(const id of themes.ids){const file=path.join(dir,id+'.html');fs.writeFileSync(file,themes.apply(engine,id));const p=await browser.newPage();await p.goto(pathToFileURL(file).href,{waitUntil:'networkidle'});await p.waitForFunction(()=>window.echarts&&window.DeckRecipes);const v=themes.get(id).tokens;
-const result=await p.evaluate(()=>{const r=DeckRecipes.resolveTokens({color:['@cat-1','@cat-2'],visualMap:{inRange:{color:['@seq-1','@seq-5']}}});let invalid=false;try{DeckRecipes.resolveTokens('@does-not-exist')}catch{invalid=true}const e=document.createElement('div');e.style='width:400px;height:250px';document.body.append(e);const chart=echarts.init(e,null,{renderer:'svg'});chart.setOption({color:r.color,animation:false,xAxis:{data:['A','B']},yAxis:{},series:[{type:'bar',data:[10,20],itemStyle:{color:r.color[0]}}]});return {resolved:r,invalid,svg:e.innerHTML,brand:getComputedStyle(document.documentElement).getPropertyValue('--brand').trim()};});
-assert.equal(result.brand,v.brand);assert.equal(result.resolved.color[0],v['cat-1']);assert.deepEqual(result.resolved.visualMap.inRange.color,[v['seq-1'],v['seq-5']]);assert.ok(result.invalid);assert.ok(result.svg.toLowerCase().includes(v['cat-1'].toLowerCase()));await p.close();}
-console.log('3 themes browser PASS: CSS, recursive options, visualMap, actual ECharts SVG, unknown token rejection');
-}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1});
+(async()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'deck-themes-')),browser=await pw.chromium.launch({channel:'chrome',headless:true});
+ try{
+  for(const id of themes.ids){
+   const file=path.join(dir,id+'.html');
+   execFileSync(process.execPath,[path.resolve(__dirname,'apply_theme.cjs'),path.resolve(__dirname,'../assets/deck_engine.html'),file,id]);
+   const p=await browser.newPage({viewport:{width:1400,height:900}}),errors=[];
+   p.on('pageerror',e=>errors.push(e.message));
+   await p.route('https://cdn.jsdelivr.net/npm/echarts@*/dist/echarts.min.js',route=>route.fulfill({path:require.resolve('echarts/dist/echarts.min.js'),contentType:'application/javascript'}));
+   await p.goto(pathToFileURL(file).href+'#3');await p.waitForFunction(()=>window.ChartRuntime&&document.querySelector('.slide.active .chart svg'));
+   assert.equal(await p.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()),themes.get(id).tokens.accent);
+   for(const [name,spec] of Object.entries(cases)){
+    const server=render({recipe:name,spec,theme_id:id,width:720,height:360});
+    const result=await p.evaluate(({name,spec,tokens})=>{
+     let plan=ChartRuntime.prepare(name,spec,{tokens,width:720,height:360});
+     const el=document.createElement('div');el.style='position:fixed;left:0;top:0;width:720px;height:360px;background:white';document.body.appendChild(el);
+     const c=echarts.init(el,null,{renderer:'svg'});c.setOption(plan.pages[0].option);plan=ChartRuntime.check(c,plan);c.setOption(plan.pages[0].option,true);ChartRuntime.check(c,plan);
+     const text=[...el.querySelectorAll('text')].map(t=>t.textContent),bad=[];
+     for(const t of el.querySelectorAll('text')){const r=t.getBoundingClientRect(),b=el.getBoundingClientRect();if(r.left<b.left-1||r.right>b.right+1||r.top<b.top-1||r.bottom>b.bottom+1)bad.push(t.textContent);}
+     const colors=name==='sankey'?plan.pages[0].option.series[0].data.map(d=>d.itemStyle.color):[];
+     const out={kind:plan.pages[0].kind,text,bad,colors};c.dispose();el.remove();return out;
+    },{name,spec,tokens:themes.get(id).tokens});
+    assert.equal(result.kind,server.pages[0].kind);
+    const serverTexts=[...server.pages[0].svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map(m=>m[1]);
+    assert.deepEqual(result.text.slice().sort(),serverTexts.sort(),id+' '+name+'文本路径不同');
+    assert.deepEqual(result.bad,[],id+' '+name+'浏览器标签越界');
+    if(name==='sankey')assert.equal(result.colors[0],themes.get(id).tokens.accent);
+   }
+   assert.deepEqual(errors,[]);await p.close();
+  }
+  console.log('PASS: 3主题×9配方，浏览器实际加载、SSR文字一致、标签边界、Sankey实体色');
+ }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

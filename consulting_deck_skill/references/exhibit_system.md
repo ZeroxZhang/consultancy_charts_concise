@@ -1,21 +1,85 @@
 # 展品系统：选型、实现与能力边界
 
+## v5分层原则
+
+- **ECharts 6优先处理定量坐标系、统计分布、关系与流向。** 高频类型先走`assets/echarts-recipes.js`，尚未封装但原生支持的类型走明确option。
+- **ExhibitKit处理咨询特定且需要构建期校验的静态展品。** 例如贡献闭合、Mekko面积、完整标签表回退。
+- **HTML/CSS/SVG处理精确表格和高文本密度关系图。** 不为了统一技术栈牺牲换行、列宽、来源定位和分页。
+- online模式可在浏览器渲染；offline-self-contained优先用`render_echarts_svg.cjs`把ECharts配方一次性转为静态SVG。
+
+图型选择先读`chart_matching.md`。本文件只回答已经选定的展品如何实现，以及当前能力是否成熟。
+
 ## 实现路由
 
 | 任务族 | 可用类型 | 实现与成熟度 |
 |---|---|---|
-| 比较/差距 | 条形、点图、哑铃、坡度、子弹、区间/森林图、tornado | 前3种常规图ECharts；kit提供dumbbell/slope/bullet，区间custom |
-| 变化/贡献 | 瀑布、桥图、指数化、小倍数、堆积面积 | kit waterfall含数据派生差异括号；其他ECharts |
-| 构成/结构 | Mekko、100%堆积、treemap、sunburst、waffle | kit mekko / stacked（普通与100%）；核对整体和分母 |
+| 比较/差距 | 条形、点图、哑铃、坡度、子弹、区间/森林图、tornado | recipe提供rankedBar/groupedBar；kit提供dumbbell/slope/bullet；区间用v6 custom series |
+| 变化/贡献 | 瀑布、桥图、趋势、指数化、小倍数、堆积面积 | recipe提供timeSeries；kit waterfall含数据派生差异括号；其他ECharts |
+| 构成/结构 | 普通/100%堆积、Mekko、treemap、sunburst、waffle | recipe提供composition；kit保留带完整表回退的stacked/mekko |
 | 分布/不确定性 | histogram、boxplot、strip、violin、区间带 | ECharts或Vega-Lite；需要原始分布，不能由均值伪造 |
-| 关系/流向 | scatter、bubble、Sankey、network、map flows | ECharts/D3；需真实节点/边/经纬度及尺寸图例 |
-| 评估/表格 | 热力、Harvey、RACI、决策表、数据条/迷你趋势表 | kit heatmap / comparisonTable；定性等级需定义 |
-| 层级/机制 | 驱动树、议题树、决策树、战略屋、价值链、鱼骨 | kit tree用于树；SVG/CSS按关系生成，其余需专项目视 |
+| 关系/流向 | scatter、bubble、Sankey、network、map flows | recipe提供scatter/sankey；其他ECharts/D3；需真实节点/边/经纬度及尺寸图例 |
+| 评估/表格 | 热力、Harvey、RACI、决策表、数据条/迷你趋势表 | recipe提供数值heatmap；kit comparisonTable与HTML处理精确/定性表 |
+| 层级/机制 | 驱动树、议题树、决策树、战略屋、价值链、鱼骨 | recipe/kit均有tree；高文本或专用关系仍用SVG/CSS并目视 |
 | 执行/责任 | 泳道、甘特、旅程、roadmap、依赖图 | kit swimlane / processFlow；HTML时间网格；复杂依赖可用ELK |
 
 现有B-01…B-56保持选型索引；“列入名录”不等于有现成组件。
 kit提供10种SVG和1种HTML比较表，附数字格式与差异计算工具；更复杂的标签避让和连接路由仍需逐图渲染验收。
 不为展示类型而放radar/桑基；同一数据不支持关系时回到诚实表格。
+
+## EChartsRecipes API（ECharts 6 option与SSR共用）
+
+`assets/echarts-recipes.js`（1.1.0）负责基础输入校验和option；`assets/chart-runtime.js`（1.0.0）统一真实画布预算、主题解析、文字对比度、完整表格与分页。浏览器和SSR均使用这个运行层，不依赖不同的默认ECharts主题。
+
+生产调用必须是`prepare → setOption → check → 若换型则重绘并再次check`；只调用`build`或`prepare`不是最终验收。`check`读取实际文字包围盒，检查界外、相互遮挡和小于14px的字；不覆盖所有形状遮挡、语义或美学问题。
+
+```html
+<div class="chart" data-recipe="rankedBar" data-spec='{
+  "items":[{"label":"甲","value":42,"selected":true},{"label":"乙","value":31}],
+  "unit":"亿元","baseline":35,"baselineLabel":"目标"
+}'></div>
+```
+
+| 配方 | 输入结构 | 主要用途/起始边界 |
+|---|---|---|
+| rankedBar | items:[{label,value,display?,role?,selected?}] | 排名/差距；最多24项，正文宜更少 |
+| groupedBar | categories + series:[{name,values}] | 并列比较；最多12类×4系列 |
+| timeSeries | periods + series:[{name,values}] | 趋势；最多36期×5系列，更多时分面 |
+| composition | items:[{label,segments}], mode | 普通/100%堆积；最多12类×6系列 |
+| histogram | bins:[{label,value}] | 已正确分箱的分布；不从均值伪造 |
+| scatter | items:[{label,x,y,size?,selected?}] | 散点/气泡；超过15点只标关键点 |
+| heatmap | rows + columns + values | 连续数值矩阵；最多160格 |
+| sankey | nodes + links:[{source,target,value}] | 真实流量；最多30节点/60边 |
+| tree | root:{label,value?,children} | 层级；最多48节点 |
+
+这些是底层拒绝阈值，不是“该数量一定放得下”的保证，也不是数据分析上限。硬阈值以上先由作者分组；阈值内仍需按真实尺寸验收。24项条形在720×360可转多页表，在1200×800则可能完整成图；不能通过巨大viewBox缩小整个图绕过。
+
+零/小值不省略：气泡无最小尺寸钳制，面积正比于规模；零规模转保留坐标和规模的表。构成小片转原值/份额表；桑基要求无环、节点有效、中间流量闭合，零流量用表。热力按实际连续色阶选择至少4.5:1的文字反差。趋势零基线包含负值，不把负值裁掉。
+
+### 构建期静态SVG
+
+在skill目录安装固定依赖后：
+
+```bash
+npm ci
+node scripts/render_echarts_svg.cjs assets/echarts-recipe-example.json chart.svg
+# 若预算要求多页，必须生成并使用全部文件
+node scripts/render_echarts_svg.cjs input.json chart.svg --paginate
+```
+
+输入包含`recipe`、`spec`、`width`、`height`和`theme_id`，可设`fontSize`（至少14）。脚本锁定6.1.0并关闭动画/tooltip；多页默认拒绝，`--paginate`输出`chart-p01.svg`等并在stdout报告原因。不会覆盖已有同名SVG。
+
+也可传原生`option`，但没有配方的输入语义校验或保真表格转换；文字验收失败会报错，由作者处理。
+浏览器`data-recipe-page="0"`从0起选择逻辑页；作者须安排所有返回页，可按布局并排，不可只留第一页。生成SVG应按其真实逻辑尺寸内联，随后执行截图、PDF和断网复测。
+
+### 两类输入的可复现案例
+
+```bash
+node scripts/test_dense_inputs.cjs
+node scripts/build_dense_reference.cjs output-dir --theme=mckinsey
+node scripts/qa_deck.cjs output-dir/dense_reference_deck.html output-dir/renders
+```
+
+输出六页离线HTML、`source_inventory.json`、逐条`evidence.json`、`page_plan.json`及版本清单。覆盖1,152条明细、42段文本与6案例；只读固定合成夹具，验证来源/派生/选型/成图之间的契约。不是通用CSV/Excel/PDF解析器，不自动完成调研、文本编码和语义选图。
 
 ## ExhibitKit API（零依赖，可构建时生成静态SVG）
 
@@ -54,13 +118,13 @@ const svg = kit.waterfall({width:740,height:330,items:[
   不移植其低字号、hover承载关键信息、圆角卡片和动效偏好到reading deck。
 - [diagram-design](https://github.com/cathrynlavery/diagram-design)：借鉴关系语义与布局类型分离、品牌token、节点/边有意义。
   其默认低密度与节点预算不是咨询阅读页通用规定。
-- [Apache ECharts](https://echarts.apache.org/handbook/en/concepts/style/)：沿用现有5.5.1，主题与series显式一致；静态SVG优先打印。
+- [Apache ECharts](https://echarts.apache.org/handbook/en/basics/release-note/v6-feature/)：固定6.1.0；使用SVG renderer、可注册custom series与Node SVG SSR，主题与series显式一致。
 - [D3](https://d3js.org/)：几何与自定义标记；需要自担标签布局。
 - [Vega-Lite](https://vega.github.io/vega-lite/docs/)：分面、统计转换和声明式编码；输出SVG后内联。
 - [ELK](https://github.com/kieler/elkjs)：复杂有向图自动布局；不要把整个关系图变成小字线路板。
 
 本版kit与CSS为原创实现，未复制上述仓库代码。未来实际复用代码应核对所取commit及LICENSE，保留必要声明。
-每项外部依赖固定版本并记录体积、离线策略、打印路径；无需引入所有库。
+每项外部依赖固定版本并记录体积、离线策略、打印路径；无需引入所有库。升级ECharts后必须跑引擎、配方、三主题、PDF和断网回归，不能只改CDN字符串。
 
 ## 参数边界与作者责任
 

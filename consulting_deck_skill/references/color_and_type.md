@@ -38,7 +38,8 @@ const css = themes.css(theme.id);
 CSS角色：brand/accent/on-brand/on-accent、ink/gray-1..4/page-bg、surface/selected；
 cat-1..6分类、seq-1..5连续量、delta-negative/neutral/positive数学偏差；good/risk/caution经营状态。
 兼容pos/neg/warn仅指经营状态，瀑布正负必须用delta角色。
-ECharts的data-opt可用 `"color":["@cat-1","@cat-2"]`、`"itemStyle":{"color":"@accent"}`；
+ECharts优先通过`data-recipe` + `data-spec`调用标准配方；未封装类型才用`data-opt`原生option。
+两条路径都可使用 `"color":["@cat-1","@cat-2"]`、`"itemStyle":{"color":"@accent"}`；
 引擎递归解析为当前CSS值，未知角色报错。visualMap同样使用@seq-1..5，且给出量尺上下限。
 SVG组件传入themes.palette(theme_id)，热力图按seq插值并计算文字反差；任意自画SVG也从palette或CSS变量取色。
 实体登记存索引/token，不只存HEX。同一图内类别与状态分开图例/列，保留标签、符号或线型。

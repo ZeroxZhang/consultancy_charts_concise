@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>分析表达升级 · 六页验证样稿</title>
 
-<!-- 国内备选： -->
 <!-- 其他备选： -->
+
+
 <style>
 /* ══════════════ 设计 token（S2 visual_spec 落点；构建时替换为品牌值）══════════════ */
 :root{
@@ -69,10 +70,10 @@ body.overview .slide.active{outline-color:var(--accent);outline-width:3px}
 body.no-charts #nocharts{display:block}
 
 /* ══════════════ 页面骨架组件（咨询页标准元素）══════════════ */
-.slide__tracker{position:absolute;top:12px;left:var(--margin);font-size:10px;color:var(--gray-2);
+.slide__tracker{position:absolute;top:12px;left:var(--margin);font-size:12px;color:var(--gray-2);
   letter-spacing:.08em;text-transform:uppercase}
-.slide__page{position:absolute;bottom:10px;right:var(--margin);font:11px/1 var(--font-num);color:var(--gray-2)}
-.slide__sticker{position:absolute;top:10px;right:var(--margin);font-size:10px;color:var(--gray-1);
+.slide__page{position:absolute;bottom:10px;right:var(--margin);font:12px/1 var(--font-num);color:var(--gray-2)}
+.slide__sticker{position:absolute;top:10px;right:var(--margin);font-size:12px;color:var(--gray-1);
   border:1px solid var(--gray-3);padding:2px 8px;border-radius:2px;letter-spacing:.05em}
 .slide__title{font-family:var(--font-title);font-size:var(--fs-title);font-weight:700;
   line-height:1.25;color:var(--brand);letter-spacing:.01em;margin-bottom:6px}
@@ -86,7 +87,7 @@ body.no-charts #nocharts{display:block}
   margin-top:12px;
 }
 .takeaway b{color:var(--brand)}
-.takeaway .tag{font-size:10px;color:var(--gray-2);letter-spacing:.08em;margin-right:8px}
+.takeaway .tag{font-size:12px;color:var(--gray-2);letter-spacing:.08em;margin-right:8px}
 .bullets{display:flex;flex-direction:column;gap:10px;justify-content:flex-start}
 .bullet{font-size:var(--fs-body);line-height:1.45;color:var(--gray-1)}
 .bullet b{color:var(--ink)}
@@ -148,7 +149,7 @@ body.no-charts #nocharts{display:block}
 /* 咨询阅读型页面组件；内联到deck，不替换导航引擎。 */
 .slide.reading{padding:32px 40px 26px;--fs-body:17px;--fs-note:12px}
 .reading .slide__title{font-size:30px;line-height:1.22;margin:0 0 8px;max-width:1180px}
-.reading .slide__tracker{top:12px;font-size:11px;color:var(--gray-2)}
+.reading .slide__tracker{top:12px;font-size:12px;color:var(--gray-2)}
 .reading .slide__body{margin-top:16px;gap:20px}
 .reading .source{margin-top:12px;line-height:1.35;color:var(--gray-2)}
 .reading .slide__page{font-size:12px}
@@ -194,7 +195,7 @@ body.no-charts #nocharts{display:block}
 .reading.analytical .exhibit .annotation{background:transparent;border-left:0;border-top:1px solid var(--gray-3);padding:10px 0 0}
 .reading.analytical .decision-strip{background:transparent;color:var(--ink);border-top:2px solid var(--brand);padding:12px 0 0}
 
-.reading .slide__body{grid-template-rows:minmax(0,1fr) auto}.analytical .graphic{align-items:flex-start}.analytical .graphic>svg{height:auto;max-height:100%}.analytical .data-table{font-size:16px}.analytical .data-table td{padding:13px 9px}.analytical .slide__sticker{font-size:11px}
+.reading .slide__body{grid-template-rows:minmax(0,1fr) auto}.analytical .graphic{align-items:flex-start}.analytical .graphic>svg{height:auto;max-height:100%}.analytical .data-table{font-size:16px}.analytical .data-table td{padding:13px 9px}.analytical .slide__sticker{font-size:12px}
 </style>
 <!-- 构建器注入完整主题；不要只替换品牌主色。 -->
 <style id="deck-theme">:root{--brand:#051C2C;--accent:#2251FF;--accent-vivid:#00A9F4;--ink:#172C3B;--gray-1:#445563;--gray-2:#586875;--gray-3:#BFCBD2;--gray-4:#F2F5F7;--selected:#EAF0FF;--cat-1:#2251FF;--cat-2:#007A78;--cat-3:#8652A0;--cat-4:#9C5C14;--cat-5:#667586;--cat-6:#9B4566;--seq-1:#EAF0FF;--seq-2:#BFCFFF;--seq-3:#819EFF;--seq-4:#456CE3;--seq-5:#173D91;--delta-negative:#9C5C14;--delta-neutral:#E8EDF0;--delta-positive:#2251FF;--good:#276749;--risk:#A3313C;--caution:#805B18;--good-soft:#E8F2EC;--risk-soft:#F9E8EC;--caution-soft:#FBF1DC;--page-bg:#FFFFFF;--on-brand:#FFFFFF;--on-accent:#FFFFFF;--on-risk:#FFFFFF;--brand-mid:#051C2C;--surface:#F2F5F7;--neutral:#586875;--pos:#276749;--neg:#A3313C;--warn:#805B18;}</style>
@@ -295,6 +296,7 @@ body.no-charts #nocharts{display:block}
   /* 咨询图表主题：白底、浅灰轴、无默认粗网格（c-4 修复：注册并真正使用）*/
   function token(name, fallback){ return getComputedStyle(document.body).getPropertyValue(name).trim() || fallback; }
   function palette(){ return [1,2,3,4,5,6].map(function(i){return token('--cat-'+i);}); }
+  function runtimeTokens(){var css=getComputedStyle(document.documentElement),out={};for(var i=0;i<css.length;i++){var k=css[i];if(k.indexOf('--')===0)out[k.slice(2)]=css.getPropertyValue(k).trim();}return out;}
   /* JSON 中仅完整的 @role 字符串会解析；缺失角色直接报错，避免静默回退成错误色。 */
   function resolveTokens(value){
     if(typeof value==='string' && /^@[a-z][a-z0-9-]*$/.test(value)){
@@ -315,14 +317,37 @@ body.no-charts #nocharts{display:block}
   /* 图表懒初始化/补尺寸：首次 init，之后 resize（容器从 display:none 变为可见后尺寸才正确）*/
   function initChartFromEl(el){
     if(!window.echarts || !el.clientWidth || !el.clientHeight || !el.getClientRects().length) return;
-    if(el._chart){ el._chart.resize(); return; }
+    if(el._chart){
+      if(el._chart.getWidth()===el.clientWidth&&el._chart.getHeight()===el.clientHeight){el._chart.resize();return;}
+      el._chart.dispose();el._chart=null; // 逻辑容器变更时重新预算和验收，不能只拉伸旧计划。
+    }
     try{
       if(el.id==='waterfall-demo'){ initWaterfall(el); return; }
-      var opt=resolveTokens(JSON.parse(el.getAttribute('data-opt')));
+      var raw,opt;
+      if(el.getAttribute('data-recipe')){
+        if(!window.ChartRuntime) throw new Error('ChartRuntime未加载');
+        var plan=ChartRuntime.prepare(el.getAttribute('data-recipe'),JSON.parse(el.getAttribute('data-spec')||'{}'),{width:el.clientWidth,height:el.clientHeight,tokens:runtimeTokens()});
+        var pageAttr=el.getAttribute('data-recipe-page'),pageIndex=pageAttr===null?0:Number(pageAttr);
+        if(!Number.isInteger(pageIndex)||pageIndex<0)throw new Error('配方页号必须是从0起的整数');
+        // 总是先用首页探测最终布局；实际验收可能把一张图转成多页表。
+        opt=plan.pages[0].option;
+      }else{
+        raw=JSON.parse(el.getAttribute('data-opt'));
+        opt=window.ChartRuntime?ChartRuntime.options(raw,runtimeTokens()):resolveTokens(raw);
+      }
       opt.animation=false;
       if(!opt.textStyle){opt.textStyle={fontFamily:getComputedStyle(document.documentElement).getPropertyValue('--font-body')};}
-      var c=echarts.init(el, THEME_NAME, {renderer:'svg'}); c.setOption(opt); el._chart=c;
-    }catch(err){ console.error('chart parse error',err); }
+      var c=echarts.init(el, null, {renderer:'svg'});c.setOption(opt);
+      if(plan){
+        var checked=ChartRuntime.check(c,plan,0);
+        if(checked.pages.length>1&&pageAttr===null)throw new Error('最终布局需'+checked.pages.length+'页，请拆页并设置data-recipe-page');
+        if(!checked.pages[pageIndex])throw new Error('配方页号超出最终范围');
+        if(checked!==plan||pageIndex!==0)c.setOption(checked.pages[pageIndex].option,true);
+        ChartRuntime.check(c,checked,pageIndex);
+        el._plan=checked;el.dataset.renderKind=checked.pages[pageIndex].kind;
+      }
+      el._chart=c;delete el.dataset.chartError;
+    }catch(err){if(c)c.dispose();el.dataset.chartError=err.message;el.textContent='图表待处理：'+err.message;console.error('chart parse error',err);}
   }
   /* 瀑布图以显式起止值绘制；允许跨零，兼容旧 abs 类型。 */
   function buildWaterfall(items){
@@ -348,7 +373,7 @@ body.no-charts #nocharts{display:block}
       animation:false, tooltip:{show:false},
       grid:{left:40,right:30,top:40,bottom:30,containLabel:true},
       xAxis:{type:'category',data:cats,axisLine:{lineStyle:{color:token('--gray-3')}},axisTick:{show:false},axisLabel:{color:token('--ink'),fontSize:14}},
-      yAxis:{type:'value',min:lo<0?lo-pad:0,max:hi+pad,splitLine:{lineStyle:{color:token('--gray-4')}},axisLabel:{color:token('--gray-2'),fontSize:14}},
+      yAxis:{type:'value',min:lo<0?lo-pad:0,max:hi+pad,splitLine:{lineStyle:{color:token('--gray-4')}},axisLabel:{color:token('--gray-2'),fontSize:14,formatter:function(v){return Number(v.toFixed(1));}}},
       series:[{type:'custom',encode:{x:0,y:[1,2]},data:data,
         renderItem:function(params,api){
           var i=api.value(0),from=api.value(1),to=api.value(2),value=api.value(3),delta=api.value(4);

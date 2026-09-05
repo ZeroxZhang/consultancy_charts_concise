@@ -15,9 +15,12 @@ const {pathToFileURL}=require('node:url');
   page.on('pageerror',e=>errors.push(e.message));
   const engine=path.resolve(__dirname,'../assets/deck_engine.html');
   await page.goto(pathToFileURL(engine).href+'#3');
-  await page.waitForFunction(()=>window.echarts&&document.querySelector('.slide.active .chart svg'));
+  await page.waitForFunction(()=>window.echarts&&window.EChartsRecipes&&document.querySelector('.slide.active .chart svg'));
   assert.equal(await page.locator('.slide.active .slide__page').textContent(),'3');
   assert.equal(await page.locator('.chart canvas').count(),0);
+  assert.match(await page.evaluate(()=>echarts.version),/^6\./);
+  assert.equal(await page.evaluate(()=>EChartsRecipes.version),'1.1.0');
+  assert.equal(await page.locator('.slide.active .chart').getAttribute('data-recipe'),'rankedBar');
   await page.evaluate(()=>{location.hash='#6';});await page.waitForFunction(()=>document.querySelector('.slide.active .slide__page').textContent==='6');
   await page.evaluate(()=>{location.hash='#3';});await page.waitForFunction(()=>document.querySelector('.slide.active .slide__page').textContent==='3');
   const geometry=await page.evaluate(()=>{
@@ -48,12 +51,23 @@ const {pathToFileURL}=require('node:url');
   assert.deepEqual(await page.locator('.slide').evaluateAll(es=>es.map(e=>e.style.display)),displays);
   const pdf=path.join(dir,'16x9.pdf');await page.pdf({path:pdf,preferCSSPageSize:true,printBackground:true});
   assert.match(execFileSync('pdfinfo',[pdf],{encoding:'utf8'}),/Pages:\s+7/);
+  fs.copyFileSync(path.resolve(__dirname,'../assets/echarts-recipes.js'),path.join(dir,'echarts-recipes.js'));
+  fs.copyFileSync(path.resolve(__dirname,'../assets/chart-runtime.js'),path.join(dir,'chart-runtime.js'));
   const four=path.join(dir,'4x3.html');fs.writeFileSync(four,fs.readFileSync(engine,'utf8').replace('<body data-ratio="16x9">','<body data-ratio="4x3">'));
   await page.goto(pathToFileURL(four).href+'#4');await page.waitForFunction(()=>window.echarts&&document.querySelector('#waterfall-demo svg'));
   assert.equal(await page.locator('#stage').evaluate(el=>getComputedStyle(el).width),'1024px');
   const pdf43=path.join(dir,'4x3.pdf');await page.pdf({path:pdf43,preferCSSPageSize:true,printBackground:true});
   const info=execFileSync('pdfinfo',[pdf43],{encoding:'utf8'});assert.match(info,/Pages:\s+7/);assert.match(info,/Page size:\s+768 x 576 pts/);
+  // 实际验收后才触发的多页回退：请求第2/3页不能被初始单图计划拦截。
+  const pagination=await page.evaluate(()=>{
+   let root={label:'末级数据业务流程'};for(let i=8;i>=1;i--)root={label:'第'+i+'层业务处理步骤',children:[root]};
+   const cells=[0,1,2,null].map(index=>{const el=document.createElement('div');el.className='chart';el.style='position:fixed;left:0;top:0;width:720px;height:200px';el.dataset.recipe='tree';el.dataset.spec=JSON.stringify({root});if(index!==null)el.dataset.recipePage=index;document.body.appendChild(el);return el;});
+   window.dispatchEvent(new Event('beforeprint'));
+   const out=cells.map((el,i)=>({error:el.dataset.chartError||null,kind:el.dataset.renderKind,rows:el._plan?.pages[i]?.table?.rows}));
+   cells.forEach(el=>{if(el._chart)el._chart.dispose();el.remove();});window.dispatchEvent(new Event('afterprint'));return out;
+  });
+  assert.ok(pagination.slice(0,3).every(p=>!p.error&&p.kind==='table'));assert.equal(pagination.slice(0,3).flatMap(p=>p.rows).length,9);assert.match(pagination[3].error,/3页/);
   assert.deepEqual(errors,[]);
-  console.log('PASS: signed waterfall geometry, total closure, SVG, #3, G/Escape, resize, print restoration, 16:9 and 4:3 PDFs. Outputs: '+dir);
+  console.log('PASS: ECharts 6 recipe, signed waterfall geometry, total closure, SVG, #3, G/Escape, resize, print restoration, 16:9 and 4:3 PDFs. Outputs: '+dir);
  } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

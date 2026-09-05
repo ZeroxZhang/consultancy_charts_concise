@@ -167,3 +167,9 @@ CSS、ECharts series/visualMap、SVG、表格、状态列必须来自同一asset
 
 设计与QA代理读取 `references/analysis_exhibits.md`。在页面规格中写出关键比较、注释公式、总量/份额标签和过密回退；表格列单位与数据条量尺、流程关系含义同样明确。
 QA独立检查注释计算、窄片标签、缺失值和普通表格反例，不把“更多图表”或“更像think-cell”当作质量结论。
+
+## v5高密度可视化路由
+
+处理大量数据或文本前先读取`references/chart_matching.md`。证据代理拆出原子证据并标记输入结构I编号和可比性；页面代理为每个主要展品写读者操作A编号、候选图、render_route、recipe、密度预算与回退触发器。常规定量图优先使用EChartsRecipes，不重复手写option；文本频次只有在语料与编码规则明确后才能图表化。
+
+QA抽查`source_inventory`、page_plan和最终展品是否闭环：输入缺少分母/分布/边/层级/日期时应拒绝对应图型；换型必须同步规格；offline交付中的ECharts图必须已经静态化或内联依赖。图形多不等于有效密度高。
