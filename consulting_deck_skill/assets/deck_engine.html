@@ -1,0 +1,631 @@
+<!--
+════════════════════════════════════════════════════════════════════════════
+ consulting_deck_skill · 单文件 HTML 幻灯片引擎模板（v1.0）
+════════════════════════════════════════════════════════════════════════════
+ 用法（构建 agent 必读）：
+ 1. 复制本文件为 deck.html；
+ 2. 用 deck-themes.js 将所选主题 CSS 注入 deck-theme 样式区；字体/字号仍由 visual_spec.md 定义；
+ 3. 按 page_specs.md 逐页替换 <main> 中的示例页（保留页面结构模式与 class 约定）；
+ 4. 图表：用 <div class="chart" data-opt='...ECharts option JSON...'></div>；
+    颜色用 "@accent" / "@cat-1" 等语义引用，未知 token 报错；数据先写好再填（每个数字挂 Source）；
+ 5. 图标：icon('Trend') —— IconPark 在线加载，离线自动降级到内置迷你集；
+ 6. 引擎功能（全部已实现，勿重写）：
+    - 分页呈现，每页 PPT 尺寸（16:9 = 1280×720；4:3 = 1024×768 逻辑像素）
+    - 视口缩放适配（任意窗口大小居中显示，图表按逻辑像素渲染保持清晰）
+    - 演示模式：F 全屏；←/→/空格/PageUp/Down 翻页；Home/End；G 总览网格；Esc 返回
+    - 进度条 + 页码计数；点击翻页（左 40% 上一页 / 右 60% 下一页）；触摸滑动
+    - URL 深链：#3 直达第 3 页；打印/导出 PDF = 每页一张（Chrome 打印可选纸张尺寸）
+    - 图表懒加载 + 断网降级提示
+ 7. 尺寸切换：把 <body> 的 data-ratio 改为 "4x3" 即 4:3（默认 16:9 无需写）。
+ 8. CDN：ECharts 用 jsDelivr；国内不可达时改 bootcdn/unpkg 备选行（见下方注释）。
+ 9. 示例页数据全部为 Illustrative（虚构），且已通过 E-08 复核（瀑布贡献和 = 起止差）。
+════════════════════════════════════════════════════════════════════════════
+-->
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="mckinsey">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deck Title</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<!-- 国内备选：<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.5.1/echarts.min.js"></script> -->
+<!-- 其他备选：<script src="https://unpkg.com/echarts@5.5.1/dist/echarts.min.js"></script> -->
+<style>
+/* ══════════════ 设计 token（S2 visual_spec 落点；构建时替换为品牌值）══════════════ */
+:root{
+  /* 完整默认色值由 scripts/sync_theme_defaults.cjs 生成到 deck-theme。 */
+  --chrome-bg:#16181D; --chrome-text:#B5BDC6;
+  /* 字体：中文系统黑体 + 西文/数字 Arial；英文 deck 可换标题 Georgia */
+  --font-title: "PingFang SC","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC","Helvetica Neue",Arial,sans-serif;
+  --font-body:  "PingFang SC","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",Arial,"Helvetica Neue",sans-serif;
+  --font-num:   Arial,"Helvetica Neue",sans-serif;
+  /* 字号层级（逻辑像素）*/
+  --fs-title:28px; --fs-lead:16px; --fs-body:16px; --fs-note:12px;
+  /* 页面与网格（页边距规范 24–32px）*/
+  --margin:32px;
+  --slide-w:1280px; --slide-h:720px;
+}
+
+/* ══════════════ 基础与缩放适配 ══════════════ */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--chrome-bg); /* 演示环境底色（页面本身始终白底）*/
+  font-family:var(--font-body); color:var(--ink);
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#stage{
+  position:relative; width:var(--slide-w); height:var(--slide-h);
+  transform:scale(var(--scale,1)); transform-origin:center center;
+  flex-shrink:0;
+}
+.slide{
+  position:absolute; inset:0; width:var(--slide-w); height:var(--slide-h);
+  background:var(--page-bg);
+  display:none; flex-direction:column;
+  padding:28px var(--margin) 24px;
+  overflow:hidden;
+  box-shadow:0 0 0 1px var(--gray-4);
+}
+.slide.active{display:flex}
+/* 4:3 */
+body[data-ratio="4x3"]{--slide-w:1024px;--slide-h:768px;--fs-title:26px}
+/* 总览网格模式 */
+body.overview{overflow:auto}
+body.overview #viewport{position:static;display:block;padding:24px}
+body.overview #stage{width:auto;height:auto;transform:none;display:flex;flex-wrap:wrap;gap:16px}
+body.overview .slide{position:relative;display:flex;transform:scale(.18);transform-origin:top left;
+  margin-right:calc(var(--slide-w)*.18 - var(--slide-w));
+  margin-bottom:calc(var(--slide-h)*.18 - var(--slide-h));
+  cursor:pointer; outline:2px solid transparent}
+body.overview .slide:hover{outline-color:var(--accent)}
+body.overview .slide.active{outline-color:var(--accent);outline-width:3px}
+/* 进度条与 HUD */
+#progress{position:fixed;top:0;left:0;height:3px;background:var(--accent);z-index:60;transition:width .25s}
+#hud{position:fixed;bottom:14px;right:18px;z-index:60;color:var(--chrome-text);font:12px/1 var(--font-num);
+  letter-spacing:.06em;pointer-events:none}
+#hint{position:fixed;bottom:14px;left:18px;z-index:60;color:var(--chrome-text);font:12px/1.4 var(--font-body);opacity:.7}
+#nocharts{display:none;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:70;
+  background:var(--risk);color:var(--on-risk);font-size:12px;padding:6px 14px;border-radius:4px}
+body.no-charts #nocharts{display:block}
+
+/* ══════════════ 页面骨架组件（咨询页标准元素）══════════════ */
+.slide__tracker{position:absolute;top:12px;left:var(--margin);font-size:10px;color:var(--gray-2);
+  letter-spacing:.08em;text-transform:uppercase}
+.slide__page{position:absolute;bottom:10px;right:var(--margin);font:11px/1 var(--font-num);color:var(--gray-2)}
+.slide__sticker{position:absolute;top:10px;right:var(--margin);font-size:10px;color:var(--gray-1);
+  border:1px solid var(--gray-3);padding:2px 8px;border-radius:2px;letter-spacing:.05em}
+.slide__title{font-family:var(--font-title);font-size:var(--fs-title);font-weight:700;
+  line-height:1.25;color:var(--brand);letter-spacing:.01em;margin-bottom:6px}
+.slide__lead{font-size:var(--fs-lead);color:var(--gray-1);line-height:1.45}
+.slide__body{flex:1;min-height:0;margin-top:14px;display:grid;gap:16px}
+.source{font-size:var(--fs-note);color:var(--gray-2);line-height:1.5}
+.source b{color:var(--gray-1);font-weight:600}
+.takeaway{
+  border-left:4px solid var(--brand); background:var(--gray-4);
+  padding:10px 14px; font-size:14px; line-height:1.5; color:var(--ink);
+  margin-top:12px;
+}
+.takeaway b{color:var(--brand)}
+.takeaway .tag{font-size:10px;color:var(--gray-2);letter-spacing:.08em;margin-right:8px}
+.bullets{display:flex;flex-direction:column;gap:10px;justify-content:flex-start}
+.bullet{font-size:var(--fs-body);line-height:1.45;color:var(--gray-1)}
+.bullet b{color:var(--ink)}
+.bullet .num{color:var(--gray-2);font-family:var(--font-num);margin-right:8px}
+
+/* 图表容器 */
+.chart{width:100%;height:100%;min-height:0}
+
+/* KPI 卡片 */
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;height:100%}
+.kpi-card{border:1px solid var(--gray-3);border-top:3px solid var(--brand);padding:16px 18px;
+  display:flex;flex-direction:column;gap:8px;background:var(--page-bg)}
+.kpi-card .kpi-name{font-size:13px;color:var(--gray-1)}
+.kpi-card .kpi-val{font:700 40px/1 var(--font-num);color:var(--ink)}
+.kpi-card .kpi-val em{font-style:normal;font-size:16px;font-weight:400;color:var(--gray-2);margin-left:4px}
+.kpi-card .kpi-delta{font-size:12px;font-family:var(--font-num)}
+.kpi-delta.up{color:var(--delta-positive)} .kpi-delta.down{color:var(--delta-negative)}
+
+/* 表格（数字右对齐、无斑马纹、表头下划线）*/
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{font-size:12px;color:var(--gray-1);font-weight:600;text-align:left;
+  border-bottom:2px solid var(--ink);padding:6px 10px;letter-spacing:.03em}
+.tbl td{border-bottom:1px solid var(--gray-4);padding:9px 10px;color:var(--ink);line-height:1.4}
+.tbl td.num,.tbl th.num{text-align:right;font-family:var(--font-num);font-variant-numeric:tabular-nums}
+.tbl tr.row-hl td{background:var(--selected);font-weight:600}
+.tbl .muted{color:var(--gray-2)}
+
+/* 封面 / 章节页 */
+.cover .slide__body{align-items:flex-start;justify-content:center}
+.cover-title{font:700 44px/1.25 var(--font-title);color:var(--brand)}
+.cover-sub{font-size:20px;color:var(--gray-1);margin-top:14px}
+.cover-meta{font-size:13px;color:var(--gray-2);margin-top:34px;line-height:1.8}
+.cover-band{position:absolute;left:0;right:0;bottom:0;height:8px;background:var(--brand)}
+.divider .slide__body{justify-content:center}
+.divider-num{font:700 110px/1 var(--font-num);color:var(--gray-4)}
+.divider-name{font:700 34px/1.2 var(--font-title);color:var(--brand);margin-top:10px}
+.divider-q{font-size:16px;color:var(--gray-1);margin-top:16px;max-width:760px;line-height:1.6}
+.divider-items{font-size:14px;color:var(--gray-2);margin-top:24px;letter-spacing:.05em}
+
+/* Harvey ball（内联 SVG 档级圆）*/
+.hb{display:inline-block;vertical-align:middle}
+.hb .hb-bg{fill:var(--page-bg);stroke:var(--gray-1)}
+.hb .hb-fill{fill:var(--brand)}
+
+/* 2×2 框架图 SVG */
+.framework-svg{width:100%;height:100%}
+
+/* ══════════════ 打印 / 导出 PDF：每页一张 ══════════════
+   16:9 用 @page 1280×720；4:3 时把下面第一条改为 size:1024px 768px */
+@page{size:1280px 720px;margin:0}
+@media print{
+  body{background:var(--page-bg);overflow:visible}
+  #viewport{position:static;display:block}
+  #stage{transform:none!important;width:auto;height:auto;display:block!important}
+  .slide{position:relative;display:flex!important;page-break-after:always;box-shadow:none;transform:none!important;margin:0!important}
+  .slide:last-child{page-break-after:auto}
+  #progress,#hud,#hint,#nocharts{display:none!important}
+}
+</style>
+<!-- 构建器注入完整主题；不要只替换品牌主色。 -->
+<style id="deck-theme">:root{--brand:#051C2C;--accent:#2251FF;--accent-vivid:#00A9F4;--ink:#172C3B;--gray-1:#445563;--gray-2:#586875;--gray-3:#BFCBD2;--gray-4:#F2F5F7;--selected:#EAF0FF;--cat-1:#2251FF;--cat-2:#007A78;--cat-3:#8652A0;--cat-4:#9C5C14;--cat-5:#667586;--cat-6:#9B4566;--seq-1:#EAF0FF;--seq-2:#BFCFFF;--seq-3:#819EFF;--seq-4:#456CE3;--seq-5:#173D91;--delta-negative:#9C5C14;--delta-neutral:#E8EDF0;--delta-positive:#2251FF;--good:#276749;--risk:#A3313C;--caution:#805B18;--good-soft:#E8F2EC;--risk-soft:#F9E8EC;--caution-soft:#FBF1DC;--page-bg:#FFFFFF;--on-brand:#FFFFFF;--on-accent:#FFFFFF;--on-risk:#FFFFFF;--brand-mid:#051C2C;--surface:#F2F5F7;--neutral:#586875;--pos:#276749;--neg:#A3313C;--warn:#805B18;}</style>
+</head>
+<body data-ratio="16x9"><!-- 4:3 时改为 data-ratio="4x3" -->
+<div id="progress" style="width:0%"></div>
+<div id="hint">← → 翻页 · F 全屏 · G 总览 · Esc 退出 · 点击翻页</div>
+<div id="hud"></div>
+<div id="nocharts">图表库未加载（离线）：表格与框架图仍可查看</div>
+<div id="viewport"><div id="stage">
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- P1 封面（cover）                                                     -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<section class="slide cover active">
+  <div class="slide__tracker">Confidential</div>
+  <div class="slide__body">
+    <div class="cover-title">收入下滑的诊断与渠道重构建议</div>
+    <div class="cover-sub">北辰食品 · 2026 年 9 月 · 董事会材料</div>
+    <div class="cover-meta">
+      汇报人：战略咨询项目组<br>
+      日期：2026-09-05 ｜ 状态：Draft for discussion<br>
+      本文件为工作文件，请勿外传
+    </div>
+  </div>
+  <div class="cover-band"></div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- P2 执行摘要（D-10）：加粗结论 + 证据数字；只读加粗可串成故事          -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="slide__sticker">Preliminary · For discussion</div>
+  <h1 class="slide__title">Executive summary</h1>
+  <p class="slide__lead">收入连续三年下滑，根因在线下渠道结构性流失，而非产品力或价格问题</p>
+  <div class="slide__body">
+    <div class="bullets" style="gap:14px">
+      <div class="bullet" style="font-size:16px"><b>1. 收入累计缩水 13%</b>——2025 年降至 10.4 亿，下滑速度超过行业大盘。</div>
+      <div class="bullet" style="font-size:16px"><b>2. 线下商超是唯一失血点</b>——2025 年销量 −18%（同比），为行业降幅的 3 倍以上；电商 +25% 但基数小，增量（+0.4 亿）仅弥补总缺口（−0.8 亿）约一半。</div>
+      <div class="bullet" style="font-size:16px"><b>3. 价格与产品力不是主因</b>——售价稳定、核心产品市占率持平，问题在渠道结构。</div>
+      <div class="bullet" style="font-size:16px"><b>4. 建议</b>——18 个月内完成渠道重构，电商占比提至 40%，2027 年恢复正增长；请董事会批准第一阶段预算 3,000 万元。</div>
+    </div>
+    <div class="takeaway"><span class="tag">ASK</span><b>本次会议需要董事会做出的决定：</b>批准渠道重构方案与第一阶段预算。</div>
+  </div>
+  <div class="source"><b>Source:</b> 公司内部销售数据（未经审计）; <b>Note:</b> 口径为净收入，不含返利；本页数据为示意（Illustrative）。</div>
+  <div class="slide__page">2</div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- P3 图表 + 评论页（D-03）：ECharts 条形图（降序、直接标注、强调色灰化）-->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="slide__tracker">1 现状诊断 > 1.1 渠道表现</div>
+  <div class="slide__sticker">Illustrative</div>
+  <h1 class="slide__title">线下商超失速最重：销量 −18%，是行业降幅的 3 倍以上</h1>
+  <p class="slide__lead">2025 年分渠道销量同比变化（%，Indexed 2024=100）</p>
+  <div class="slide__body" style="grid-template-columns:2fr 1fr">
+    <div class="chart" data-opt='{
+      "grid":{"left":8,"right":56,"top":24,"bottom":8,"containLabel":true},
+      "xAxis":{"type":"value","max":135,"splitLine":{"show":false},"axisLine":{"show":false},"axisTick":{"show":false},"axisLabel":{"color":"@gray-2","fontSize":11}},
+      "yAxis":{"type":"category","inverse":true,"data":["线下商超","经销","电商","行业大盘"],"axisLine":{"show":false},"axisTick":{"show":false},"axisLabel":{"color":"@ink","fontSize":13}},
+      "series":[{"type":"bar","barWidth":26,"data":[
+          {"value":82,"itemStyle":{"color":"@risk"},"label":{"show":true,"position":"right","formatter":"−18%","color":"@risk","fontWeight":700,"fontSize":12}},
+          {"value":97,"itemStyle":{"color":"@gray-3"},"label":{"show":true,"position":"right","formatter":"−3%","color":"@gray-1","fontSize":12}},
+          {"value":125,"itemStyle":{"color":"@gray-3"},"label":{"show":true,"position":"right","formatter":"+25%","color":"@gray-1","fontSize":12}},
+          {"value":95,"itemStyle":{"color":"@gray-3"},"label":{"show":true,"position":"right","formatter":"−5%","color":"@gray-1","fontSize":12}}
+        ],
+        "markLine":{"symbol":"none","silent":true,"lineStyle":{"color":"@gray-3","type":"dashed"},"label":{"formatter":"2024 基线 = 100","position":"insideEndTop","color":"@gray-2","fontSize":10},"data":[{"xAxis":100}]}
+      }]
+    }'></div>
+    <div class="bullets">
+      <div class="bullet"><b>商超是唯一失血点</b>——2025 年销量 −18%（同比），单渠道拖累收入约 1.1 亿。</div>
+      <div class="bullet"><b>电商增速最快但基数小</b>——2025 年占比不足 20%，增量仅弥补总缺口约一半。</div>
+      <div class="bullet"><b>行业仅微降</b>——排除周期性因素，问题在于我们的渠道结构。</div>
+    </div>
+  </div>
+  <div class="takeaway"><span class="tag">NOW WHAT</span>渠道资源应向电商与经销倾斜；商超投入 2026 年缩减 30%。</div>
+  <div class="source"><b>Source:</b> 公司内部销售数据（未经审计）; <b>Note:</b> 行业大盘为零售行业协会统计，含线上渠道。</div>
+  <div class="slide__page">3</div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- P4 单图表页（D-02）：ECharts 瀑布图（custom矩形，累计值计算）      -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="slide__tracker">1 现状诊断 > 1.2 缺口拆解</div>
+  <div class="slide__sticker">Illustrative</div>
+  <h1 class="slide__title">收入下降 0.8 亿：商超拖累 1.1 亿，电商弥补 0.4 亿</h1>
+  <p class="slide__lead">2025 vs 2024 收入变动拆解（亿元）——瀑布贡献之和 = 起止柱之差（QA 必查）</p>
+  <div class="slide__body"><div class="chart" id="waterfall-demo"></div></div>
+  <div class="takeaway"><span class="tag">NOW WHAT</span>商超的失血速度（−1.1 亿/年）决定：渠道重构必须在 2026 年上半年见效。</div>
+  <div class="source"><b>Source:</b> 公司内部销售数据（未经审计）; <b>Note:</b> 口径为净收入，不含返利。</div>
+  <div class="slide__page">4</div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- P5 表格页（D-05）：数字右对齐 + Harvey ball 内联 SVG + RAG 色点       -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="slide__tracker">2 方案比选 > 2.1 评估</div>
+  <div class="slide__sticker">Not exhaustive</div>
+  <h1 class="slide__title">渠道重构三方案：全渠道自营在能力与财务上综合最优</h1>
+  <p class="slide__lead">评估口径：●=满足  ◕=部分满足  ◔=基本不满足  ○=不满足；状态符号：●=可行 ▲=有条件 ■=高风险</p>
+  <div class="slide__body">
+    <table class="tbl">
+      <thead><tr><th style="width:22%">评估维度</th><th class="num">方案 A<br>深度经销</th><th class="num">方案 B<br>全渠道自营</th><th class="num">方案 C<br>电商优先</th></tr></thead>
+      <tbody>
+        <tr><td>财务回报（3 年净现值）</td><td class="num">1.2 亿</td><td class="num"><b>2.4 亿</b></td><td class="num">1.8 亿</td></tr>
+        <tr><td>渠道控制力</td><td class="num"><svg class="hb" width="20" height="20" viewBox="0 0 24 24"><circle class="hb-bg" cx="12" cy="12" r="10" stroke-width="1.6"/><path class="hb-fill" d="M12 2a10 10 0 1 1 0 20V2z"/></svg></td>
+            <td class="num"><svg class="hb" width="20" height="20" viewBox="0 0 24 24"><circle class="hb-bg" cx="12" cy="12" r="10" stroke-width="1.6"/><path class="hb-fill" d="M12 2a10 10 0 1 1 0 20V2z"/></svg></td>
+            <td class="num"><svg class="hb" width="20" height="20" viewBox="0 0 24 24"><circle class="hb-bg" cx="12" cy="12" r="10" stroke-width="1.6"/><path class="hb-fill" d="M12 2a10 10 0 0 1 0 20V2z"/></svg></td></tr>
+        <tr><td>落地风险（团队与供应链）</td><td class="num">● 低</td><td class="num">▲ 中</td><td class="num">● 低</td></tr>
+        <tr><td>上线周期</td><td class="num">6 个月</td><td class="num">12 个月</td><td class="num">9 个月</td></tr>
+        <tr class="row-hl"><td><b>综合结论</b></td><td class="num">次优</td><td class="num">✓ 推荐</td><td class="num">备选</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="source"><b>Source:</b> 项目组测算（模型见 Appendix A2）; <b>Note:</b> 净现值按 WACC 8% 折现；数据为示意（Illustrative）。</div>
+  <div class="slide__page">5</div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- P6 框架/概念页（D-06）：自绘 SVG 2×2（轴有战略含义、象限命名、摆位）  -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<section class="slide">
+  <div class="slide__tracker">1 现状诊断 > 1.3 渠道定位</div>
+  <div class="slide__sticker">Illustrative</div>
+  <h1 class="slide__title">渠道组合应向右上迁移：电商升为增长引擎，商超转为防守</h1>
+  <p class="slide__lead">渠道定位矩阵：市场增速（2024–2026E）× 我方相对份额（vs 品类第一）</p>
+  <div class="slide__body">
+    <svg class="framework-svg" viewBox="0 0 1100 480" preserveAspectRatio="xMidYMid meet">
+      <!-- 坐标轴 -->
+      <line x1="70" y1="410" x2="1060" y2="410" stroke="var(--ink)" stroke-width="2"/>
+      <line x1="70" y1="30" x2="70" y2="410" stroke="var(--ink)" stroke-width="2"/>
+      <line x1="565" y1="30" x2="565" y2="410" stroke="var(--gray-3)" stroke-width="1.5" stroke-dasharray="4 4"/>
+      <line x1="70" y1="220" x2="1060" y2="220" stroke="var(--gray-3)" stroke-width="1.5" stroke-dasharray="4 4"/>
+      <!-- 轴标签 -->
+      <text x="565" y="440" font-size="17" fill="var(--gray-1)" text-anchor="middle">我方相对份额（低 → 高）</text>
+      <text x="18" y="225" font-size="17" fill="var(--gray-1)" text-anchor="middle" transform="rotate(-90 18 225)">市场增速（低 → 高）</text>
+      <!-- 象限命名（四角） -->
+      <text x="80" y="52" font-size="16" font-weight="700" fill="var(--gray-2)">防守区</text>
+      <text x="1048" y="52" font-size="16" font-weight="700" fill="var(--brand)" text-anchor="end">增长引擎</text>
+      <text x="80" y="402" font-size="16" font-weight="700" fill="var(--gray-2)">收缩区</text>
+      <text x="1048" y="402" font-size="16" font-weight="700" fill="var(--gray-2)" text-anchor="end">利润奶牛</text>
+      <!-- 渠道摆位（气泡面积∝营收规模） -->
+      <g><circle cx="180" cy="150" r="34" fill="var(--risk)" fill-opacity=".12" stroke="var(--risk)" stroke-width="2"/><text x="180" y="156" font-size="15" font-weight="700" fill="var(--risk)" text-anchor="middle">商超</text><text x="180" y="196" font-size="11" fill="var(--gray-1)" text-anchor="middle">5.3 亿</text></g>
+      <g><circle cx="880" cy="150" r="46" fill="var(--accent)" fill-opacity=".14" stroke="var(--accent)" stroke-width="2.5"/><text x="880" y="156" font-size="15" font-weight="700" fill="var(--brand)" text-anchor="middle">电商</text><text x="880" y="200" font-size="11" fill="var(--gray-1)" text-anchor="middle">2.0 亿</text></g>
+      <g><circle cx="840" cy="330" r="30" fill="var(--gray-3)" fill-opacity=".6" stroke="var(--gray-2)" stroke-width="1.5"/><text x="840" y="336" font-size="15" fill="var(--gray-1)" text-anchor="middle">经销</text><text x="840" y="374" font-size="11" fill="var(--gray-1)" text-anchor="middle">3.1 亿</text></g>
+      <!-- 迁移箭头 -->
+      <line x1="300" y1="430" x2="820" y2="180" stroke="var(--brand)" stroke-width="3" marker-end="url(#arrow)"/>
+      <defs><marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="var(--brand)"/></marker></defs>
+      <text x="560" y="440" font-size="13" fill="var(--brand)" font-weight="700" text-anchor="middle">目标路径：2 年内渠道组合重心</text>
+    </svg>
+  </div>
+  <div class="source"><b>Source:</b> 项目组测算 + 行业协会数据; <b>Note:</b> 气泡面积代表 2025 年营收规模；数据为示意（Illustrative）。</div>
+  <div class="slide__page">6</div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- P7 章节分隔页（D-11）                                                -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<section class="slide divider">
+  <div class="slide__body">
+    <div class="divider-num">2</div>
+    <div class="divider-name">渠道重构方案</div>
+    <div class="divider-q">本章回答：如何在 18 个月内将电商占比提升至 40%，同时止损商超失血？</div>
+    <div class="divider-items">2.1 方案比选 ｜ 2.2 实施路线图 ｜ 2.3 财务测算与风险</div>
+  </div>
+  <div class="slide__page">7</div>
+</section>
+
+</div></div><!-- /stage /viewport -->
+
+<script>
+/* ══════════════ 引擎（勿重写）══════════════ */
+(function(){
+  var DECK = {
+    slides: [], cur: 0,
+    init: function(){
+      var self = this;
+      this.slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+      this.cur = Math.max(0, Math.min(this.slides.length-1, parseInt((location.hash||'').replace('#',''),10)-1||0));
+      this.resize(); window.addEventListener('resize', function(){ self.resize(); });
+      window.addEventListener('hashchange',function(){var n=Number(location.hash.slice(1));if(Number.isInteger(n)&&n>=1&&n<=self.slides.length)self.go(n-1);});
+      document.addEventListener('keydown', function(e){ self.key(e); });
+      document.getElementById('stage').addEventListener('click', function(e){
+        if(document.body.classList.contains('overview')) return;
+        if(e.clientX / window.innerWidth > 0.6) self.next(); else self.prev();
+      });
+      var sx=null; document.addEventListener('touchstart',function(e){sx=e.touches[0].clientX},{passive:true});
+      document.addEventListener('touchend',function(e){ if(sx===null) return;
+        var dx=e.changedTouches[0].clientX-sx; sx=null;
+        if(Math.abs(dx)>50){ dx<0?self.next():self.prev(); } },{passive:true});
+      this.initCharts(); this.go(this.cur);
+    },
+    resize: function(){
+      var pad = 28;
+      /* 从 #stage 读尺寸变量：4:3 的覆盖定义在 body 上，html 读不到（c-5 修复）*/
+      var cs = getComputedStyle(document.getElementById('stage'));
+      var sw = parseFloat(cs.getPropertyValue('--slide-w')) || 1280;
+      var sh = parseFloat(cs.getPropertyValue('--slide-h')) || 720;
+      var s = Math.min((window.innerWidth-pad*2)/sw, (window.innerHeight-pad*2)/sh);
+      document.getElementById('stage').style.setProperty('--scale', Math.max(0.05,s));
+      document.querySelectorAll('.chart').forEach(function(el){ if(el._chart && el.clientWidth && el.clientHeight && el.getClientRects().length) el._chart.resize(); });
+    },
+    key: function(e){
+      var k=e.key; var overview=document.body.classList.contains('overview');
+      if(k==='f'||k==='F'){ this.fullscreen(); return; }
+      if(k==='g'||k==='G'){ this.overview(!overview); return; }
+      if(k==='Escape'){ if(document.fullscreenElement){document.exitFullscreen();} this.overview(false); return; }
+      if(overview) return;
+      if(k==='ArrowRight'||k===' '||k==='PageDown'){ e.preventDefault(); this.next(); }
+      else if(k==='ArrowLeft'||k==='PageUp'){ e.preventDefault(); this.prev(); }
+      else if(k==='Home'){ this.go(0); } else if(k==='End'){ this.go(this.slides.length-1); }
+    },
+    go: function(i){
+      if(i<0||i>=this.slides.length) return;
+      this.cur=i; this.slides.forEach(function(s,idx){ s.classList.toggle('active',idx===i); });
+      document.getElementById('progress').style.width = ((i+1)/this.slides.length*100)+'%';
+      document.getElementById('hud').textContent = (i+1)+' / '+this.slides.length;
+      history.replaceState(null,'','#'+(i+1));
+      var el=this.slides[i];
+      el.querySelectorAll('.chart').forEach(function(c){ initChartFromEl(c); });
+    },
+    next: function(){ this.go(this.cur+1); },
+    prev: function(){ this.go(this.cur-1); },
+    fullscreen: function(){
+      if(!document.fullscreenElement){ (document.documentElement.requestFullscreen||function(){}).call(document.documentElement); }
+      else document.exitFullscreen();
+    },
+    overview: function(on){
+      document.body.classList.toggle('overview',on);
+      if(on){ /* 总览下所有页可见：补初始化/补尺寸，保证网格缩略图完整 */
+        this.slides.forEach(function(s){ s.querySelectorAll('.chart').forEach(function(c){ initChartFromEl(c); }); });
+      } else { this.go(this.cur); }
+      var self=this;
+      if(on) this.slides.forEach(function(s,idx){ s.onclick=function(ev){ ev.stopPropagation(); self.overview(false); self.go(idx); }; });
+      else this.slides.forEach(function(s){ s.onclick=null; });
+      this.resize();
+    },
+    initCharts: function(){
+      /* 只做库存在性检查与主题注册（c-1 修复：不做全量 init——隐藏容器里
+         init 会拿到 0 尺寸，产生 100×100 画布。图表在页面可见时懒初始化）*/
+      if(!window.echarts){ document.body.classList.add('no-charts'); return; }
+      echarts.registerTheme(THEME_NAME, chartTheme());
+    }
+  };
+  var THEME_NAME = 'consulting';
+  /* 咨询图表主题：白底、浅灰轴、无默认粗网格（c-4 修复：注册并真正使用）*/
+  function token(name, fallback){ return getComputedStyle(document.body).getPropertyValue(name).trim() || fallback; }
+  function palette(){ return [1,2,3,4,5,6].map(function(i){return token('--cat-'+i);}); }
+  /* JSON 中仅完整的 @role 字符串会解析；缺失角色直接报错，避免静默回退成错误色。 */
+  function resolveTokens(value){
+    if(typeof value==='string' && /^@[a-z][a-z0-9-]*$/.test(value)){
+      var resolved=token('--'+value.slice(1));
+      if(!resolved) throw new Error('未知主题 token: '+value);
+      return resolved;
+    }
+    if(Array.isArray(value)) return value.map(resolveTokens);
+    if(value && typeof value==='object'){
+      var out={}; Object.keys(value).forEach(function(k){out[k]=resolveTokens(value[k]);}); return out;
+    }
+    return value;
+  }
+  function chartTheme(){ return { animation:false, color:palette(),
+    textStyle:{fontFamily:token('--font-body','Arial'),fontSize:14,color:token('--ink')},
+    categoryAxis:{axisLine:{lineStyle:{color:token('--gray-3')}},axisTick:{show:false},splitLine:{show:false},axisLabel:{color:token('--gray-2'),fontSize:14}},
+    valueAxis:{axisLine:{show:false},axisTick:{show:false},splitLine:{lineStyle:{color:token('--gray-4')}},axisLabel:{color:token('--gray-2'),fontSize:14}} }; }
+  /* 图表懒初始化/补尺寸：首次 init，之后 resize（容器从 display:none 变为可见后尺寸才正确）*/
+  function initChartFromEl(el){
+    if(!window.echarts || !el.clientWidth || !el.clientHeight || !el.getClientRects().length) return;
+    if(el._chart){ el._chart.resize(); return; }
+    try{
+      if(el.id==='waterfall-demo'){ initWaterfall(el); return; }
+      var opt=resolveTokens(JSON.parse(el.getAttribute('data-opt')));
+      opt.animation=false;
+      if(!opt.textStyle){opt.textStyle={fontFamily:getComputedStyle(document.documentElement).getPropertyValue('--font-body')};}
+      var c=echarts.init(el, THEME_NAME, {renderer:'svg'}); c.setOption(opt); el._chart=c;
+    }catch(err){ console.error('chart parse error',err); }
+  }
+  /* 瀑布图以显式起止值绘制；允许跨零，兼容旧 abs 类型。 */
+  function buildWaterfall(items){
+    if(!Array.isArray(items)||!items.length) throw new Error('瀑布数据不能为空');
+    var acc=0, data=[], cats=[];
+    items.forEach(function(d,i){
+      var kind=d.type==='abs'?'total':d.type;
+      if(['total','subtotal','delta'].indexOf(kind)<0) throw new Error('未知瀑布类型');
+      var value=d.value;
+      if(kind==='subtotal' && value===undefined) value=acc;
+      if(typeof value!=='number'||!Number.isFinite(value)) throw new Error('瀑布数值必须有限');
+      var from=kind==='delta'?acc:0;
+      var to=kind==='delta'?acc+value:value;
+      if(!Number.isFinite(to)) throw new Error('瀑布累计溢出');
+      if(kind!=='delta' && i>0 && Math.abs(to-acc)>1e-8*Math.max(1,Math.abs(acc))) throw new Error('瀑布总计/小计未与贡献闭合');
+      acc=to; cats.push(d.name);
+      data.push({name:d.name,value:[i,from,to,value,kind==='delta'?1:0]});
+    });
+    var lo=Math.min.apply(null,[0].concat(data.map(function(d){return Math.min(d.value[1],d.value[2]);})));
+    var hi=Math.max.apply(null,[0].concat(data.map(function(d){return Math.max(d.value[1],d.value[2]);})));
+    var pad=(hi-lo||1)*.12;
+    return {
+      animation:false, tooltip:{show:false},
+      grid:{left:40,right:30,top:40,bottom:30,containLabel:true},
+      xAxis:{type:'category',data:cats,axisLine:{lineStyle:{color:token('--gray-3')}},axisTick:{show:false},axisLabel:{color:token('--ink'),fontSize:14}},
+      yAxis:{type:'value',min:lo<0?lo-pad:0,max:hi+pad,splitLine:{lineStyle:{color:token('--gray-4')}},axisLabel:{color:token('--gray-2'),fontSize:14}},
+      series:[{type:'custom',encode:{x:0,y:[1,2]},data:data,
+        renderItem:function(params,api){
+          var i=api.value(0),from=api.value(1),to=api.value(2),value=api.value(3),delta=api.value(4);
+          var p0=api.coord([i,from]),p1=api.coord([i,to]);
+          var width=Math.min(64,Math.abs(api.size([1,0])[0])*.62);
+          var color=delta?token(value>=0?'--delta-positive':'--delta-negative'):token('--brand');
+          var shape={x:p0[0]-width/2,y:Math.min(p0[1],p1[1]),width:width,height:Math.abs(p1[1]-p0[1])};
+          var children=[{type:'rect',shape:shape,style:{fill:color}},
+            {type:'text',style:{x:p0[0],y:shape.y-9,text:(delta&&value>0?'+':'')+Number(value.toFixed(8)),textAlign:'center',textVerticalAlign:'bottom',fill:token('--ink'),font:'14px '+token('--font-num','Arial')}}];
+          if(i<data.length-1){ var next=api.coord([i+1,to]); children.push({type:'line',shape:{x1:p0[0]+width/2,y1:p1[1],x2:next[0]-width/2,y2:p1[1]},style:{stroke:token('--gray-3'),lineDash:[4,3]}}); }
+          return {type:'group',children:children};
+        }
+      }]
+    };
+  }
+  function initWaterfall(el){
+    if(!window.echarts||el._chart) return;
+    var c=echarts.init(el, THEME_NAME, {renderer:'svg'});
+    /* 示例数据经 E-08 复核：贡献和 0.4−1.1−0.1 = −0.8 = 起止差 10.4−11.2（Illustrative）*/
+    c.setOption(buildWaterfall([
+      {name:'2024 收入',type:'abs',value:11.2},
+      {name:'电商',type:'delta',value:0.4},
+      {name:'商超',type:'delta',value:-1.1},
+      {name:'经销',type:'delta',value:-0.1},
+      {name:'2025 收入',type:'abs',value:10.4}
+    ]));
+    el._chart=c;
+  }
+  /* Mekko 配方（B-11）：custom series —— 柱宽∝类别总量 × 段高=构成%
+     输入 rows = [{name, total, segs:[{name, value}]}]
+     输出：面积 ∝ 绝对值（E-R20）；x 轴刻度 = 类别名 + 总量（宽轴标类别总量）*/
+  function buildMekko(rows){
+    var totalAll = rows.reduce(function(s,r){return s+r.total;},0);
+    var segNames = rows[0].segs.map(function(sg){return sg.name;});
+    var colors = palette();
+    var colLabels = []; /* 列中心 x（px 由 renderItem 换算）与"类别名+总量"标签 */
+    var data = []; var accX = 0;
+    rows.forEach(function(r){
+      var colPct = r.total/totalAll*100; var accY = 0;
+      r.segs.forEach(function(sg,si){
+        var segPct = sg.value/r.total*100;
+        data.push({name:r.name, segName:segNames[si], value:[accX, accY, segPct, colPct, si]});
+        accY += segPct;   /* c-3 修复：段在列内自下而上累计堆叠 */
+      });
+      colLabels.push({center: accX + colPct/2, label: r.name + '\n' + r.total});
+      accX += colPct;
+    });
+    return {
+      tooltip:{trigger:'item',formatter:function(p){
+        return p.name+' · '+p.data.segName+'<br/>占比 '+p.data.value[2].toFixed(1)+'%';}},
+      grid:{left:8,right:30,top:24,bottom:40,containLabel:true},
+      xAxis:{type:'value',min:0,max:100,splitLine:{show:false},axisLine:{show:false},axisTick:{show:false},axisLabel:{show:false}},
+      yAxis:{type:'value',min:0,max:100,splitLine:{lineStyle:{color:token('--gray-4')}},axisLine:{show:false},axisTick:{show:false},axisLabel:{formatter:'{value}%',color:token('--gray-2'),fontSize:14}},
+      series:[{
+        type:'custom', silent:false, clip:false,
+        /* clip:false：列标签画在 grid 下方 padding 区，默认裁剪会吞掉它们 */
+        renderItem:function(params,api){
+          /* value:[accX, accY, segPct, colPct, segIndex] —— 段从 accY 向上堆到 accY+segPct */
+          var x0 = api.coord([api.value(0),0])[0], x1 = api.coord([api.value(0)+api.value(3),0])[0];
+          var y0 = api.coord([0,api.value(1)])[1], y1 = api.coord([0,api.value(1)+api.value(2)])[1];
+          var si = api.value(4);
+          var rect = {type:'rect',
+            shape:{x:x0, y:Math.min(y0,y1), width:x1-x0, height:Math.abs(y1-y0)},
+            style:{fill:colors[si%colors.length], stroke:token('--page-bg'), lineWidth:1}};
+          /* N-1 修复：列标签由 renderItem 按列坐标直接绘制（不依赖轴刻度巧合），
+             在每列第一段（segIndex===0）时附带 text 子元素 */
+          if(si===0){
+            /* 当前列中心 = accX + colPct/2，与 colLabels 的 center 精确对应 */
+            var myCenter = api.value(0) + api.value(3)/2;
+            var lab = colLabels.find(function(L){ return Math.abs(L.center-myCenter)<0.01; });
+            if(lab){
+              var cx = api.coord([lab.center,0])[0];
+              var cy = api.coord([0,0])[1] + 26;
+              var fontFam = getComputedStyle(document.documentElement).getPropertyValue('--font-num').trim() || 'Arial,sans-serif';
+              return {type:'group', children:[rect, {type:'text',
+                style:{x:cx, y:cy, text:lab.label, textAlign:'center', textVerticalAlign:'top',
+                       fill:token('--ink'), font:'14px '+fontFam}}]};
+            }
+          }
+          return rect;
+        },
+        data:data.map(function(d){
+          return {name:d.name, segName:d.segName, value:[d.value[0], d.value[1], d.value[2], d.value[3], d.value[4]]};
+        })
+      }]
+    };
+  }
+
+  /* ══════════════ 图标助手：IconPark（在线）→ 内置 SVG 迷你集（离线降级）══════════════ */
+  window.icon = function(name,opts){
+    opts = opts||{};
+    try{
+      if(window.__icons && typeof window.__icons[name]==='function'){
+        return window.__icons[name]({theme:opts.theme||'outline',size:opts.size||20,
+          fill:opts.fill||['currentColor'],strokeWidth:opts.strokeWidth||4,
+          strokeLinecap:'round',strokeLinejoin:'round'});
+      }
+    }catch(e){ /* fall through */ }
+    var f = window.__iconFallback[name]; var c = opts.color||'currentColor'; var s = opts.size||20;
+    if(f) return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle">'+f+'</svg>';
+    return '<span style="display:inline-block;width:'+s+'px;height:'+s+'px;border:1.5px solid '+c+';border-radius:4px;vertical-align:middle"></span>';
+  };
+  window.__iconFallback = {
+    'Right': '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    'Left':  '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+    'Check': '<path d="M4 12.5l5 5L20 6.5"/>',
+    'Close': '<path d="M6 6l12 12M18 6L6 18"/>',
+    'Flag':  '<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>',
+    'Target':'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>',
+    'Trend': '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+    'PaperMoney': '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M15.5 9.2c-.7-.9-2-1.4-3.5-1.4-1.9 0-3 .8-3 2s1.1 1.6 3 1.9c1.9.3 3 .8 3 1.9s-1.1 2-3 2c-1.5 0-2.8-.5-3.5-1.4"/>',
+    'People':'<circle cx="9" cy="8" r="3.5"/><path d="M3.5 20c.6-3.5 2.8-5.5 5.5-5.5s4.9 2 5.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M17.5 14.8c2.3.7 3.4 2.6 3.8 5.2"/>',
+    'Setting':'<circle cx="12" cy="12" r="3"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M18.5 5.5l-2.1 2.1M7.6 16.4l-2.1 2.1"/>',
+    'Alarm': '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M5 3L2.5 5.5M19 3l2.5 2.5"/>',
+    'Calendar':'<rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+    'FileDoc': '<path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+    'Pie':   '<path d="M21 12A9 9 0 1 1 12 3v9z"/>',
+    'Data':  '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>'
+  };
+  document.addEventListener('DOMContentLoaded', function(){
+    /* 4:3 时按比例注入匹配的打印纸张尺寸（构建者只需改 body[data-ratio] 一处）*/
+    if(document.body.getAttribute('data-ratio')==='4x3'){
+      var st=document.createElement('style');
+      st.textContent='@page{size:1024px 768px;margin:0}';
+      document.head.appendChild(st);
+    }
+    DECK.init();
+    /* 打印事件发生时浏览器尚未必切换媒介；先显式显示所有页再量尺寸。 */
+    var printState=null;
+    window.addEventListener('beforeprint', function(){
+      if(printState) return;
+      printState=DECK.slides.map(function(s){return {slide:s,value:s.style.getPropertyValue('display'),priority:s.style.getPropertyPriority('display')};});
+      DECK.slides.forEach(function(s){s.style.setProperty('display','flex','important');});
+      document.getElementById('stage').getBoundingClientRect();
+      document.querySelectorAll('.chart').forEach(function(c){initChartFromEl(c);});
+    });
+    window.addEventListener('afterprint', function(){
+      if(!printState) return;
+      printState.forEach(function(p){if(p.value)p.slide.style.setProperty('display',p.value,p.priority);else p.slide.style.removeProperty('display');});
+      printState=null; DECK.resize();
+    });
+  });
+  /* 配方暴露：构建者/测试可直接 window.DeckRecipes.buildWaterfall(items) / buildMekko(rows) */
+  window.DeckRecipes = { buildWaterfall: buildWaterfall, buildMekko: buildMekko, resolveTokens: resolveTokens };
+})();
+</script>
+<script type="module">
+/* IconPark 在线加载（离线时 icon() 自动降级到内置迷你集）*/
+try{
+  const m = await import('https://cdn.jsdelivr.net/npm/@icon-park/svg/+esm');
+  if(m && m.setConfig){ m.setConfig({theme:'outline',size:20,fill:['currentColor'],strokeWidth:4}); }
+  window.__icons = m;
+}catch(e){ console.warn('IconPark unavailable, using built-in fallback icons.'); }
+</script>
+</body>
+</html>
