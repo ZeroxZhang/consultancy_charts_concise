@@ -1,5 +1,5 @@
 /* 自动运行与几何审计；不代替逐页目视验收。需要Node、Playwright和Chrome。 */
-const fs=require('node:fs'),path=require('node:path'),{pathToFileURL}=require('node:url'),{execFileSync}=require('node:child_process');
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),{pathToFileURL}=require('node:url'),{execFileSync}=require('node:child_process');
 const fontAudit=require('./browser_font_audit.cjs');
 let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)throw Error('请安装playwright，或将PLAYWRIGHT_MODULE设为现有模块路径');pw=require(process.env.PLAYWRIGHT_MODULE)}
 (async()=>{
@@ -30,10 +30,10 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
   await p.locator('.slide.active').screenshot({path:path.join(out,result.screenshot)});rows.push(result);
  }
  await p.keyboard.press('g');await p.screenshot({path:path.join(out,'overview.png'),fullPage:true});await p.keyboard.press('Escape');
- await p.pdf({path:path.join(out,'deck.pdf'),printBackground:true,preferCSSPageSize:true});
- const pdfInfo=execFileSync('pdfinfo',[path.join(out,'deck.pdf')],{encoding:'utf8'});const pdfPages=Number(pdfInfo.match(/Pages:\s+(\d+)/)?.[1]);if(pdfPages!==n)errors.push('PDF页数与deck不符');
- const pdfFonts=execFileSync('pdffonts',[path.join(out,'deck.pdf')],{encoding:'utf8'});const fontRows=pdfFonts.split('\n').slice(2).filter(Boolean);if(!fontRows.length||fontRows.some(row=>row.trim().split(/\s+/).slice(-5,-2).some(v=>v!=='yes')))errors.push('PDF 字体未完整嵌入或缺少字符映射');
- const normalize=s=>s.replace(/\s+/g,'');const printed=normalize(execFileSync('pdftotext',['-layout',path.join(out,'deck.pdf'),'-'],{encoding:'utf8'}));
+ const pdfPath=path.join(out,'deck.pdf');await p.pdf({path:pdfPath,printBackground:true,preferCSSPageSize:true});
+ const pdfInfo=execFileSync('pdfinfo',[pdfPath],{encoding:'utf8'});const pdfPages=Number(pdfInfo.match(/Pages:\s+(\d+)/)?.[1]);if(pdfPages!==n)errors.push('PDF页数与deck不符');
+ const pdfFonts=execFileSync('pdffonts',[pdfPath],{encoding:'utf8'});const fontRows=pdfFonts.split('\n').slice(2).filter(Boolean);if(!fontRows.length||fontRows.some(row=>row.trim().split(/\s+/).slice(-5,-2).some(v=>v!=='yes')))errors.push('PDF 字体未完整嵌入或缺少字符映射');
+ const normalize=s=>s.replace(/\s+/g,'');const printed=normalize(execFileSync('pdftotext',['-layout',pdfPath,'-'],{encoding:'utf8'}));
  for(const row of rows)if(!printed.includes(normalize(row.title)))errors.push('PDF缺少第'+row.page+'页标题');
  const onlineContent=await p.locator('.slide').evaluateAll(es=>es.map(s=>({text:s.textContent.replace(/\s+/g,''),svg:s.querySelectorAll('svg text').length})));
  await p.keyboard.press('Home');await p.keyboard.press('f');await p.waitForTimeout(100);const fullscreen=await p.evaluate(()=>!!document.fullscreenElement);if(fullscreen)await p.evaluate(()=>document.exitFullscreen());
@@ -42,7 +42,9 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
  const offline=await browser.newPage({viewport:{width:1400,height:820}});await fontAudit.attach(offline);offline.on('pageerror',e=>errors.push('断网: '+e.message));offline.on('console',m=>{if(m.type()==='error')errors.push('断网: '+m.text())});await offline.route('**/*',r=>/^https?:/.test(r.request().url())?r.abort():r.continue());await offline.goto(pathToFileURL(input).href,{waitUntil:'networkidle'});await offline.evaluate(()=>window.deckReady||document.fonts.ready);const offlineState=await offline.evaluate(()=>({externalScripts:[...document.scripts].filter(s=>s.src).length,warning:document.body.classList.contains('no-charts'),staticSVG:document.querySelectorAll('.slide svg').length}));
  if(offlineState.externalScripts===0){const offContent=await offline.locator('.slide').evaluateAll(es=>es.map(s=>({text:s.textContent.replace(/\s+/g,''),svg:s.querySelectorAll('svg text').length})));offlineState.contentParity=JSON.stringify(onlineContent)===JSON.stringify(offContent);if(!offlineState.contentParity)errors.push('断网前后逐页文字或SVG标签不一致');}
  if(offlineState.externalScripts===0){offlineState.fonts=[];offlineState.layoutParity=true;for(let i=0;i<n;i++){await offline.keyboard.press('Home');for(let k=0;k<i;k++)await offline.keyboard.press('ArrowRight');const identity=await fontAudit.inspect(offline);offlineState.fonts.push(identity);if(identity.identity==='FAIL')errors.push('断网第'+(i+1)+'页字体失败');if(JSON.stringify(await fontAudit.signature(offline))!==JSON.stringify(rows[i].layoutSignature))offlineState.layoutParity=false;}if(!offlineState.layoutParity)errors.push('断网前后版式不一致');}
- const report={input,pages:n,pdfPages,pdfFonts,navigation:{fullscreen,deepLink,scales},errors,offline:offlineState,rows,visualStatus:'NOT_REVIEWED：必须实际查看每页图片与PDF',geometryStatus:rows.some(r=>r.overflow.length||r.smallDataText.length||r.charts.some(c=>!c.rendered||c.error))||errors.length?'FAIL':'PASS'};
+ const htmlBuffer=fs.readFileSync(input),htmlArtifact={path:input,bytes:htmlBuffer.length,sha256:crypto.createHash('sha256').update(htmlBuffer).digest('hex')};
+ const pdfArtifact={path:pdfPath,bytes:fs.statSync(pdfPath).size,sha256:crypto.createHash('sha256').update(fs.readFileSync(pdfPath)).digest('hex'),pages:pdfPages};
+ const report={input,pages:n,pdfPages,htmlArtifact,pdfArtifact,pdfFonts,navigation:{fullscreen,deepLink,scales},errors,offline:offlineState,rows,visualStatus:'NOT_REVIEWED：必须实际查看每页图片与PDF',geometryStatus:rows.some(r=>r.overflow.length||r.smallDataText.length||r.charts.some(c=>!c.rendered||c.error))||errors.length?'FAIL':'PASS'};
  fs.writeFileSync(path.join(out,'audit.json'),JSON.stringify(report,null,2));console.log(JSON.stringify({pages:n,geometry:report.geometryStatus,errors,overflow:rows.filter(r=>r.overflow.length).map(r=>({page:r.page,items:r.overflow})),tiny:rows.filter(r=>r.tinyText.length).map(r=>r.page),offline:offlineState}));if(report.geometryStatus==='FAIL')process.exitCode=1;
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});

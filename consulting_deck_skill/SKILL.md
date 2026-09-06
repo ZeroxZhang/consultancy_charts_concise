@@ -4,12 +4,13 @@ description: >-
   制作与迭代咨询风格的战略汇报、董事会材料、研究型 reading deck 和商业演示。
   从简报、原始数据、文本资料或已确认文稿出发，按任务深度规划议题、匹配商业/行业/财务/
   数据分析方法，执行分析并综合证据、反证和结论，再组织 storyline 与全篇内容，
-  生成高密度复合图表和固定尺寸分页 HTML，执行分析、证据、视觉与工程验收。适用于
+  生成高密度复合图表和固定尺寸分页 HTML，执行分析、证据、视觉与工程验收，并同步交付
+  同版分页 PDF。适用于
   咨询级 PPT/deck、McKinsey/BCG/Accenture
-  风格材料；默认交付 HTML，可打印 PDF，不冒称原生可编辑 PPTX。
+  风格材料；默认交付自包含 HTML 与 PDF，HTML 可离线一键下载该 PDF，不冒称原生可编辑 PPTX。
 ---
 
-# 咨询分析与 deck 制作技能 · v7
+# 咨询分析与 deck 制作技能 · v8
 
 目标是让决策者能独立读懂、核对并采取行动。公开咨询演示稿是参考样本，
 不是内部模板或“顶级质量”的认证。保留现有分页引擎，优先改进论证与信息设计。
@@ -28,7 +29,7 @@ description: >-
   作者建议标“建议”，主观评估标“分析判断”，估计值列方法与区间。
 - **先写论证再制作；实际看图才可声称视觉验收。** 代码检查和截图像素统计不能替代目视。
 - **字体是交付资源与排版契约。** 新 reading deck 默认衬线主标题、无衬线阅读与数据；从统一配置加载真实字重，字体就绪后绘图，静态 SVG 不自动等于字体自包含。
-- HTML 是当前产品契约；用户明确要求可编辑 PPTX 时先说明当前能力边界，不能改扩展名冒充。
+- HTML + PDF 是当前产品契约：PDF 是同版分页定稿，HTML 内嵌已验收 PDF 供离线一键下载，并保留浏览器打印入口。用户明确要求可编辑 PPTX 时先说明当前能力边界，不能改扩展名冒充。
 - 既有用户授权和偏好持续有效。用户已授权自主迭代时记录设计决策并继续，不重复索要签字。
 
 ## 工作流与门禁
@@ -41,9 +42,9 @@ description: >-
 | S3 综合与storyline | ghost_deck.md | 问题→发现→证据/边界→决策或研究结论闭合；重要材料有去向 |
 | S4 视觉系统、分页与选型 | visual_spec.md + page_plan.md | 在内容骨架基础上确定语义色、预算、证明责任、主视觉与布局 |
 | S5 页面规格 | page_specs.md | 证据充分、几何编码合法、内容预算能装下、无重复占位模块 |
-| S6 制作 | deck.html | 复用引擎、运行图示组件、逐页截图与打印检查 |
-| S7 独立 QA | qa_report.md + renders/ | 分析、证据、视觉、工程分别验收；Blocking/Major 为零才称通过 |
-| S8 交付 | HTML、预览、分析底稿、QA与限制 | 交付可打开文件；准确说明核验、依赖、未知及遗留项 |
+| S6 制作 | deck.html | 复用引擎、运行图示组件、字体打包、逐页截图与打印检查 |
+| S7 独立 QA | qa_report.md + renders/deck.pdf + renders/ | 分析、证据、视觉、工程分别验收；HTML/PDF 同版且 Blocking/Major 为零才称通过 |
+| S8 交付 | 同名 HTML + PDF、预览、分析底稿、QA与限制 | HTML 离线可下载随附 PDF；两个文件页数、内容和校验值一致 |
 
 表中完整产物适用于分析任务。editorial仅在标题骨架中记录范围、必要核对/修正/未决项及原文段落到页面去向，不强制议题树、Q/T/F/E台账、逐值JSON或逐行AQ表；小型分析可合并为analysis_brief.md。详见分析规划。阶段是依赖关系，发现新证据可返回受影响任务，不一次冻结所有结论。
 
@@ -154,6 +155,7 @@ reading 正文通常2–4个证据模块，但单个完整主展品也可以；�
 7. 用`scripts/test_echarts_recipes.cjs`、`test_theme_browser.cjs`和既有组件测试验证数值几何、主题、浏览器/SSR；大量输入另跑`test_dense_inputs.cjs`。用`qa_deck.cjs`渲染每页、检查越界/有效数据字号、PDF标题与页数、离线内容一致性；用可用图片工具实际逐页看图。自动文字验收不能代替证据核验、数据点遮挡或整体视觉判断。
 8. 引擎改动额外检验1280×720与1024×768、#3深链、G/ESC、键盘、缩放、全屏、打印页数和断网。
 9. 字体升级另跑test_typography.cjs和test_typography_browser.cjs，检查实际字体、真实字重、数字等宽、缺字/坏资源拒绝、PDF嵌入与冷缓存断网版式。SSR固定字体测宽不替代最终浏览器边界和目视。
+10. 交付层改动另跑 `test_delivery.cjs`，检查HTML/PDF页数门禁、离线下载、下载字节一致、打印控件隐藏及页面状态保持。
 
 ### S7 · 独立质量验收
 
@@ -166,6 +168,13 @@ reading 正文通常2–4个证据模块，但单个完整主展品也可以；�
 Blocking/Major 修复后复验；无法修复则明确不通过，不将未目视改称有条件通过。
 若环境无子代理能力，如实标“作者自检，独立QA未执行”，不冒称独立通过。
 
+### S8 · 双格式交付
+
+读取 `references/delivery_system.md`。S7完成且没有Blocking/Major后，用
+`node scripts/package_delivery.cjs deck.html renders/deck.pdf delivery <报告名>` 生成同名 HTML 与 PDF。
+HTML 的“下载分页 PDF”必须下载这份已验收 PDF；“打印 / 另存 PDF”仅作为临时打印入口。交付时分别提供两个可打开文件，并报告页数、PDF校验值、验证状态和已知限制。
+打包后若修改正文、数据、主题、字体或页序，必须重新生成PDF、复验并打包，不能让HTML内嵌旧版PDF。
+
 ## 按需参考
 
 - 分析规划与模式：`references/analysis_planning.md`；模型按问题检索：`references/framework_router.md`
@@ -177,6 +186,7 @@ Blocking/Major 修复后复验；无法修复则明确不通过，不将未目�
 - 分析语法与示例：`references/analysis_exhibits.md`；`assets/analysis_reference_deck.html`（六页合成数据，含v3前后对照及纯表格反例）
 - 语义配色：`references/color_and_type.md`
 - 字体角色、资源、打包与兼容：`references/typography_system.md`；唯一配置 `assets/deck-typography.js`
+- 双格式交付、内嵌PDF与版本一致性：`references/delivery_system.md`；打包工具 `scripts/package_delivery.cjs`
 - 论证：`references/storyline_method.md`；`references/logic_frameworks.md`
 - 样例：`references/worked_example.md`（原始数据示例）；`assets/reference_deck.html`（v2复合页实物）
 - 大量输入实测：`assets/dense-input-example/`；`scripts/build_dense_reference.cjs <输出目录>`生成六页离线样稿及来源清单、原子证据、派生公式、选型计划。固定合成夹具，非通用文件抽取器；文本编码和选型仍由作者判断。

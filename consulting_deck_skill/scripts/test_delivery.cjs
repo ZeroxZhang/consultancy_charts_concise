@@ -1,0 +1,78 @@
+/* 双格式交付回归：页数门禁、离线下载、字节一致、状态保持与打印入口。 */
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const os=require('node:os');
+const path=require('node:path');
+const crypto=require('node:crypto');
+const {execFileSync}=require('node:child_process');
+const {pathToFileURL}=require('node:url');
+const {packageDelivery}=require('./package_delivery.cjs');
+let pw;try{pw=require('playwright')}catch(error){const modulePath=process.env.PLAYWRIGHT_MODULE||process.env.PLAYWRIGHT_PATH;if(!modulePath)throw Error('请安装playwright或设置PLAYWRIGHT_MODULE');pw=require(modulePath)}
+const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
+
+(async()=>{
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'deck-delivery-test-'));
+  const browser=await pw.chromium.launch({channel:process.env.CHROME_CHANNEL||'chrome',headless:true});
+  try{
+    const source=path.resolve(__dirname,'../assets/reference_deck.html');
+    const sourcePage=await browser.newPage({viewport:{width:1400,height:820}});
+    await sourcePage.goto(pathToFileURL(source).href,{waitUntil:'networkidle'});
+    await sourcePage.evaluate(()=>window.deckReady);
+    const pdf=path.join(dir,'validated.pdf');
+    await sourcePage.pdf({path:pdf,printBackground:true,preferCSSPageSize:true});
+    const onePage=path.join(dir,'one-page.pdf');
+    await sourcePage.pdf({path:onePage,printBackground:true,preferCSSPageSize:true,pageRanges:'1'});
+    const htmlBuffer=fs.readFileSync(source),pdfBuffer=fs.readFileSync(pdf);
+    const audit={
+      input:source,pages:9,pdfPages:9,geometryStatus:'PASS',errors:[],
+      htmlArtifact:{path:source,bytes:htmlBuffer.length,sha256:digest(htmlBuffer)},
+      pdfArtifact:{path:pdf,bytes:pdfBuffer.length,sha256:digest(pdfBuffer),pages:9}
+    };
+    fs.writeFileSync(path.join(dir,'audit.json'),JSON.stringify(audit));
+    assert.throws(()=>packageDelivery({htmlFile:source,pdfFile:onePage,outputDir:path.join(dir,'bad')}),/拒绝打包不同版本/);
+    assert.throws(()=>packageDelivery({htmlFile:source,pdfFile:pdf,auditFile:path.join(dir,'missing-audit.json'),outputDir:path.join(dir,'bad')}),/缺少 S7 audit/);
+    const failedAudit=path.join(dir,'failed-audit.json');fs.writeFileSync(failedAudit,JSON.stringify({...audit,geometryStatus:'FAIL'}));
+    assert.throws(()=>packageDelivery({htmlFile:source,pdfFile:pdf,auditFile:failedAudit,outputDir:path.join(dir,'bad')}),/验收未通过/);
+    const changedHtml=path.join(dir,'changed.html');fs.writeFileSync(changedHtml,fs.readFileSync(source,'utf8').replace('<title>','<title>已修改'));
+    const changedHtmlAudit=path.join(dir,'changed-html-audit.json');fs.writeFileSync(changedHtmlAudit,JSON.stringify({...audit,input:changedHtml,htmlArtifact:{...audit.htmlArtifact,path:changedHtml}}));
+    assert.throws(()=>packageDelivery({htmlFile:changedHtml,pdfFile:pdf,auditFile:changedHtmlAudit,outputDir:path.join(dir,'bad')}),/HTML 在 S7 验收后已修改/);
+    assert.throws(()=>packageDelivery({htmlFile:changedHtml,pdfFile:pdf,outputDir:path.join(dir,'bad')}),/对应另一份 HTML/);
+    const changedPdf=path.join(dir,'changed.pdf');fs.writeFileSync(changedPdf,Buffer.concat([pdfBuffer,Buffer.from('\n')]));
+    const changedPdfAudit=path.join(dir,'changed-pdf-audit.json');fs.writeFileSync(changedPdfAudit,JSON.stringify({...audit,pdfArtifact:{...audit.pdfArtifact,path:changedPdf}}));
+    assert.throws(()=>packageDelivery({htmlFile:source,pdfFile:changedPdf,auditFile:changedPdfAudit,outputDir:path.join(dir,'bad')}),/PDF 不是 S7 验收产物/);
+
+    const result=packageDelivery({htmlFile:source,pdfFile:pdf,outputDir:path.join(dir,'delivery'),baseName:'董事会报告'});
+    assert.equal(result.pages,9);
+    assert.match(execFileSync('pdfinfo',[result.pdf],{encoding:'utf8'}),/Pages:\s+9/);
+    assert.throws(()=>packageDelivery({htmlFile:source,pdfFile:pdf,outputDir:path.join(dir,'delivery'),baseName:'董事会报告'}),/已存在/);
+    packageDelivery({htmlFile:source,pdfFile:pdf,outputDir:path.join(dir,'delivery'),baseName:'董事会报告',force:true});
+
+    const page=await browser.newPage({acceptDownloads:true,viewport:{width:1400,height:820}}),requests=[],errors=[];
+    page.on('pageerror',error=>errors.push(error.message));
+    page.on('console',message=>{if(message.type()==='error')errors.push(message.text())});
+    await page.route('**/*',route=>/^https?:/.test(route.request().url())?(requests.push(route.request().url()),route.abort()):route.continue());
+    await page.goto(pathToFileURL(result.html).href+'#3',{waitUntil:'networkidle'});
+    await page.evaluate(()=>window.deckReady);
+    assert.equal(await page.locator('#download-pdf').isVisible(),true);
+    assert.equal(await page.locator('#download-pdf').isEnabled(),true);
+    assert.equal(await page.locator('#print-pdf').textContent(),'打印 / 另存 PDF');
+    assert.equal(await page.locator('#deck-pdf-payload').getAttribute('data-sha256'),result.pdfSha256);
+    const before=await page.evaluate(()=>({hash:location.hash,overview:document.body.classList.contains('overview')}));
+    const event=page.waitForEvent('download');
+    await page.locator('#download-pdf').click();
+    const download=await event,downloaded=path.join(dir,'downloaded.pdf');
+    await download.saveAs(downloaded);
+    assert.equal(download.suggestedFilename(),'董事会报告.pdf');
+    assert.deepEqual(fs.readFileSync(downloaded),fs.readFileSync(result.pdf));
+    assert.deepEqual(await page.evaluate(()=>({hash:location.hash,overview:document.body.classList.contains('overview')})),before);
+    assert.equal(digest(fs.readFileSync(downloaded)),result.pdfSha256);
+    assert.equal(requests.length,0);
+    await page.evaluate(()=>{window.print=()=>{window.__printRequested=true}});
+    await page.locator('#print-pdf').click();
+    assert.equal(await page.evaluate(()=>window.__printRequested),true);
+    await page.emulateMedia({media:'print'});
+    assert.equal(await page.locator('#deck-actions').evaluate(e=>getComputedStyle(e).display),'none');
+    assert.deepEqual(errors,[]);
+    console.log('PASS: HTML + PDF 双格式、S7审计/页数/覆盖门禁、离线一键下载、字节一致、打印隐藏与状态保持。Outputs: '+dir);
+  }finally{await browser.close()}
+})().catch(error=>{console.error(error);process.exitCode=1});

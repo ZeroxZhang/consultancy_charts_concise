@@ -15,7 +15,7 @@
     - 视口缩放适配（任意窗口大小居中显示，图表按逻辑像素渲染保持清晰）
     - 演示模式：F 全屏；←/→/空格/PageUp/Down 翻页；Home/End；G 总览网格；Esc 返回
     - 进度条 + 页码计数；点击翻页（左 40% 上一页 / 右 60% 下一页）；触摸滑动
-    - URL 深链：#3 直达第 3 页；打印/导出 PDF = 每页一张（Chrome 打印可选纸张尺寸）
+    - URL 深链：#3 直达第 3 页；交付版可一键下载已验收 PDF，也可浏览器打印（每页一张）
     - 图表懒加载 + 断网降级提示
  7. 尺寸切换：把 <body> 的 data-ratio 改为 "4x3" 即 4:3（默认 16:9 无需写）。
  8. CDN：ECharts 6.1.0用jsDelivr；offline-self-contained应通过Node SSR写入静态SVG。
@@ -88,6 +88,14 @@ body.overview .slide.active{outline-color:var(--accent);outline-width:3px}
 #hud{position:fixed;bottom:14px;right:18px;z-index:60;color:var(--chrome-text);font:12px/1 var(--font-num);
   letter-spacing:.06em;pointer-events:none}
 #hint{position:fixed;bottom:14px;left:18px;z-index:60;color:var(--chrome-text);font:12px/1.4 var(--font-body);opacity:.7}
+#deck-actions{position:fixed;top:14px;right:18px;z-index:65;display:flex;gap:8px}
+.deck-action{appearance:none;border:1px solid color-mix(in srgb,var(--chrome-text) 42%,transparent);border-radius:5px;
+  background:color-mix(in srgb,var(--chrome-bg) 90%,white);color:var(--chrome-text);padding:7px 11px;
+  font:600 12px/1 var(--font-body);letter-spacing:.01em;cursor:pointer}
+.deck-action:hover,.deck-action:focus-visible{border-color:var(--accent);color:white;outline:none}
+.deck-action:disabled{cursor:wait;opacity:.45}.deck-action[hidden]{display:none}
+#download-pdf{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+#download-pdf:hover,#download-pdf:focus-visible{filter:brightness(1.08)}
 #nocharts{display:none;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:70;
   background:var(--risk);color:var(--on-risk);font-size:12px;padding:6px 14px;border-radius:4px}
 body.no-charts #nocharts{display:block}
@@ -162,12 +170,12 @@ body.no-charts #nocharts{display:block}
    16:9 用 @page 1280×720；4:3 时把下面第一条改为 size:1024px 768px */
 @page{size:1280px 720px;margin:0}
 @media print{
-  body{background:var(--page-bg);overflow:visible}
+  body{background:var(--page-bg);overflow:visible;print-color-adjust:exact;-webkit-print-color-adjust:exact}
   #viewport{position:static;display:block}
   #stage{transform:none!important;width:auto;height:auto;display:block!important}
   .slide{position:relative;display:flex!important;page-break-after:always;box-shadow:none;transform:none!important;margin:0!important}
   .slide:last-child{page-break-after:auto}
-  #progress,#hud,#hint,#nocharts{display:none!important}
+  #progress,#hud,#hint,#deck-actions,#nocharts{display:none!important}
 }
 </style>
 <!-- 构建器注入完整主题；不要只替换品牌主色。 -->
@@ -192,6 +200,10 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
 <div id="progress" style="width:0%"></div>
 <div id="hint">← → 翻页 · F 全屏 · G 总览 · Esc 退出 · 点击翻页</div>
 <div id="hud"></div>
+<div id="deck-actions" role="group" aria-label="PDF 导出">
+  <button class="deck-action" id="download-pdf" type="button" hidden disabled>下载分页 PDF</button>
+  <button class="deck-action" id="print-pdf" type="button" disabled>打印 / 另存 PDF</button>
+</div>
 <div id="nocharts">图表库未加载（离线）：表格与框架图仍可查看</div>
 <div id="viewport"><div id="stage">
 
@@ -376,12 +388,12 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
       this.initCharts(); this.go(this.cur);
     },
     resize: function(){
-      var pad = 28;
+      var padX=28,padY=48; /* 顶部为交付控件保留浏览器 chrome 空间 */
       /* 从 #stage 读尺寸变量：4:3 的覆盖定义在 body 上，html 读不到（c-5 修复）*/
       var cs = getComputedStyle(document.getElementById('stage'));
       var sw = parseFloat(cs.getPropertyValue('--slide-w')) || 1280;
       var sh = parseFloat(cs.getPropertyValue('--slide-h')) || 720;
-      var s = Math.min((window.innerWidth-pad*2)/sw, (window.innerHeight-pad*2)/sh);
+      var s = Math.min((window.innerWidth-padX*2)/sw, (window.innerHeight-padY*2)/sh);
       document.getElementById('stage').style.setProperty('--scale', Math.max(0.05,s));
       document.querySelectorAll('.chart').forEach(function(el){ if(el._chart && el.clientWidth && el.clientHeight && el.getClientRects().length) el._chart.resize(); });
     },
@@ -628,6 +640,33 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
     'Pie':   '<path d="M21 12A9 9 0 1 1 12 3v9z"/>',
     'Data':  '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>'
   };
+  function installPdfActions(){
+    var download=document.getElementById('download-pdf'),print=document.getElementById('print-pdf');
+    var payload=document.getElementById('deck-pdf-payload');
+    if(!download||!print) return;
+    print.addEventListener('click',function(event){event.stopPropagation();window.print();});
+    if(payload&&payload.textContent.trim()){
+      download.hidden=false;
+      download.addEventListener('click',function(event){
+        event.stopPropagation();
+        var encoded=payload.textContent.trim(),chunks=[],step=32768;
+        for(var i=0;i<encoded.length;i+=step){
+          var binary=atob(encoded.slice(i,i+step)),bytes=new Uint8Array(binary.length);
+          for(var j=0;j<binary.length;j++)bytes[j]=binary.charCodeAt(j);
+          chunks.push(bytes);
+        }
+        var url=URL.createObjectURL(new Blob(chunks,{type:'application/pdf'}));
+        var link=document.createElement('a');
+        link.href=url;link.download=payload.dataset.filename||'deck.pdf';
+        document.body.appendChild(link);link.click();link.remove();
+        setTimeout(function(){URL.revokeObjectURL(url);},60000);
+      });
+      document.documentElement.dataset.pdfEmbedded=payload.dataset.sha256||'ready';
+    }
+    window.deckReady.then(function(state){
+      if(['ready','legacy'].includes(state.status)){print.disabled=false;if(!download.hidden)download.disabled=false;}
+    });
+  }
   document.addEventListener('DOMContentLoaded', function(){
     /* 4:3 时按比例注入匹配的打印纸张尺寸（构建者只需改 body[data-ratio] 一处）*/
     if(document.body.getAttribute('data-ratio')==='4x3'){
@@ -645,6 +684,7 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
       window.__deckFontState={status:'error',error:error.message};
       console.error('字体加载失败',error);var notice=document.createElement('div');notice.textContent='字体资源加载失败，报告尚未就绪：'+error.message;notice.style='position:fixed;top:0;left:0;right:0;background:#fff;color:#900;padding:16px;z-index:1000';document.body.appendChild(notice);throw error;
     });
+    installPdfActions();
     /* 打印事件发生时浏览器尚未必切换媒介；先显式显示所有页再量尺寸。 */
     var printState=null;
     window.addEventListener('beforeprint', function(){

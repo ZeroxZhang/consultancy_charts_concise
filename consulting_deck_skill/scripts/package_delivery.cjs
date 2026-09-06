@@ -1,0 +1,76 @@
+/* 把已验收 PDF 与定稿 HTML 打包为双格式交付；HTML 内嵌同一 PDF 供离线一键下载。 */
+const fs=require('node:fs');
+const path=require('node:path');
+const crypto=require('node:crypto');
+const {execFileSync}=require('node:child_process');
+
+function fail(message){throw Error(message)}
+function sha256(value){return crypto.createHash('sha256').update(value).digest('hex')}
+function safeName(value){
+  const name=String(value||'').trim().replace(/[<>:"/\\|?*\0-\x1f]/g,'_').replace(/\.html?$|\.pdf$/i,'').replace(/[. ]+$/,'');
+  if(!name||name==='.'||name==='..')fail('交付文件名无效');
+  return name;
+}
+function pageCountFromHtml(html){
+  return [...html.matchAll(/<section\b[^>]*\bclass=(['"])[^'"]*\bslide\b[^'"]*\1/gi)].length;
+}
+function pageCountFromPdf(file){
+  let info;
+  try{info=execFileSync('pdfinfo',[file],{encoding:'utf8'})}
+  catch(error){fail('无法读取 PDF 信息；请安装 pdfinfo 并确认 PDF 有效：'+error.message)}
+  const pages=Number(info.match(/^Pages:\s+(\d+)/m)?.[1]);
+  if(!Number.isInteger(pages)||pages<1)fail('PDF 没有有效页数');
+  return pages;
+}
+function escapeAttr(value){return String(value).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function removeExistingPayload(html){
+  return html.replace(/\n?<script\b[^>]*\bid="deck-pdf-payload"[^>]*>[\s\S]*?<\/script>\n?/gi,'\n');
+}
+function injectPdf(html,pdf,filename,sha256){
+  html=removeExistingPayload(html);
+  if(!html.includes('</body>'))fail('HTML 缺少 </body>，无法写入 PDF');
+  const tag=`<script id="deck-pdf-payload" type="application/pdf" data-filename="${escapeAttr(filename)}" data-sha256="${sha256}" data-bytes="${pdf.length}">\n${pdf.toString('base64')}\n</script>\n`;
+  return html.replace('</body>',tag+'</body>');
+}
+function validateAudit(file,{inputHtml,inputPdf,html,pdf,htmlPages,pdfPages,pdfSha256}){
+  if(!fs.statSync(file,{throwIfNoEntry:false})?.isFile())fail('缺少 S7 audit.json，不能确认 HTML 与 PDF 来自同一次验收');
+  let audit;try{audit=JSON.parse(fs.readFileSync(file,'utf8'))}catch(error){fail('无法读取 S7 audit.json：'+error.message)}
+  if(audit.geometryStatus!=='PASS'||audit.errors?.length)fail('S7 工程验收未通过，拒绝打包');
+  if(path.resolve(audit.input||'')!==inputHtml)fail('audit.json 对应另一份 HTML，拒绝打包');
+  if(audit.pages!==htmlPages||audit.pdfPages!==pdfPages)fail('audit.json 页数与当前 HTML/PDF 不一致');
+  if(audit.htmlArtifact?.sha256!==sha256(html))fail('HTML 在 S7 验收后已修改，请重新生成 PDF 并复验');
+  if(path.resolve(audit.pdfArtifact?.path||'')!==inputPdf||audit.pdfArtifact?.sha256!==pdfSha256||audit.pdfArtifact?.sha256!==sha256(pdf))fail('PDF 不是 S7 验收产物或验收后已修改');
+  return audit;
+}
+function packageDelivery({htmlFile,pdfFile,outputDir,baseName,auditFile,force=false}){
+  const inputHtml=path.resolve(htmlFile||''),inputPdf=path.resolve(pdfFile||'');
+  if(!fs.statSync(inputHtml,{throwIfNoEntry:false})?.isFile())fail('需要定稿 HTML 文件');
+  if(!fs.statSync(inputPdf,{throwIfNoEntry:false})?.isFile())fail('需要已验收 PDF 文件');
+  const html=fs.readFileSync(inputHtml,'utf8'),pdf=fs.readFileSync(inputPdf);
+  if(!pdf.subarray(0,5).equals(Buffer.from('%PDF-')))fail('输入文件不是有效 PDF');
+  const htmlPages=pageCountFromHtml(html),pdfPages=pageCountFromPdf(inputPdf);
+  if(!htmlPages)fail('HTML 中没有 .slide 页面');
+  if(htmlPages!==pdfPages)fail(`HTML 为 ${htmlPages} 页，PDF 为 ${pdfPages} 页，拒绝打包不同版本`);
+  const name=safeName(baseName||path.parse(inputHtml).name),dir=path.resolve(outputDir||'delivery');
+  const outputHtml=path.join(dir,name+'.html'),outputPdf=path.join(dir,name+'.pdf');
+  if([outputHtml,outputPdf].includes(inputHtml)||[outputHtml,outputPdf].includes(inputPdf))fail('交付输出不能覆盖输入文件，请指定独立目录或文件名');
+  if(!force&&(fs.existsSync(outputHtml)||fs.existsSync(outputPdf)))fail('交付文件已存在；确认替换时使用 --force');
+  const pdfSha256=sha256(pdf),auditPath=path.resolve(auditFile||path.join(path.dirname(inputPdf),'audit.json'));
+  validateAudit(auditPath,{inputHtml,inputPdf,html,pdf,htmlPages,pdfPages,pdfSha256});
+  const deliveredHtml=injectPdf(html,pdf,path.basename(outputPdf),pdfSha256);
+  const embedded=Buffer.from(deliveredHtml.match(/<script\b[^>]*\bid="deck-pdf-payload"[^>]*>\s*([A-Za-z0-9+/=\s]+?)\s*<\/script>/i)?.[1].replace(/\s/g,'')||'','base64');
+  if(!embedded.equals(pdf))fail('HTML 内嵌 PDF 校验失败');
+  fs.mkdirSync(dir,{recursive:true});
+  fs.writeFileSync(outputHtml,deliveredHtml);
+  fs.copyFileSync(inputPdf,outputPdf);
+  return {html:outputHtml,pdf:outputPdf,pages:htmlPages,pdfBytes:pdf.length,pdfSha256,htmlBytes:Buffer.byteLength(deliveredHtml),audit:auditPath};
+}
+
+if(require.main===module){
+  const args=process.argv.slice(2),force=args.includes('--force'),pos=args.filter(v=>v!=='--force');
+  const [htmlFile,pdfFile,outputDir,baseName]=pos;
+  if(!htmlFile||!pdfFile||!outputDir)fail('用法: node scripts/package_delivery.cjs deck.html renders/deck.pdf delivery [文件名] [--force]（PDF 同目录需有 S7 audit.json）');
+  console.log(JSON.stringify(packageDelivery({htmlFile,pdfFile,outputDir,baseName,force}),null,2));
+}
+
+module.exports={packageDelivery,injectPdf,pageCountFromHtml,pageCountFromPdf,validateAudit};

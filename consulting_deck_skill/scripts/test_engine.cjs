@@ -18,6 +18,9 @@ const {pathToFileURL}=require('node:url');
   await page.waitForFunction(()=>window.echarts&&window.EChartsRecipes&&document.querySelector('.slide.active .chart svg'));
   assert.equal(await page.locator('.slide.active .slide__page').textContent(),'3');
   assert.equal(await page.locator('.chart canvas').count(),0);
+  assert.equal(await page.locator('#download-pdf').isHidden(),true);
+  assert.equal(await page.locator('#print-pdf').isEnabled(),true);
+  assert.equal(await page.evaluate(()=>{const nativePrint=window.print;window.print=()=>{window.__printRequested=true};document.getElementById('print-pdf').click();window.print=nativePrint;return window.__printRequested}),true);
   assert.match(await page.evaluate(()=>echarts.version),/^6\./);
   assert.equal(await page.evaluate(()=>EChartsRecipes.version),'1.1.0');
   assert.equal(await page.locator('.slide.active .chart').getAttribute('data-recipe'),'rankedBar');
@@ -58,6 +61,7 @@ const {pathToFileURL}=require('node:url');
   assert.equal(await page.locator('#stage').evaluate(el=>getComputedStyle(el).width),'1024px');
   const pdf43=path.join(dir,'4x3.pdf');await page.pdf({path:pdf43,preferCSSPageSize:true,printBackground:true});
   const info=execFileSync('pdfinfo',[pdf43],{encoding:'utf8'});assert.match(info,/Pages:\s+7/);assert.match(info,/Page size:\s+768 x 576 pts/);
+  await page.emulateMedia({media:'print'});assert.equal(await page.locator('#deck-actions').evaluate(e=>getComputedStyle(e).display),'none');await page.emulateMedia({media:'screen'});
   // 实际验收后才触发的多页回退：请求第2/3页不能被初始单图计划拦截。
   const pagination=await page.evaluate(()=>{
    let root={label:'末级数据业务流程'};for(let i=8;i>=1;i--)root={label:'第'+i+'层业务处理步骤',children:[root]};

@@ -3,17 +3,17 @@
 # Consulting Deck Skill
 
 **把一份简报，变成一份咨询级的演示文稿。**
-*Turn a brief into a consulting-grade deck — as a single HTML file.*
+*Turn a brief into a consulting-grade deck — delivered as HTML and PDF.*
 
-![version](https://img.shields.io/badge/版本-v7.0-2251FF)
+![version](https://img.shields.io/badge/版本-v8.0-2251FF)
 ![claude-code](https://img.shields.io/badge/Claude%20Code-Agent%20Skill-D97757)
-![deliverable](https://img.shields.io/badge/交付-单个自包含%20HTML-E34F26)
+![deliverable](https://img.shields.io/badge/交付-HTML%20%2B%20PDF-E34F26)
 ![echarts](https://img.shields.io/badge/ECharts-6.1.0-AA344D)
 ![themes](https://img.shields.io/badge/内置主题-3%20套-6C5CE7)
 ![print](https://img.shields.io/badge/打印-PDF-374151)
 ![offline](https://img.shields.io/badge/离线模式-可用-0E9F6E)
 
-`consulting_deck_skill` 是一个 Claude Code Agent Skill：你给它简报与原始材料，它走完 **分析 → 叙事 → 视觉 → 制作 → 独立质检** 全流程，交付**一个自包含 HTML 演示文稿**——16:9 或 4:3、翻页/缩放/全屏演示、URL 深链，浏览器打印即得逐页 PDF。
+`consulting_deck_skill` 是一个 Claude Code Agent Skill：你给它简报与原始材料，它走完 **分析 → 叙事 → 视觉 → 制作 → 独立质检** 全流程，同步交付**自包含 HTML 演示文稿与同版分页 PDF**。HTML 支持 16:9 或 4:3、翻页/缩放/全屏演示、URL 深链，并可离线一键下载已验收 PDF。
 
 ![样稿预览](docs/showcase/overview-mckinsey.png)
 
@@ -25,7 +25,7 @@
 |---|---|
 | 内容、分析、排版、图表在多个工具之间来回搬运 | 一次简报，从分析到成品一条龙 |
 | 图表凭感觉画，数字来源说不清 | 每个数字落到来源，待核缺口显式保留 |
-| 交付 PPTX 要装 Office，字体、版式到处跑 | 单个 HTML 文件，浏览器即开即演示，可打印 PDF |
+| 交付 PPTX 要装 Office，字体、版式到处跑 | HTML 浏览器即开即演示，随附 PDF 直接转发和归档 |
 
 ## 核心能力
 
@@ -36,7 +36,7 @@
 - 🔤 **统一字体系统** — 衬线主标题、无衬线正文与数据；中西文字重、图表测量、字体子集和PDF嵌入共同验收。构建依赖见 [字体说明](consulting_deck_skill/references/typography_system.md)，打开成稿无需安装字体。
 - 🧾 **证据纪律** — 页面上每个数字必须来自用户素材或调研来源；仅真正合成数据标注 Illustrative，分析判断与建议分别标注。
 - 🤖 **多 agent 协作** — 调研 2–3 并行、页面设计 2–4 并行、QA 独立 1 个，各司其职。
-- 📦 **单文件交付，离线可读** — 交付物为单个 HTML；离线场景经静态 SVG 路径完整自包含，断网可读。
+- 📦 **HTML + PDF 双格式交付** — 独立 PDF 直接归档；HTML 内嵌同一份 PDF，断网可一键下载，仍保留浏览器打印入口。
 - ✅ **独立 QA** — 分析、证据、视觉、工程四类验收，逐页渲染与打印检查，Blocking/Major 问题清零才算通过。
 
 ## 效果：同一份内容，三套主题
@@ -68,6 +68,7 @@ ln -s "$(pwd)/consulting_deck_skill" ~/.claude/skills/consulting_deck_skill
 ```bash
 open consulting_deck_skill/assets/reference_deck.html          # 9 页引擎样稿，断网完整可读
 open consulting_deck_skill/assets/analysis_reference_deck.html # 6 页分析表达样稿
+open iteration_v8_delivery/delivery/consulting-deck-v8-reference.html # v8 双格式交付与一键下载样稿
 ```
 
 ## 工作流程
@@ -98,10 +99,11 @@ S0 简报 ──→ S1 资料与问题 ──→ S2 分析规划/执行/审查 �
 - **v4** — 分析表达组件：差异注释、堆积图、比较表
 - **v5** — 高密度可视化路由与 ECharts 6.1.0 标准配方
 - **v6** — 分析规划、六类方法卡与论证综合
-- **v7**（当前）— 统一字体角色、固定字体资源、离线子集、真实字形测量与字体QA
+- **v7** — 统一字体角色、固定字体资源、离线子集、真实字形测量与字体QA
+- **v8**（当前）— HTML + PDF 双格式交付、离线一键下载、交付版本一致性门禁
 
 详见各 `iteration_v*/` 归档。
 
 ## 免责声明
 
-三套主题是基于**公开视觉资料**的独立适配，并非任何咨询公司的官方内部模板。本仓库交付 HTML（可打印为 PDF），不冒称原生可编辑 PPTX。
+三套主题是基于**公开视觉资料**的独立适配，并非任何咨询公司的官方内部模板。本仓库交付 HTML 与分页 PDF，不冒称原生可编辑 PPTX。

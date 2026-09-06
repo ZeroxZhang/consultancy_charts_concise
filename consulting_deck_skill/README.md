@@ -1,6 +1,6 @@
-# consulting_deck_skill · v7
+# consulting_deck_skill · v8
 
-包含分析规划、方法匹配与论证综合的咨询reading deck技能。默认交付固定尺寸分页HTML，可打印PDF；不输出原生可编辑PPTX。
+包含分析规划、方法匹配与论证综合的咨询reading deck技能。默认同步交付固定尺寸分页HTML与同版PDF；交付HTML可离线一键下载已验收PDF，并保留浏览器打印入口。不输出原生可编辑PPTX。
 
 核心入口：`SKILL.md`。先选择analytical/exploratory/editorial深度，再做资料与问题、分析计划、实际分析及审查、storyline、视觉与制作。小任务可合并分析底稿，已确认文稿不强制重做研究。
 
@@ -20,7 +20,8 @@
 - `assets/consulting-layouts.css`：阅读型复合布局。
 - `assets/reference_deck.html`：9页可离线打开样稿（6页旧材料改版 + 3页合成图示）。
 - `scripts/build_reference_deck.cjs`：重新构建样稿。
-- `scripts/qa_deck.cjs`：逐页渲染、几何审计、PDF；目視另做。
+- `scripts/qa_deck.cjs`：逐页渲染、几何审计、生成待交付PDF；目视另做。
+- `scripts/package_delivery.cjs`：把定稿HTML与已验收PDF打包为同名双格式交付，并把同一PDF内嵌进HTML。
 
 ```bash
 # 先按下方v7说明准备Node与FONT_PYTHON构建依赖
@@ -32,8 +33,10 @@ node scripts/test_theme_browser.cjs
 node scripts/build_dense_reference.cjs dense-output
 node scripts/build_analysis_reference.cjs
 node scripts/test_engine.cjs
+node scripts/test_delivery.cjs
 node scripts/build_reference_deck.cjs
 node scripts/qa_deck.cjs assets/reference_deck.html renders
+node scripts/package_delivery.cjs deck.html renders/deck.pdf delivery 报告名
 ```
 
 浏览器脚本需要Node、Playwright和Chrome；`PLAYWRIGHT_MODULE`可指定模块路径（engine测试兼容`PLAYWRIGHT_PATH`）。
@@ -86,7 +89,7 @@ node scripts/render_echarts_svg.cjs assets/echarts-recipe-example.json chart.svg
 S2现为分析规划、执行与审查，视觉系统移至S4；S3只综合已审查发现。方法卡记录输入、步骤/公式、假设、核验、回退和来源，不能仅凭框架名称生成结论。
 分析任务的`analysis_plan.md`、`findings.md`、`content_map.md`、`analysis_review.md`在小任务中可合并为`analysis_brief.md`；editorial可直接在标题骨架中附必要核对和原文定位，无需完整编号/审查台账。关键问题有回答或明确未知，重要反证进入相关正文，目标与预测分开。
 `references/worked_example.md`演示从销售表到有限判断和验证建议，修正旧例的因果与时限跳跃。技能行为验证与限制见项目`iteration_v6_analysis/qa_report.md`。
-v6方法与文档升级未改变当时运行代码；v7运行包为7.0.0，ChartRuntime为2.0.0，字体配置1.0.0；主题仍3.0.0，ECharts仍6.1.0。
+v6方法与文档升级未改变当时运行代码；v8运行包为8.0.0，ChartRuntime为2.0.0，字体配置1.0.0；主题仍3.0.0，ECharts仍6.1.0。
 
 ## v7字体与交付一致性
 
@@ -108,3 +111,7 @@ node scripts/test_typography_browser.cjs
 ```
 
 所有构建样稿默认嵌入字体；build_reference_deck/build_analysis_reference/build_dense_reference可用 `--typography=serif-playfair`。SSR输出仍是依赖字体的SVG文字，需嵌入已打包同配置的HTML。QA检查实际字体身份、字体加载失败、数字等宽、PDF字体嵌入和冷缓存断网版式；仍需逐页目视。字体测试包括test_typography、test_font_metrics、test_typography_browser和test_svg_scaling。
+
+## v8 双格式交付
+
+S7由 `qa_deck.cjs` 生成并验收分页PDF；S8再由 `package_delivery.cjs` 输出同名HTML与PDF。交付HTML中的“下载分页 PDF”直接下载该PDF的内嵌副本，断网可用且字节一致；“打印 / 另存 PDF”用于临时打印。修改定稿HTML后必须重新生成、验收并打包PDF。完整契约见 `references/delivery_system.md`。
