@@ -1,3 +1,4 @@
+const frame=require('./apply_frame.cjs');
 /* 六页合成数据验证稿；复制既有引擎并内联SVG/HTML，保留导航与打印。 */
 const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..'),kit=require('../assets/exhibit-kit.js'),themes=require('../assets/deck-themes.js');
@@ -10,7 +11,7 @@ const ex=(title,unit,body,note)=>`<div class="exhibit"><h2>${title}</h2><div cla
 const paired=(a,b)=>`<div class="layout-paired">${a}${b}</div>`;
 const slides=[];
 function page(title,lead,body,decision){
-  const n=slides.length+1;slides.push(`<section class="slide reading analytical${n===1?' active':''}" data-arch="D-04"><div class="slide__tracker">分析表达升级 · ${String(n).padStart(2,'0')}</div><div class="slide__sticker">${n===5?'建议 · 非执行承诺':'示意数据 · 非真实结论'}</div><h1 class="slide__title">${title}</h1><div class="slide__lead">${lead}</div><div class="slide__body">${body}<div class="decision-strip">${decision}</div></div><div class="source">来源：本技能合成数据与流程建议，仅用于验证表达方式；前后对照源于本项目v3组件，非think-cell官方样例。</div><div class="slide__page">${n}</div></section>`);
+  const n=slides.length+1;slides.push(`<section class="slide reading analytical${n===1?' active':''}" data-arch="D-04">${frame.markup}<div class="slide__tracker">分析表达升级 · ${String(n).padStart(2,'0')}</div><div class="slide__sticker">${n===5?'建议 · 非执行承诺':'示意数据 · 非真实结论'}</div><header class="slide__header"><h1 class="slide__title">${title}</h1><div class="slide__lead">${lead}</div></header><div class="slide__body">${body}<div class="decision-strip">${decision}</div></div><div class="source">来源：本技能合成数据与流程建议，仅用于验证表达方式；前后对照源于本项目v3组件，非think-cell官方样例。</div><div class="slide__page">${n}</div></section>`);
 }
 page('净减少0.8亿元，可直接从贡献桥读出','相同数据、同一尺寸：在贡献分解之外，把起止净变化和相对变化放在图内。',paired(
   ex('基础版本｜贡献柱已闭合','收入，亿元',baseline.svg[themeId].waterfall,'起止值11.2和10.4都可见，净差额与变化率需要读者自行换算。'),
@@ -46,6 +47,6 @@ html=html.replace("if(!window.echarts){ document.body.classList.add('no-charts')
 html=themes.apply(html,themeId);
 // 旧快照仍比较原始图形设计；统一文字字体以避免混淆两种变量。
 html=html.replace(/font-family:Arial,'PingFang SC','Microsoft YaHei',sans-serif/g,'font-family:'+typography.get(profile).body);
-html=pack(html,{profile});
+html=pack(frame.apply(html),{profile});
 const output=path.resolve(args.find(v=>!v.startsWith('--'))||path.join(root,'assets/analysis_reference_deck.html'));
 fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,html);console.log(`6页分析样稿 → ${output}`);

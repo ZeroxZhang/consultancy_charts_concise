@@ -41,6 +41,30 @@ const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
     const changedPdfAudit=path.join(dir,'changed-pdf-audit.json');fs.writeFileSync(changedPdfAudit,JSON.stringify({...audit,pdfArtifact:{...audit.pdfArtifact,path:changedPdf}}));
     assert.throws(()=>packageDelivery({htmlFile:source,pdfFile:changedPdf,auditFile:changedPdfAudit,outputDir:path.join(dir,'bad')}),/PDF 不是 S7 验收产物/);
 
+    const reviewFile=path.join(dir,'review.json');
+    const review={status:'complete',reviewer:'自动测试夹具，不代表实际目视',independence:'author',htmlSha256:audit.htmlArtifact.sha256,pdfSha256:audit.pdfArtifact.sha256,checks:{analysis:{status:'not_applicable',basis:'运行契约测试夹具'},evidence:{status:'not_applicable',basis:'运行契约测试夹具'},visual:{status:'pass',basis:'模拟状态，仅用于测试校验行为'}},issues:[]};
+    const opts={htmlFile:source,pdfFile:pdf,outputDir:path.join(dir,'review-tests')};
+    assert.throws(()=>packageDelivery(opts),/缺少成稿 review/);
+    const preview=packageDelivery({...opts,preview:true});
+    assert.equal(preview.status,'preview');assert.match(preview.html,/-preview\.html$/);
+    assert.match(fs.readFileSync(preview.html,'utf8'),/<title>预览 · /);
+    const variedHtml=fs.readFileSync(source,'utf8').replace('<head>','<HEAD data-build="test">').replace('<title>','<TITLE lang="zh-CN">');
+    const variedSource=path.join(dir,'varied.html');fs.writeFileSync(variedSource,variedHtml);
+    const variedAudit=path.join(dir,'varied-audit.json');fs.writeFileSync(variedAudit,JSON.stringify({...audit,input:variedSource,htmlArtifact:{...audit.htmlArtifact,path:variedSource,sha256:digest(variedHtml)}}));
+    const varied=packageDelivery({...opts,htmlFile:variedSource,auditFile:variedAudit,outputDir:path.join(dir,'varied'),preview:true});
+    const variedOutput=fs.readFileSync(varied.html,'utf8');assert.match(variedOutput,/<meta name="deck-delivery-status" content="preview">/);assert.match(variedOutput,/<TITLE lang="zh-CN">预览 · /);
+    assert.throws(()=>packageDelivery({...opts,auditFile:failedAudit,preview:true,baseName:'failed-preview'}),/工程验收未通过/);
+    for(const [mutation,pattern] of [
+      [{...review,htmlSha256:'old'},/旧版/],
+      [{...review,checks:{...review.checks,visual:{status:'not_applicable',basis:'未看图'}}},/visual/],
+      [{...review,checks:{...review.checks,evidence:{status:'fail',basis:'数据待核'}}},/evidence/],
+      [{...review,issues:[{severity:'major',status:'open',description:'主图缺失'}]},/未解决/],
+      [{...review,reviewer:''},/审查者/]
+    ]){fs.writeFileSync(reviewFile,JSON.stringify(mutation));assert.throws(()=>packageDelivery(opts),pattern);}
+    fs.writeFileSync(reviewFile,JSON.stringify({...review,issues:[{severity:'minor',status:'open',description:'不影响阅读的样式偏好'}]}));
+    const allowedMinor=packageDelivery({...opts,baseName:'minor'});assert.equal(allowedMinor.status,'complete');
+    fs.writeFileSync(reviewFile,JSON.stringify(review));
+
     const result=packageDelivery({htmlFile:source,pdfFile:pdf,outputDir:path.join(dir,'delivery'),baseName:'董事会报告'});
     assert.equal(result.pages,9);
     assert.match(execFileSync('pdfinfo',[result.pdf],{encoding:'utf8'}),/Pages:\s+9/);
@@ -73,6 +97,6 @@ const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
     await page.emulateMedia({media:'print'});
     assert.equal(await page.locator('#deck-actions').evaluate(e=>getComputedStyle(e).display),'none');
     assert.deepEqual(errors,[]);
-    console.log('PASS: HTML + PDF 双格式、S7审计/页数/覆盖门禁、离线一键下载、字节一致、打印隐藏与状态保持。Outputs: '+dir);
-  }finally{await browser.close()}
+    console.log('PASS: HTML + PDF 双格式、S7审计/页数/覆盖门禁、离线一键下载、字节一致、打印隐藏与状态保持。临时产物已清理。');
+  }finally{await browser.close();fs.rmSync(dir,{recursive:true,force:true});}
 })().catch(error=>{console.error(error);process.exitCode=1});

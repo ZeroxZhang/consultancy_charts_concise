@@ -11,7 +11,9 @@ assert.equal(byId.get('D-GROWTH').value,(byId.get('D-Y2025').value/byId.get('D-Y
 assert.equal(data.regions.reduce((n,r)=>n+r.value,0),byId.get('D-Y2025').value);
 for(const theme of themes.ids){
  const result=build(path.join(tmp,theme),theme);
- assert.equal(result.pages,6);assert.doesNotMatch(result.html,/<script\s+src=/);assert.doesNotMatch(result.html,/NaN|Infinity/);
+ // 字体子集的 base64 可能偶然包含“NaN”字符，不是页面中的非有限数值；只扫描可解释的 HTML/CSS/SVG。
+ const inspectable=result.html.replace(/<style\b[^>]*id="deck-fonts"[^>]*>[\s\S]*?<\/style>/g,'');
+ assert.equal(result.pages,6);assert.doesNotMatch(result.html,/<script\s+src=/);assert.doesNotMatch(inspectable,/NaN|Infinity/);
  for(const p of result.plans)for(const id of p.evidence_ids)assert.ok(byId.has(id),'页面孤立证据 '+id);
  const rankModule=result.plans[1].modules[0],rank=render({recipe:rankModule.recipe,spec:rankModule.spec,width:588,height:460,theme_id:theme});
  const tableRows=rank.pages.flatMap(p=>p.table.rows);assert.equal(tableRows.length,24);assert.equal(new Set(tableRows.map(r=>r[0])).size,24);
