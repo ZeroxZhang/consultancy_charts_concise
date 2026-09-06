@@ -2,13 +2,14 @@
 name: consulting-deck-skill
 description: >-
   制作与迭代咨询风格的战略汇报、董事会材料、研究型 reading deck 和商业演示。
-  从简报、大量原始数据或文本证据与 storyline 出发，选择并生成高密度复合图表、表格和关系图，
-  将输入结构、读者比较任务、图型与渲染路径显式匹配后生成固定尺寸分页 HTML，
-  并执行逐页渲染、证据与视觉验收。适用于咨询级 PPT/deck、McKinsey/BCG/Accenture
+  从简报、原始数据、文本资料或已确认文稿出发，按任务深度规划议题、匹配商业/行业/财务/
+  数据分析方法，执行分析并综合证据、反证和结论，再组织 storyline 与全篇内容，
+  生成高密度复合图表和固定尺寸分页 HTML，执行分析、证据、视觉与工程验收。适用于
+  咨询级 PPT/deck、McKinsey/BCG/Accenture
   风格材料；默认交付 HTML，可打印 PDF，不冒称原生可编辑 PPTX。
 ---
 
-# 咨询 deck 制作技能 · v5
+# 咨询分析与 deck 制作技能 · v6
 
 目标是让决策者能独立读懂、核对并采取行动。公开咨询演示稿是参考样本，
 不是内部模板或“顶级质量”的认证。保留现有分页引擎，优先改进论证与信息设计。
@@ -17,6 +18,9 @@ description: >-
 
 - **一页一个主判断，可以有多个证据模块。** 不把“一页一观点”误写成一图、五条要点或固定两栏。
 - **密度是有效证据的密度。** 不靠缩字、重复标题、加装饰图或虚构数字填空。
+- **先明确问题、执行分析，再形成结论与页面。** 研究中的初步答案是可推翻假设；表达时才把有证据的答案前置。贡献分解不等于因果，期望目标不等于预测。
+- **方法按业务问题匹配。** 分析方法ID与图型ID分开；不以模型数量、名气或主题品牌决定采用。
+- **重要内容有去向。** 来源→议题→分析任务→发现→正文/附录可追溯；不采用有理由，关键反证影响相关结论。
 - **大量输入先结构化再图示化。** 先识别数据表、时间序列、矩阵、层级、节点边、任务责任或文本论证结构，再按读者操作选图；材料多本身不是使用复杂图的理由。
 - **分析表达优先。** 借鉴 think-cell 的数据标注、对齐和结构表达；是否采用取决于读者的比较任务，不设风格覆盖率或复杂图配额。
 - **数据和判断分开。** 数据记录来源、时间、单位、分母、范围和核验状态；计算记录公式。
@@ -30,21 +34,24 @@ description: >-
 
 | 阶段 | 输出 | 进入下一阶段的条件 |
 |---|---|---|
-| S0 简报 | brief.md | 明确受众、要做的决定、reading/presentation、范围、素材、截止日期 |
-| S1 证据与输入建模 | source_inventory.json + evidence.json + research_notes.md | 原始材料有清单；主判断有原子证据；输入结构、缺口、推断和口径差异显式列出 |
-| S2 视觉系统 | visual_spec.md | 语义色登记表、字号、页面预算、媒介与依赖模式明确 |
-| S3 storyline | ghost_deck.md | 主判断→证据→决策的横向链闭合；必要的新方向已向用户确认 |
-| S4 分页与选型 | page_plan.md | 每页确定证明责任、证据模块、关系、主视觉、候选图及布局 |
+| S0 简报与模式 | brief.md | 明确受众、理解/决策目标、范围、analytical/exploratory/editorial及媒介 |
+| S1 资料与初步问题 | source_inventory.json + evidence.json + research_notes.md | 材料可定位、关键口径和未知已识别，足以制定分析计划；定向研究继续迭代 |
+| S2 分析规划、执行与审查 | analysis_plan.md + findings.md + content_map.md + analysis_review.md | 方法适配且已执行；结果可复核；关键问题有回答或明确未知；无未解决Blocking/Major |
+| S3 综合与storyline | ghost_deck.md | 问题→发现→证据/边界→决策或研究结论闭合；重要材料有去向 |
+| S4 视觉系统、分页与选型 | visual_spec.md + page_plan.md | 在内容骨架基础上确定语义色、预算、证明责任、主视觉与布局 |
 | S5 页面规格 | page_specs.md | 证据充分、几何编码合法、内容预算能装下、无重复占位模块 |
 | S6 制作 | deck.html | 复用引擎、运行图示组件、逐页截图与打印检查 |
-| S7 独立 QA | qa_report.md + renders/ | 内容、视觉、工程分别验收；Blocking/Major 为零才称通过 |
-| S8 交付 | HTML、预览、QA 与限制 | 交付可打开文件，准确说明在线/离线、核验范围与遗留项 |
+| S7 独立 QA | qa_report.md + renders/ | 分析、证据、视觉、工程分别验收；Blocking/Major 为零才称通过 |
+| S8 交付 | HTML、预览、分析底稿、QA与限制 | 交付可打开文件；准确说明核验、依赖、未知及遗留项 |
+
+表中完整产物适用于分析任务。editorial仅在标题骨架中记录范围、必要核对/修正/未决项及原文段落到页面去向，不强制议题树、Q/T/F/E台账、逐值JSON或逐行AQ表；小型分析可合并为analysis_brief.md。详见分析规划。阶段是依赖关系，发现新证据可返回受影响任务，不一次冻结所有结论。
 
 ### S0 · 输入与媒介
 
 先读取已有简报及用户素材，仅追问会改变结果的缺项；不机械重复问卷。
 - 深度行业研究、董事会预读：默认 **reading deck**；现场讲解明确时用 presentation。
-- 记录：受众、决定、核心问题、素材清单、语言、品牌、页数范围、尺寸、数据截止日期。
+- 记录：受众、理解/决策目标、核心问题、素材清单、语言、品牌、页数范围、尺寸、数据截止日期。
+- 读取 `references/analysis_planning.md`，按范围选择 `work_mode: analytical|exploratory|editorial`；原始材料走分析，开放研究允许先探索，已确认文稿保留轻量路径。
 - 默认中文跟随用户、16:9 1280×720；页数由论证决定，不为达到10–30页而填充。
 - 当前引擎允许 CDN 依赖；S0 区分 online-single-file 与 offline-self-contained。
   前者是单文件入口但需要网络；后者必须把库内联或把图表静态化并断网复测。
@@ -59,10 +66,10 @@ description: >-
 - brief.md记录 `theme_id: mckinsey|bcg|accenture`、`theme_version: 3.0.0`、`selection_basis: explicit|inherited|default`、`overrides: {}`。未填写ID默认mckinsey，非法ID报错。
 - 中途更改主题：更新brief/visual_spec，保留实体→cat索引，重新生成所有SVG、ECharts、表格、截图/PDF并复验。最终交付锁定一套主题，用户未要求时不额外加界面选择器。
 
-### S1 · 以证明责任组织研究
+### S1 · 资料盘点与初步问题
 
 可并行派2–3个研究代理处理独立主题，使用 `assets/subagent_prompts.md`；主会话核验关键事实。
-先列“需要什么证据才能让这个标题成立”，再搜索，不以每主题凑10条事实代替研究。
+围绕理解/决策问题及竞争解释识别已有证据和缺口；定向搜索同时寻找支持与反证。初步答案标工作假设，不用先定标题再挑材料；不以每主题凑事实条数代替分析。
 每个证据项遵守 `references/evidence_design.md` 的契约，尤其检查：
 同一期间/范围/指标才可直接排名；公司样本不能替代行业；相关不证明因果。
 报告发布日期在截止日期之后的资料不得用于当时视角的事实。
@@ -70,7 +77,26 @@ description: >-
 用户提供大量文件时先生成`source_inventory.json`：文件/表/工作表、范围或页码、行列数、字段、单位、时间粒度、主键候选、缺失/异常、可抽取关系与处理状态。文本按主张/证据/反证/边界/来源定位拆分；只有明确语料范围和编码规则后，文本频次才能进入统计图。
 对每组可视化候选数据标记`input_shape: I-01..I-15`和`comparability`；未知口径不得进入共轴、排序、相减、份额、流量或同一色阶。
 
-### S2 · 视觉系统
+### S2 · 分析规划、执行与审查
+
+以下完整步骤用于analytical/exploratory；editorial按分析规划中的最小交付核对已确认内容，只在局部问题需要时使用对应方法。
+
+1. 按 `references/analysis_planning.md` 建立议题Q、分析任务T和优先级；先记录分析蓝图，不要求用户逐阶段签字。
+2. 读取 `references/framework_router.md`，按问题、业务机制、数据和假设选方法，只读相关卡。每项任务写输入/口径、步骤、预期输出、反证条件及采用/淘汰理由。
+3. 实际执行计算、编码、对比或模型，保存可复算底稿；在findings.md记录发现F、推理、证据、替代解释、可信度、限制和改变判断的条件。资料不足可完成缺口诊断，不能伪造模型结果。
+4. content_map.md登记重要资料的议题/发现、作用、正文/附录/待补/不采用去向及理由；S3确定页码。关键反证必须影响结论。
+5. 按 `references/analysis_review.md` 执行AQ-01…10；复杂分析或重大建议使用独立分析审查代理，模板见 `assets/subagent_prompts.md`。无独立工具准确记录作者自检。
+6. 只有ready或ready_with_limits进入S3；后者意味着限制已写入允许表达的结论，不允许保留依赖未知前提的确定推荐。发现与计算会改变时同步更新下游。
+
+### S3 · storyline
+
+读取 `references/storyline_method.md`，按NT方法选择叙事。
+分析任务从已审查的findings综合；editorial从已确认文稿和必要核对结果组织：受众问题 → 有依据的答案/未知 → 支撑论点 → 证据与反证/边界 → 行动或后续研究。没有分析结果时不把计划当结论。
+SCQA 是可选叙事框架，不强行用前三页铺背景。
+分析任务的关键标题下标 question_id、finding_id、evidence_ids；editorial用原文段落定位和必要计算即可，不要求生成分析编号。标题的语气不得超过证据强度；研究报告允许以开放问题组织未知。
+向用户呈现简洁骨架；已有完整自主制作授权时记录采用的骨架继续，缺少关键方向才等待回答。
+
+### S4 · 视觉系统、分页与图表选型
 
 读取 `references/color_and_type.md` 与 `references/slide_anatomy.md`；品牌依据见 `references/theme_research.md`。
 从 `assets/deck-themes.js` 读取选定主题，作为CSS、SVG和ECharts唯一色值来源；不得混用三套主题。
@@ -78,20 +104,10 @@ description: >-
 把实体与颜色写进登记表；增长方向与经营好坏分开。标题、图注、Source 要在打印尺寸可读。
 先定义标题区/证据区/来源区的几何预算，再选组件；不从一组巨大 KPI 卡开始套版。
 
-### S3 · storyline
-
-读取 `references/storyline_method.md`、必要时 `references/logic_frameworks.md`。
-写：受众决定 → 暂定答案 → 3–5个支撑论点 → 每页判断与证据 → 风险/边界 → 行动。
-SCQA 是可选叙事框架，不强行用前三页铺背景。
-每个标题下标 evidence_id；标题的语气不得超过证据强度。
-向用户呈现简洁骨架；已有完整自主制作授权时记录采用的骨架继续，缺少关键方向才等待回答。
-
-### S4 · 分页与图表选型
-
 读取 `references/chart_matching.md`、`references/layout_templates.md`、
 `references/exhibit_system.md` 与 `references/analysis_exhibits.md`，按需读取 `references/chart_cards.md` 对应 B 编号。
 每页记录：
-`页号 | 主判断 | 证明责任 | 证据ID | 输入结构I编号 | 读者操作A编号 | 模块关系 | 候选图型 | render_route | recipe/B编号 | 布局 | 密度与标签计划 | 回退触发器 | 候选/淘汰理由`。
+`页号 | 主判断 | 议题/发现ID或editorial原文定位 | 证明责任 | 证据ID | 输入结构I编号 | 读者操作A编号 | 模块关系 | 候选图型 | render_route | recipe/B编号 | 布局 | 密度与标签计划 | 回退触发器 | 候选/淘汰理由`。
 
 先做可比性门禁，再按`输入结构 → 读者操作 → 候选图型 → 页面组合 → 实现路径 → 容量回退`路由。通常比较2–3种合理图型；唯一明确适配时直接采用。没有柱条线占比、饼图配额或复杂图配额。
 主动考虑：哑铃/坡度/子弹图、区间图、Mekko、热力矩阵、小倍数、驱动树、泳道、决策树、
@@ -102,7 +118,7 @@ SCQA 是可选叙事框架，不强行用前三页铺背景。
 ### S5 · 逐页设计
 
 按 `references/evidence_design.md` 页面规格填写完整数据与解释。
-独立页面批次可交2–4个设计代理；主会话统一术语、语义色和数据口径。
+独立页面批次可交设计代理；主会话统一术语、语义色和数据口径。发现证据不足或结论矛盾，定位受影响F/T或原文段落退回必要分析/核对，不为“保持标题”强行制作。
 每页必须具备：
 1. 主判断、可信度、适用范围与读者要回答的问题；
 2. 不重复的证据模块，每块的“子结论—数据/机制—来源—含义”；
@@ -129,7 +145,8 @@ reading 正文通常2–4个证据模块，但单个完整主展品也可以；�
 
 ### S7 · 独立质量验收
 
-交给未参与制作的 QA 代理：成稿、证据库、视觉规范、`references/workflow_qa.md`、截图和PDF。
+交给未参与制作的 QA 代理：成稿、分析底稿与发现、内容覆盖、证据库、视觉规范、`references/workflow_qa.md`、截图和PDF；editorial用原文定位与必要核对记录替代完整分析台账。
+复核最终标题是否保留S2的证据边界、关键反证与目标/预测区别；分析状态按AQ报告，不能用视觉通过替代。
 不给作者自评分或“已经修好”的结论。代理必须独立阅读图像；工具看不到图时视觉状态为“未验收”。
 每页评估：证据充分性、阅读层级、布局/重心、编码与配色、图表完成度（评分锚点见QA）。
 按 `references/analysis_exhibits.md` 检查表达收益、注释计算与小片标签完整性；“很像think-cell”不能替代正确与可读。
@@ -139,6 +156,9 @@ Blocking/Major 修复后复验；无法修复则明确不通过，不将未目�
 
 ## 按需参考
 
+- 分析规划与模式：`references/analysis_planning.md`；模型按问题检索：`references/framework_router.md`
+- 方法卡：`references/business_industry_methods.md`、`references/strategy_operations_methods.md`、`references/financial_methods.md`、`references/data_methods.md`（仅按路由读取）
+- 分析门禁与行为验证：`references/analysis_review.md`
 - 证据与密度：`references/evidence_design.md`；`references/slide_anatomy.md`
 - 布局与组件：`references/layout_templates.md`；`references/exhibit_system.md`
 - 高密度输入、选图与编码：`references/chart_matching.md`；`references/chart_cards.md`

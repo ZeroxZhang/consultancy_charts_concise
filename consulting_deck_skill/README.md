@@ -1,10 +1,13 @@
-# consulting_deck_skill · v5
+# consulting_deck_skill · v6
 
-论证驱动的咨询reading deck技能。默认交付固定尺寸分页HTML，可打印PDF；不输出原生可编辑PPTX。
+包含分析规划、方法匹配与论证综合的咨询reading deck技能。默认交付固定尺寸分页HTML，可打印PDF；不输出原生可编辑PPTX。
 
-核心入口：`SKILL.md`。先读用户简报，再做证据、storyline、语义色、复合页、制作及独立目视QA。
+核心入口：`SKILL.md`。先选择analytical/exploratory/editorial深度，再做资料与问题、分析计划、实际分析及审查、storyline、视觉与制作。小任务可合并分析底稿，已确认文稿不强制重做研究。
 
 核心资源：
+- `references/analysis_planning.md`：分析蓝图、Q/T/F/E追溯、内容去向与三种任务深度。
+- `references/framework_router.md`：按业务问题检索六类方法；对应商业/行业、战略/经营、财务、数据与叙事卡按需加载。
+- `references/analysis_review.md`：AQ-01…10分析验收与技能行为验证。
 - `references/evidence_design.md`：证据与页面规格契约。
 - `references/chart_matching.md`：15类输入结构、16类读者操作、文本结构与实现路径的高密度可视化路由。
 - `references/exhibit_system.md`：ECharts 6配方、SSR与10个SVG、1个HTML比较表API。
@@ -75,3 +78,10 @@ node scripts/render_echarts_svg.cjs assets/echarts-recipe-example.json chart.svg
 
 本轮补齐运行契约：真实渲染后的文字验收、小画布全量表格/分页、零值与负值、比例几何、桑基闭合和三主题热力反差。CLI多页需`--paginate`，浏览器需安排所有`data-recipe-page`；表也装不下时明确报错，不丢掉记录。
 六页大量输入样稿包含原子证据、派生公式和最终选型理由；它是固定合成材料的端到端验收，不是通用文件抽取或自动语义推荐器。粗映射仍由作者按实际材料和读者任务应用。
+
+## v6分析规划与内容综合
+
+S2现为分析规划、执行与审查，视觉系统移至S4；S3只综合已审查发现。方法卡记录输入、步骤/公式、假设、核验、回退和来源，不能仅凭框架名称生成结论。
+分析任务的`analysis_plan.md`、`findings.md`、`content_map.md`、`analysis_review.md`在小任务中可合并为`analysis_brief.md`；editorial可直接在标题骨架中附必要核对和原文定位，无需完整编号/审查台账。关键问题有回答或明确未知，重要反证进入相关正文，目标与预测分开。
+`references/worked_example.md`演示从销售表到有限判断和验证建议，修正旧例的因果与时限跳跃。技能行为验证与限制见项目`iteration_v6_analysis/qa_report.md`。
+本轮方法与文档升级不改变图表运行代码；runtime package版本仍为5.0.0，主题仍为3.0.0，ECharts仍为6.1.0。

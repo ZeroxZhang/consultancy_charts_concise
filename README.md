@@ -33,7 +33,7 @@ Data flow: `research_notes` (evidence) → `report` (methodology) → `skill` (e
 ## 核心特性 · Highlights
 
 - **分页 HTML 与离线交付** / Paginated HTML & offline delivery — 16:9（1280×720）或 4:3；分页、缩放、演示、打印、URL 深链已实测。离线模式要求关键内容完整，不以“图表不可用”提示作为通过。
-- **论证驱动的工作流** / Argument-driven workflow — S0 简报 → S1 调研 → S2 视觉规范 → S3 storyline → S4 分页 → S5 逐页设计 → S6 制作 → S7 独立 QA → S8 交付，每阶段有门禁。
+- **论证驱动的工作流** / Argument-driven workflow — S0 简报/模式 → S1 资料/问题 → S2 分析规划/执行/审查 → S3 storyline → S4 视觉/分页 → S5 逐页设计 → S6 制作 → S7 独立 QA → S8 交付，每阶段有门禁。
 - **多 agent 协作** / Multi-agent collaboration — 调研 2–3 并行、页面设计 2–4 并行、QA 独立 1 个（模板见 `assets/subagent_prompts.md`）。
 - **证据纪律** / Evidence discipline — 页面上每个数字必须来自用户素材或调研来源，否则保留待核缺口；仅真正合成数据标 Illustrative，分析判断与建议分别标注。
 - **图表与图标** / Charts & icons — ECharts 6.1.0 + 9种标准配方 + Node静态SVG渲染；ExhibitKit处理瀑布、Mekko等咨询展品；IconPark离线降级到内置SVG迷你集。
@@ -72,13 +72,15 @@ cp -R consulting_deck_skill ~/.claude/skills/consulting_deck_skill
 |---|---|---|
 | S0 简报 Brief | `brief.md` | 受众、要做的决定、reading/presentation、范围、素材、截止日期明确 |
 | S1 证据与输入建模 Evidence | `source_inventory.json` + `evidence.json` + `research_notes.md` | 原始材料有清单；输入结构、缺口、推断、口径差异显式列出 |
-| S2 视觉系统 Visual system | `visual_spec.md` | 语义色登记表、字号、页面预算、依赖模式明确 |
-| S3 storyline | `ghost_deck.md` | 主判断→证据→决策的横向链闭合 |
-| S4 分页与选型 Pagination | `page_plan.md` | 每页证明责任、证据模块、主视觉与候选图确定 |
+| S2 分析 Analysis | `analysis_plan.md` + `findings.md` + `content_map.md` + `analysis_review.md` | 方法适配且实际执行；关键问题有答案或明确未知，重大分析问题已处理 |
+| S3 storyline | `ghost_deck.md` | 问题→发现→证据/边界→决策或研究结论闭合 |
+| S4 视觉与分页 Visual/pagination | `visual_spec.md` + `page_plan.md` | 内容骨架稳定后确定语义色、预算、证明责任和图型 |
 | S5 页面规格 Page specs | `page_specs.md` | 证据充分、几何编码合法、内容预算可装下 |
 | S6 制作 Build | `deck.html` | 复用引擎、逐页截图与打印检查 |
-| S7 独立 QA | `qa_report.md` + `renders/` | 内容、视觉、工程分别验收；Blocking/Major 为零才称通过 |
+| S7 独立 QA | `qa_report.md` + `renders/` | 分析、证据、视觉、工程分别验收；Blocking/Major 为零才称通过 |
 | S8 交付 Deliver | HTML、预览、QA 与限制 | 交付可打开文件，准确说明在线/离线、核验范围与遗留项 |
+
+原始材料选analytical，开放研究选exploratory，已确认文稿选editorial；小型分析的S2产物可合并为analysis_brief.md；editorial可将必要核对、限制与原文定位直接附于标题骨架，不强制完整台账。方法入口见[framework_router.md](consulting_deck_skill/references/framework_router.md)。
 
 ## 验证脚本 · Verification Scripts
 
@@ -106,6 +108,8 @@ cp -R consulting_deck_skill ~/.claude/skills/consulting_deck_skill
 - **v4** — 按信息任务借鉴think-cell的分析表达：数据派生注释、堆积图、Mekko完整标签回退、比较表与阶段门禁；六页对照样稿和验收见 `iteration_v4_thinkcell/`。Information-led analytical exhibits, computed annotations, complete label fallback and comparison tables.
 - **v5** — 面向大量数据与文本的可视化路由：输入结构→读者操作→候选图→实现路径→容量回退；引入ECharts 6.1.0、标准配方和Node静态SVG路径。Dense-input visualization routing, validated ECharts recipes, and build-time SVG rendering.
 - **v5 复核迭代** — 共用ChartRuntime补齐真实文字验收、完整表格分页、比例/零值/负值与主题校验；1,152条明细、42段文本的六页实测及独立验收见 [`iteration_v5_validation/qa_report.md`](iteration_v5_validation/qa_report.md)。选型映射是作者指引，不冒称通用自动语义推荐。
+
+- **v6** — 补齐问题→分析任务→方法→结果→论证与内容覆盖，六类方法按需加载；分析验收先于视觉，已确认文稿保留轻量路径。记录与验证见 [`iteration_v6_analysis/qa_report.md`](iteration_v6_analysis/qa_report.md)。
 
 ## 免责声明 · Disclaimer
 

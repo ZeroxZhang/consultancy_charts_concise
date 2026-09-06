@@ -21,10 +21,19 @@ verified 必须打开原始来源且找到对应数字；摘要命中只能是un
 derived 必须给输入ID和公式；estimate 必须给假设与区间；synthetic明确虚构。
 没有可靠来源时保留null与缺口，禁止填“合理数值”。
 
+## 与分析底稿的连接
+
+S1原始证据用于S2分析；不能从证据条数直接跳到建议。按 [analysis_planning.md](analysis_planning.md) 建立Q议题、T任务、F发现及content_map。
+关键发现记录evidence_ids与实际计算/编码位置；派生证据保留输入ID与公式。来源状态与推断可信度分开：verified事实仍可能支撑不了因果或预测。
+user-provided不自动变verified；synthetic输入派生的结果须继续注明合成来源（可用derived加synthetic来源标记），不能因计算正确冒充真实业务证据。
+页面规格增加question_ids、finding_ids，关键标题的限定来自对应F；目标和预测单列。editorial以原文段落定位、重要数字公式与必要修正完成追溯，不要求Q/T/F编号、逐值JSON或单独分析底稿。
+
 ## 页面规格契约
 
 ```yaml
 page: P08
+question_ids: [Q-02]
+finding_ids: [F-03] # 在分析底稿中定义，并回溯任务与证据
 mode: reading
 claim: 不同出海业务的增长信号提示分层研究，尚不足以直接排投资优先级
 evidence_ids: [E01, E02, E03]
