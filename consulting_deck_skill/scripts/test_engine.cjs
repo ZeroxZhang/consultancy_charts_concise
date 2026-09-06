@@ -72,6 +72,6 @@ const {pathToFileURL}=require('node:url');
   });
   assert.ok(pagination.slice(0,3).every(p=>!p.error&&p.kind==='table'));assert.equal(pagination.slice(0,3).flatMap(p=>p.rows).length,9);assert.match(pagination[3].error,/3页/);
   assert.deepEqual(errors,[]);
-  console.log('PASS: ECharts 6 recipe, signed waterfall geometry, total closure, SVG, #3, G/Escape, resize, print restoration, 16:9 and 4:3 PDFs. Outputs: '+dir);
- } finally {await browser.close();}
+  console.log('PASS: ECharts 6 recipe, signed waterfall geometry, total closure, SVG, #3, G/Escape, resize, print restoration, 16:9 and 4:3 PDFs. 临时产物已清理。'+'');
+ } finally {await browser.close();fs.rmSync(dir,{recursive:true,force:true});}
 })().catch(e=>{console.error(e);process.exitCode=1;});

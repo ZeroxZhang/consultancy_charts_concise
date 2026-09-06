@@ -1,14 +1,16 @@
 # 证据架构与信息密度
 
+> v9适用原则：下列字段、编号、评分和布局预算用于复杂任务的按需参考，可合并或省略不影响结果的过程记录。分析/编码正确、核心内容可读完整与同版交付是底线；默认阈值和作者选择的区别见 [开放创作](open_authoring.md)。
+
 ## 大量原始材料的预处理
 
 高密度输入先建立清单，再写页面。数据文件记录表名/工作表、行列数、主键候选、字段类型、单位、时间粒度、缺失和异常；文本文件记录文档、章节/页码、对象、时间、可抽取的主张/引文及是否可系统编码。
 
-不要把整份表或整段文本作为一个证据项。拆成原子证据后，额外标记其可进入的输入结构`I-01…I-15`（见`chart_matching.md`），以及可与哪些证据共轴、相减、聚合或建立关系。无法判断口径时先标`comparability: unknown`，禁止进入排名、差异和同色阶图。
+不要把整份表或整段文本作为一个证据项。关键证据定位到原文或行；复杂展品可额外标记输入结构`I-01…I-15`（见`chart_matching.md`），以及可与哪些证据共轴、相减、聚合或建立关系。无法判断口径时先标`comparability: unknown`，禁止进入排名、差异和同色阶图。
 
 ## 证据契约
 
-`evidence.json` 为对象数组，每项至少包含：
+需要详细证据库时，`evidence.json`可采用对象数组；以下为重要量化证据的示例，而非所有句子的强制字段：
 ```json
 {"id":"E01","claim":"某公司海外收入增长","value":12.3,"unit":"亿元",
  "period":"2025FY","scope":"合并海外业务","denominator":null,
@@ -18,17 +20,17 @@
 ```
 status 区分 verified / user-provided / unverified / derived / estimate / synthetic。
 verified 必须打开原始来源且找到对应数字；摘要命中只能是unverified。
-derived 必须给输入ID和公式；estimate 必须给假设与区间；synthetic明确虚构。
+derived 保留输入定位和公式；estimate 说明假设与不确定性，有根据时给区间；synthetic明确虚构。
 没有可靠来源时保留null与缺口，禁止填“合理数值”。
 
 ## 与分析底稿的连接
 
-S1原始证据用于S2分析；不能从证据条数直接跳到建议。按 [analysis_planning.md](analysis_planning.md) 建立Q议题、T任务、F发现及content_map。
-关键发现记录evidence_ids与实际计算/编码位置；派生证据保留输入ID与公式。来源状态与推断可信度分开：verified事实仍可能支撑不了因果或预测。
+S1原始证据用于S2分析；不能从证据条数直接跳到建议。按 [analysis_planning.md](analysis_planning.md) 连接问题、实际分析与发现；Q/T/F和content_map适合大型项目索引。
+关键发现能定位到来源与实际计算/编码；已有编号体系时复用，派生证据保留输入与公式。来源状态与推断可信度分开：verified事实仍可能支撑不了因果或预测。
 user-provided不自动变verified；synthetic输入派生的结果须继续注明合成来源（可用derived加synthetic来源标记），不能因计算正确冒充真实业务证据。
-页面规格增加question_ids、finding_ids，关键标题的限定来自对应F；目标和预测单列。editorial以原文段落定位、重要数字公式与必要修正完成追溯，不要求Q/T/F编号、逐值JSON或单独分析底稿。
+复杂页可增加question_ids、finding_ids，关键标题保留原分析限定；目标和预测单列。editorial以原文段落定位、重要数字公式与必要修正完成追溯，不要求Q/T/F编号、逐值JSON或单独分析底稿。
 
-## 页面规格契约
+## 复杂页面规格示例
 
 ```yaml
 page: P08

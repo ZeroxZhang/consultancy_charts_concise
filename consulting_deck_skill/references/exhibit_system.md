@@ -1,8 +1,10 @@
 # 展品系统：选型、实现与能力边界
 
+> v9适用原则：下列字段、编号、评分和布局预算用于复杂任务的按需参考，可合并或省略不影响结果的过程记录。分析/编码正确、核心内容可读完整与同版交付是底线；默认阈值和作者选择的区别见 [开放创作](open_authoring.md)。
+
 ## v5分层原则
 
-- **ECharts 6优先处理定量坐标系、统计分布、关系与流向。** 高频类型先走`assets/echarts-recipes.js`，尚未封装但原生支持的类型走明确option。
+- **ECharts 6优先处理定量坐标系、统计分布、关系与流向。** 适配的高频类型可走`assets/echarts-recipes.js`；原生或自定义表达更好时可直接使用，不必先尝试配方。
 - **ExhibitKit处理咨询特定且需要构建期校验的静态展品。** 例如贡献闭合、Mekko面积、完整标签表回退。
 - **HTML/CSS/SVG处理精确表格和高文本密度关系图。** 不为了统一技术栈牺牲换行、列宽、来源定位和分页。
 - online模式可在浏览器渲染；offline-self-contained优先用`render_echarts_svg.cjs`把ECharts配方一次性转为静态SVG。
@@ -30,7 +32,7 @@ kit提供10种SVG和1种HTML比较表，附数字格式与差异计算工具；�
 
 `assets/echarts-recipes.js`（1.1.0）负责基础输入校验和option；`assets/chart-runtime.js`（2.0.0）统一真实画布预算、主题/字体配置、文字对比度、完整表格与分页。浏览器和SSR均使用这个运行层，不依赖不同的默认ECharts主题。
 
-生产调用必须是`prepare → setOption → check → 若换型则重绘并再次check`；只调用`build`或`prepare`不是最终验收。`check`读取实际文字包围盒，检查界外、相互遮挡和小于14px的字；不覆盖所有形状遮挡、语义或美学问题。
+采用ChartRuntime配方的调用为`prepare → setOption → check → 若换型则重绘并再次check`；只调用`build`或`prepare`不是最终验收。`check`读取实际文字包围盒，检查界外、相互遮挡和小于14px的字；不覆盖所有形状遮挡、语义或美学问题。
 
 ```html
 <div class="chart" data-recipe="rankedBar" data-spec='{
@@ -183,3 +185,7 @@ kit.comparisonTable({title:'渠道复核',columns:[
 
 旧waterfall调用保持兼容，新增标签容量检查可能要求扩容；Mekko不再静默省略小片标签，原来紧凑的画布可能需要增加高度或改表。这是显式的数据完整性门禁。
 完整示例构建：`node scripts/build_analysis_reference.cjs`；含v3快照对照的六页HTML为 `assets/analysis_reference_deck.html`。
+
+## 开放SVG图示
+
+新增 `scripts/render_diagram.cjs` 支持节点、关系、组与注释自由组合；参见 [自定义展品](custom_exhibits.md)。它不是新增封闭图型列表，不限制直接写SVG或使用其他绘图库。

@@ -7,7 +7,7 @@
  2. 用 deck-themes.js 将所选主题 CSS 注入 deck-theme 样式区；字体/字号仍由 visual_spec.md 定义；
  3. 按 page_specs.md 逐页替换 <main> 中的示例页（保留页面结构模式与 class 约定）；
  4. 图表：优先用 <div class="chart" data-recipe="rankedBar" data-spec='...JSON...'></div>；
-    没有标准配方时才用 data-opt 写原生ECharts option；
+    原生表达更适合时可直接用 data-opt 写ECharts option，也可嵌入自定义SVG；
     颜色用 "@accent" / "@cat-1" 等语义引用，未知 token 报错；数据先写好再填（每个数字挂 Source）；
  5. 图标：icon('Trend') —— IconPark 在线加载，离线自动降级到内置迷你集；
  6. 引擎功能（全部已实现，勿重写）：
@@ -19,11 +19,13 @@
     - 图表懒加载 + 断网降级提示
  7. 尺寸切换：把 <body> 的 data-ratio 改为 "4x3" 即 4:3（默认 16:9 无需写）。
  8. CDN：ECharts 6.1.0用jsDelivr；offline-self-contained应通过Node SSR写入静态SVG。
- 9. 示例页数据全部为 Illustrative（虚构），且已通过 E-08 复核（瀑布贡献和 = 起止差）。
+ 9. 标题与副题置于 slide__header，页边识别使用 slide__frame；quiet 默认中性低对比，
+    首排正文有顶线时可用 data-frame-boundary="integrated"，特殊页可 data-frame="off"。
+ 10. 示例页数据全部为 Illustrative（虚构），且已通过 E-08 复核（瀑布贡献和 = 起止差）。
 ════════════════════════════════════════════════════════════════════════════
 -->
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="mckinsey" data-typography="serif-report" data-typography-version="1.0.0">
+<html lang="zh-CN" data-theme="mckinsey" data-typography="serif-report" data-typography-version="1.0.0" data-frame="quiet" data-frame-version="1.0.0">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -195,6 +197,45 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
 .slide svg{font-synthesis:none;text-rendering:geometricPrecision}.slide svg text{font-variant-numeric:lining-nums tabular-nums}.slide svg text[font-weight="700"]{font-weight:600}
 .type-note{font-size:14px;line-height:1.5}.source{font-size:12px}
 </style>
+<style id="deck-frame">
+/* 低对比母版：只负责页面分区与识别，不复用数据强调色。 */
+:root{
+  --frame-rule:color-mix(in srgb,var(--gray-2) 24%,var(--page-bg));
+  --frame-mark:color-mix(in srgb,var(--gray-2) 42%,var(--page-bg));
+  --frame-display:none; --frame-rule-content:none;
+  --frame-rule-offset:-7px;
+  --frame-mark-top:28px; --frame-mark-width:3px; --frame-mark-height:40px;
+  --frame-corner-right:10px; --frame-corner-bottom:18px; --frame-corner-size:12px;
+}
+:where(html,.slide)[data-frame="quiet"]{--frame-display:block;--frame-rule-content:""}
+:where(html,.slide)[data-frame="off"]{--frame-display:none;--frame-rule-content:none}
+.slide{isolation:isolate}
+:where(.slide.reading){--frame-rule-offset:-8px;--frame-mark-top:32px}
+.slide[data-frame-boundary="integrated"],.slide[data-frame-boundary="space"]{--frame-rule-content:none}
+/* flex 容器保留标题/副题原有间距，不额外占用正文高度。 */
+.slide__header{position:relative;display:flex;flex-direction:column;flex:0 0 auto;isolation:isolate}
+.slide__header::after{
+  content:var(--frame-rule-content);position:absolute;left:0;right:0;
+  bottom:var(--frame-rule-offset);height:1px;background:var(--frame-rule);pointer-events:none;
+}
+/* 专用空节点避免占用作者的 .slide::before / ::after。 */
+.slide__frame{display:var(--frame-display);position:absolute;inset:0;z-index:2;pointer-events:none}
+.slide__frame::before{
+  content:"";position:absolute;left:0;top:var(--frame-mark-top);
+  width:var(--frame-mark-width);height:var(--frame-mark-height);background:var(--frame-mark);
+}
+.slide__frame::after{
+  content:"";position:absolute;right:var(--frame-corner-right);bottom:var(--frame-corner-bottom);
+  width:var(--frame-corner-size);height:var(--frame-corner-size);
+  border-right:1px solid var(--frame-mark);border-bottom:1px solid var(--frame-mark);
+}
+.slide__tracker,.slide__sticker{z-index:3}
+@media print{
+  .slide__header::after,.slide__frame::before,.slide__frame::after{
+    print-color-adjust:exact;-webkit-print-color-adjust:exact;
+  }
+}
+</style>
 </head>
 <body data-ratio="16x9"><!-- 4:3 时改为 data-ratio="4x3" -->
 <div id="progress" style="width:0%"></div>
@@ -210,7 +251,8 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
 <!-- ════════════════════════════════════════════════════════════════════ -->
 <!-- P1 封面（cover）                                                     -->
 <!-- ════════════════════════════════════════════════════════════════════ -->
-<section class="slide cover active">
+<section class="slide cover active" data-frame="off">
+  <div class="slide__frame" aria-hidden="true"></div>
   <div class="slide__tracker">Confidential</div>
   <div class="slide__body">
     <div class="cover-title">收入下滑的诊断与渠道重构建议</div>
@@ -228,19 +270,22 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
 <!-- P2 执行摘要（D-10）：加粗结论 + 证据数字；只读加粗可串成故事          -->
 <!-- ════════════════════════════════════════════════════════════════════ -->
 <section class="slide">
+  <div class="slide__frame" aria-hidden="true"></div>
   <div class="slide__sticker">Preliminary · For discussion</div>
+  <header class="slide__header">
   <h1 class="slide__title">Executive summary</h1>
-  <p class="slide__lead">收入连续三年下滑，根因在线下渠道结构性流失，而非产品力或价格问题</p>
+  <p class="slide__lead">收入下滑集中于商超；渠道迁移能否改善贡献，还需经济性与原因验证</p>
+  </header>
   <div class="slide__body">
     <div class="bullets" style="gap:14px">
-      <div class="bullet" style="font-size:16px"><b>1. 收入累计缩水 13%</b>——2025 年降至 10.4 亿，下滑速度超过行业大盘。</div>
-      <div class="bullet" style="font-size:16px"><b>2. 线下商超是唯一失血点</b>——2025 年销量 −18%（同比），为行业降幅的 3 倍以上；电商 +25% 但基数小，增量（+0.4 亿）仅弥补总缺口（−0.8 亿）约一半。</div>
-      <div class="bullet" style="font-size:16px"><b>3. 价格与产品力不是主因</b>——售价稳定、核心产品市占率持平，问题在渠道结构。</div>
-      <div class="bullet" style="font-size:16px"><b>4. 建议</b>——18 个月内完成渠道重构，电商占比提至 40%，2027 年恢复正增长；请董事会批准第一阶段预算 3,000 万元。</div>
+      <div class="bullet" style="font-size:16px"><b>1. 收入同比下降 7.1%</b>——从2024年的11.2亿降至2025年的10.4亿，减少0.8亿。</div>
+      <div class="bullet" style="font-size:16px"><b>2. 线下商超是主要下滑渠道</b>——2025 年销量 −18%（同比），为行业降幅的 3 倍以上；电商 +25% 但基数小，增量（+0.4 亿）弥补商超减量（−1.1 亿）的36%。</div>
+      <div class="bullet" style="font-size:16px"><b>3. 原因仍需进一步核验</b>——售价与份额信号不足以排除产品、客户或渠道组合的影响。</div>
+      <div class="bullet" style="font-size:16px"><b>4. 建议先验证再扩大投入</b>——补充渠道单位经济性、客户流失与迁移成本，形成可比较的试点方案。</div>
     </div>
-    <div class="takeaway"><span class="tag">ASK</span><b>本次会议需要董事会做出的决定：</b>批准渠道重构方案与第一阶段预算。</div>
+    <div class="takeaway"><span class="tag">ASK</span><b>本次会议需要董事会做出的决定：</b>确认试点研究范围与责任；预算待增量经济性明确后提出。</div>
   </div>
-  <div class="source"><b>Source:</b> 公司内部销售数据（未经审计）; <b>Note:</b> 口径为净收入，不含返利；本页数据为示意（Illustrative）。</div>
+  <div class="source"><b>Source:</b> 合成销售数据（Illustrative）；净收入不含返利，仅用于组件与推理示范。</div>
   <div class="slide__page">2</div>
 </section>
 
@@ -248,10 +293,13 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
 <!-- P3 图表 + 评论页（D-03）：ECharts 条形图（降序、直接标注、强调色灰化）-->
 <!-- ════════════════════════════════════════════════════════════════════ -->
 <section class="slide">
+  <div class="slide__frame" aria-hidden="true"></div>
   <div class="slide__tracker">1 现状诊断 > 1.1 渠道表现</div>
   <div class="slide__sticker">Illustrative</div>
+  <header class="slide__header">
   <h1 class="slide__title">线下商超失速最重：销量 −18%，是行业降幅的 3 倍以上</h1>
-  <p class="slide__lead">2025 年分渠道销量同比变化（%，Indexed 2024=100）</p>
+  <p class="slide__lead">2025年分渠道销量指数（2024=100）；标签为同比变化</p>
+  </header>
   <div class="slide__body" style="grid-template-columns:2fr 1fr">
     <div class="chart" data-recipe="rankedBar" data-spec='{
       "sort":"none","max":135,"baseline":100,"baselineLabel":"2024 基线 = 100",
@@ -263,13 +311,13 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
       ]
     }'></div>
     <div class="bullets">
-      <div class="bullet"><b>商超是唯一失血点</b>——2025 年销量 −18%（同比），单渠道拖累收入约 1.1 亿。</div>
-      <div class="bullet"><b>电商增速最快但基数小</b>——2025 年占比不足 20%，增量仅弥补总缺口约一半。</div>
-      <div class="bullet"><b>行业仅微降</b>——排除周期性因素，问题在于我们的渠道结构。</div>
+      <div class="bullet"><b>商超是主要下滑渠道</b>——2025 年销量 −18%（同比），单渠道拖累收入约 1.1 亿。</div>
+      <div class="bullet"><b>电商增速最快但基数小</b>——2025 年占比不足 20%，增量弥补商超减量约36%。</div>
+      <div class="bullet"><b>行业仅微降</b>——公司降幅大于行业，仍需分开核验周期、产品与渠道因素。</div>
     </div>
   </div>
-  <div class="takeaway"><span class="tag">NOW WHAT</span>渠道资源应向电商与经销倾斜；商超投入 2026 年缩减 30%。</div>
-  <div class="source"><b>Source:</b> 公司内部销售数据（未经审计）; <b>Note:</b> 行业大盘为零售行业协会统计，含线上渠道。</div>
+  <div class="takeaway"><span class="tag">NOW WHAT</span>先核对各渠道增量贡献、客户重合与迁移成本，再决定是否调整资源。</div>
+  <div class="source"><b>Source:</b> 合成数据（Illustrative）；“行业大盘”为同期间示意比较基准，非真实协会统计。</div>
   <div class="slide__page">3</div>
 </section>
 
@@ -277,39 +325,43 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
 <!-- P4 单图表页（D-02）：ECharts 瀑布图（custom矩形，累计值计算）      -->
 <!-- ════════════════════════════════════════════════════════════════════ -->
 <section class="slide">
+  <div class="slide__frame" aria-hidden="true"></div>
   <div class="slide__tracker">1 现状诊断 > 1.2 缺口拆解</div>
   <div class="slide__sticker">Illustrative</div>
+  <header class="slide__header">
   <h1 class="slide__title">收入下降 0.8 亿：商超拖累 1.1 亿，电商弥补 0.4 亿</h1>
   <p class="slide__lead">2025 vs 2024 收入变动拆解（亿元）——瀑布贡献之和 = 起止柱之差（QA 必查）</p>
+  </header>
   <div class="slide__body"><div class="chart" id="waterfall-demo"></div></div>
-  <div class="takeaway"><span class="tag">NOW WHAT</span>商超的失血速度（−1.1 亿/年）决定：渠道重构必须在 2026 年上半年见效。</div>
-  <div class="source"><b>Source:</b> 公司内部销售数据（未经审计）; <b>Note:</b> 口径为净收入，不含返利。</div>
+  <div class="takeaway"><span class="tag">NOW WHAT</span>收入变化定位了商超减量；改善目标与生效时间需由原因、方案和实施能力确定。</div>
+  <div class="source"><b>Source:</b> 合成数据（Illustrative）；口径为净收入，不含返利。</div>
   <div class="slide__page">4</div>
 </section>
 
 <!-- ════════════════════════════════════════════════════════════════════ -->
-<!-- P5 表格页（D-05）：数字右对齐 + Harvey ball 内联 SVG + RAG 色点       -->
+<!-- P5 表格页（D-05）：同口径净现值与方案取舍       -->
 <!-- ════════════════════════════════════════════════════════════════════ -->
 <section class="slide">
+  <div class="slide__frame" aria-hidden="true"></div>
   <div class="slide__tracker">2 方案比选 > 2.1 评估</div>
   <div class="slide__sticker">Not exhaustive</div>
-  <h1 class="slide__title">渠道重构三方案：全渠道自营在能力与财务上综合最优</h1>
-  <p class="slide__lead">评估圆填充比例：全满=满足、3/4=部分满足、1/4=基本不满足、空心=不满足；风险：低 / 中 / 高</p>
+  <header class="slide__header">
+  <h1 class="slide__title">全渠道自营的示意净现值最高，但资金需求与上线周期也更高</h1>
+  <p class="slide__lead">合成方案演示：相同8%折现率、三年期；金额亿元，投入与收益均为假设</p>
+  </header>
   <div class="slide__body">
     <table class="tbl">
       <thead><tr><th style="width:22%">评估维度</th><th class="num">方案 A<br>深度经销</th><th class="num">方案 B<br>全渠道自营</th><th class="num">方案 C<br>电商优先</th></tr></thead>
       <tbody>
-        <tr><td>财务回报（3 年净现值）</td><td class="num">1.2 亿</td><td class="num"><b>2.4 亿</b></td><td class="num">1.8 亿</td></tr>
-        <tr><td>渠道控制力</td><td class="num"><svg class="hb" width="20" height="20" viewBox="0 0 24 24"><circle class="hb-bg" cx="12" cy="12" r="10" stroke-width="1.6"/><path class="hb-fill" d="M12 2a10 10 0 1 1 0 20V2z"/></svg></td>
-            <td class="num"><svg class="hb" width="20" height="20" viewBox="0 0 24 24"><circle class="hb-bg" cx="12" cy="12" r="10" stroke-width="1.6"/><path class="hb-fill" d="M12 2a10 10 0 1 1 0 20V2z"/></svg></td>
-            <td class="num"><svg class="hb" width="20" height="20" viewBox="0 0 24 24"><circle class="hb-bg" cx="12" cy="12" r="10" stroke-width="1.6"/><path class="hb-fill" d="M12 2a10 10 0 0 1 0 20V2z"/></svg></td></tr>
-        <tr><td>落地风险（团队与供应链）</td><td class="num">● 低</td><td class="num">▲ 中</td><td class="num">● 低</td></tr>
+        <tr><td>初始投入／每年净现金流</td><td class="num">4／2</td><td class="num">8／4</td><td class="num">6／3</td></tr>
+        <tr><td>三年净现值</td><td class="num">1.15</td><td class="num"><b>2.31</b></td><td class="num">1.73</td></tr>
+        <tr><td>控制方式（方案定义）</td><td class="num">合同约定</td><td class="num">自营决定</td><td class="num">线上自营</td></tr>
         <tr><td>上线周期</td><td class="num">6 个月</td><td class="num">12 个月</td><td class="num">9 个月</td></tr>
-        <tr class="row-hl"><td><b>综合结论</b></td><td class="num">次优</td><td class="num">✓ 推荐</td><td class="num">备选</td></tr>
+        <tr class="row-hl"><td><b>关键取舍</b></td><td class="num">投入较低</td><td class="num">净现值高／投入高</td><td class="num">聚焦线上</td></tr>
       </tbody>
     </table>
   </div>
-  <div class="source"><b>Source:</b> 项目组测算（模型见 Appendix A2）; <b>Note:</b> 净现值按 WACC 8% 折现；数据为示意（Illustrative）。</div>
+  <div class="source"><b>Source:</b> 合成输入；NPV=−初始投入＋Σ每年净现金流/(1.08)^t，t=1…3；按年末计，不另设残值；尚不足以决定最优方案。</div>
   <div class="slide__page">5</div>
 </section>
 
@@ -317,10 +369,13 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
 <!-- P6 框架/概念页（D-06）：自绘 SVG 2×2（轴有战略含义、象限命名、摆位）  -->
 <!-- ════════════════════════════════════════════════════════════════════ -->
 <section class="slide">
+  <div class="slide__frame" aria-hidden="true"></div>
   <div class="slide__tracker">1 现状诊断 > 1.3 渠道定位</div>
   <div class="slide__sticker">Illustrative</div>
-  <h1 class="slide__title">渠道组合应向右上迁移：电商升为增长引擎，商超转为防守</h1>
-  <p class="slide__lead">渠道定位矩阵：市场增速（2024–2026E）× 我方相对份额（vs 品类第一）</p>
+  <header class="slide__header">
+  <h1 class="slide__title">渠道定位提出迁移假设，收入规模不足以证明投资优先级</h1>
+  <p class="slide__lead">定性假设矩阵：增长潜力判断 × 相对份额判断；需取数验证位置</p>
+  </header>
   <div class="slide__body">
     <svg class="framework-svg" viewBox="0 0 1100 480" preserveAspectRatio="xMidYMid meet">
       <!-- 坐标轴 -->
@@ -329,24 +384,24 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
       <line x1="565" y1="30" x2="565" y2="410" stroke="var(--gray-3)" stroke-width="1.5" stroke-dasharray="4 4"/>
       <line x1="70" y1="220" x2="1060" y2="220" stroke="var(--gray-3)" stroke-width="1.5" stroke-dasharray="4 4"/>
       <!-- 轴标签 -->
-      <text x="565" y="440" font-size="17" fill="var(--gray-1)" text-anchor="middle">我方相对份额（低 → 高）</text>
-      <text x="18" y="225" font-size="17" fill="var(--gray-1)" text-anchor="middle" transform="rotate(-90 18 225)">市场增速（低 → 高）</text>
+      <text x="565" y="440" font-size="17" fill="var(--gray-1)" text-anchor="middle">相对份额判断（低 → 高）</text>
+      <text x="18" y="225" font-size="17" fill="var(--gray-1)" text-anchor="middle" transform="rotate(-90 18 225)">增长潜力判断（低 → 高）</text>
       <!-- 象限命名（四角） -->
       <text x="80" y="52" font-size="16" font-weight="700" fill="var(--gray-2)">防守区</text>
       <text x="1048" y="52" font-size="16" font-weight="700" fill="var(--brand)" text-anchor="end">增长引擎</text>
       <text x="80" y="402" font-size="16" font-weight="700" fill="var(--gray-2)">收缩区</text>
       <text x="1048" y="402" font-size="16" font-weight="700" fill="var(--gray-2)" text-anchor="end">利润奶牛</text>
       <!-- 渠道摆位（气泡面积∝营收规模） -->
-      <g><circle cx="180" cy="150" r="34" fill="var(--risk)" fill-opacity=".12" stroke="var(--risk)" stroke-width="2"/><text x="180" y="156" font-size="15" font-weight="700" fill="var(--risk)" text-anchor="middle">商超</text><text x="180" y="196" font-size="11" fill="var(--gray-1)" text-anchor="middle">5.3 亿</text></g>
-      <g><circle cx="880" cy="150" r="46" fill="var(--accent)" fill-opacity=".14" stroke="var(--accent)" stroke-width="2.5"/><text x="880" y="156" font-size="15" font-weight="700" fill="var(--brand)" text-anchor="middle">电商</text><text x="880" y="200" font-size="11" fill="var(--gray-1)" text-anchor="middle">2.0 亿</text></g>
-      <g><circle cx="840" cy="330" r="30" fill="var(--gray-3)" fill-opacity=".6" stroke="var(--gray-2)" stroke-width="1.5"/><text x="840" y="336" font-size="15" fill="var(--gray-1)" text-anchor="middle">经销</text><text x="840" y="374" font-size="11" fill="var(--gray-1)" text-anchor="middle">3.1 亿</text></g>
+      <g><circle cx="180" cy="150" r="34" fill="var(--risk)" fill-opacity=".12" stroke="var(--risk)" stroke-width="2"/><text x="180" y="156" font-size="15" font-weight="700" fill="var(--risk)" text-anchor="middle">商超</text><text x="180" y="196" font-size="14" fill="var(--gray-1)" text-anchor="middle">5.3 亿</text></g>
+      <g><circle cx="880" cy="150" r="20.886034" fill="var(--accent)" fill-opacity=".14" stroke="var(--accent)" stroke-width="2.5"/><text x="880" y="156" font-size="15" font-weight="700" fill="var(--brand)" text-anchor="middle">电商</text><text x="880" y="200" font-size="14" fill="var(--gray-1)" text-anchor="middle">2.0 亿</text></g>
+      <g><circle cx="840" cy="330" r="26.002903" fill="var(--gray-3)" fill-opacity=".6" stroke="var(--gray-2)" stroke-width="1.5"/><text x="840" y="336" font-size="15" fill="var(--gray-1)" text-anchor="middle">经销</text><text x="840" y="374" font-size="14" fill="var(--gray-1)" text-anchor="middle">3.1 亿</text></g>
       <!-- 迁移箭头 -->
       <line x1="300" y1="380" x2="820" y2="180" stroke="var(--brand)" stroke-width="3" marker-end="url(#arrow)"/>
       <defs><marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="var(--brand)"/></marker></defs>
-      <text x="505" y="350" font-size="13" fill="var(--brand)" font-weight="700" text-anchor="middle">目标路径：2 年内渠道组合重心</text>
+      <text x="505" y="350" font-size="13" fill="var(--brand)" font-weight="700" text-anchor="middle">候选路径：需验证经济性与迁移条件</text>
     </svg>
   </div>
-  <div class="source"><b>Source:</b> 项目组测算 + 行业协会数据; <b>Note:</b> 气泡面积代表 2025 年营收规模；数据为示意（Illustrative）。</div>
+  <div class="source"><b>Source:</b> 合成数据与假设（Illustrative）; <b>Note:</b> 气泡面积按2025年示意营收同比例计算；位置为定性假设，不是实测份额/增速。</div>
   <div class="slide__page">6</div>
 </section>
 
@@ -354,10 +409,11 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
 <!-- P7 章节分隔页（D-11）                                                -->
 <!-- ════════════════════════════════════════════════════════════════════ -->
 <section class="slide divider">
+  <div class="slide__frame" aria-hidden="true"></div>
   <div class="slide__body">
     <div class="divider-num">2</div>
     <div class="divider-name">渠道重构方案</div>
-    <div class="divider-q">本章回答：如何在 18 个月内将电商占比提升至 40%，同时止损商超失血？</div>
+    <div class="divider-q">本章回答：什么渠道方案具有更好的增量经济性，何种证据支持扩大投入？</div>
     <div class="divider-items">2.1 方案比选 ｜ 2.2 实施路线图 ｜ 2.3 财务测算与风险</div>
   </div>
   <div class="slide__page">7</div>

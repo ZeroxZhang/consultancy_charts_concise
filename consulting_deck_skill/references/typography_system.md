@@ -10,7 +10,7 @@
 |---|---|---|---|
 | 封面主标题 | Noto Serif SC600 | DM Serif Text400 | 46px / 1.2 |
 | 章节标题 | 同上 | 同上 | 38px / 1.25 |
-| 页主判断 | 同上 | 同上 | 32px / 1.28，最多两行 |
+| 页主判断 | 同上 | 同上 | 32px / 1.28，通常两行 |
 | 模块、展品标题 | Noto Sans SC600 | Inter600 | 18–20px / 1.3 |
 | 正文、解释 | Noto Sans SC400 | Inter400 | 16–18px / 约1.5 |
 | 图表标签、数据 | Noto Sans SC400 | Inter400，选择性600 | 至少14px，通常14–16px |
@@ -62,7 +62,7 @@ SVG统一使用text-rendering:geometricPrecision，避免缩放时实际字形�
 
 ## 验收与迁移
 
-运行test_typography.cjs、test_font_metrics.cjs、test_typography_browser.cjs、test_theme_browser.cjs、既有图表/引擎回归及qa_deck.cjs。QA同时检查角色字体链、实际平台字体身份与允许字重，不能只凭isCustomFont通过；另查标题行数、有效数据字号、PDF嵌入与字符映射、新页面冷缓存断网后的字体和几何一致性。字体检查器在导航前启用CDP，避免Chrome对file:内联SVG引用的观察器副作用，页面自身的控制台错误仍全部阻断。逐页截图与PDF目视仍必需。
+字体打包或测量代码改动时，按受影响范围运行typography/font_metrics/browser/svg_scaling测试；普通制稿只运行qa_deck和实际查看，不重复整库回归。QA同时检查角色字体链、实际平台字体身份与允许字重，不能只凭isCustomFont通过；另查标题行数、有效数据字号、PDF嵌入与字符映射、新页面冷缓存断网后的字体和几何一致性。字体检查器在导航前启用CDP，避免Chrome对file:内联SVG引用的观察器副作用，页面自身的控制台错误仍全部阻断。逐页截图与PDF目视仍必需。
 
 build_typography_reference.cjs生成同内容的中文长判断、英文分析、混排财务表，包含legacy / DM / Playfair三组。字体变化重算标题和证据区，不缩数据字、不省略证据。不同系统的字形栅格化仍可能略有差别，不承诺跨环境逐像素相同。
 

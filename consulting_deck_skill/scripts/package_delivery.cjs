@@ -32,6 +32,15 @@ function injectPdf(html,pdf,filename,sha256){
   const tag=`<script id="deck-pdf-payload" type="application/pdf" data-filename="${escapeAttr(filename)}" data-sha256="${sha256}" data-bytes="${pdf.length}">\n${pdf.toString('base64')}\n</script>\n`;
   return html.replace('</body>',tag+'</body>');
 }
+function markDelivery(html,preview){
+  if(!/<head\b[^>]*>/i.test(html))fail('HTML 缺少 <head>，无法写入交付状态');
+  html=html.replace(/<head\b[^>]*>/i,tag=>tag+'\n<meta name="deck-delivery-status" content="'+(preview?'preview':'complete')+'">');
+  if(preview){
+    if(!/<title\b[^>]*>/i.test(html))fail('预览 HTML 缺少 <title>，无法标记预览状态');
+    html=html.replace(/<title\b[^>]*>/i,tag=>tag+'预览 · ');
+  }
+  return html;
+}
 function validateAudit(file,{inputHtml,inputPdf,html,pdf,htmlPages,pdfPages,pdfSha256}){
   if(!fs.statSync(file,{throwIfNoEntry:false})?.isFile())fail('缺少 S7 audit.json，不能确认 HTML 与 PDF 来自同一次验收');
   let audit;try{audit=JSON.parse(fs.readFileSync(file,'utf8'))}catch(error){fail('无法读取 S7 audit.json：'+error.message)}
@@ -42,7 +51,24 @@ function validateAudit(file,{inputHtml,inputPdf,html,pdf,htmlPages,pdfPages,pdfS
   if(path.resolve(audit.pdfArtifact?.path||'')!==inputPdf||audit.pdfArtifact?.sha256!==pdfSha256||audit.pdfArtifact?.sha256!==sha256(pdf))fail('PDF 不是 S7 验收产物或验收后已修改');
   return audit;
 }
-function packageDelivery({htmlFile,pdfFile,outputDir,baseName,auditFile,force=false}){
+function validateReview(file,{htmlSha256,pdfSha256}){
+  if(!fs.existsSync(file))fail('缺少成稿 review.json；完成内容与目视复核，或用 --preview 导出预览');
+  const review=JSON.parse(fs.readFileSync(file,'utf8'));
+  if(review.htmlSha256!==htmlSha256||review.pdfSha256!==pdfSha256)fail('review.json 对应旧版成稿，请复核当前 HTML/PDF');
+  if(review.status!=='complete'||typeof review.reviewer!=='string'||!review.reviewer.trim()||!['author','independent'].includes(review.independence))fail('成稿审查状态、审查者或独立性记录不完整');
+  for(const key of ['analysis','evidence','visual']){
+    const check=review.checks?.[key];
+    const allowed=key==='visual'?['pass']:['pass','not_applicable'];
+    if(!check||!allowed.includes(check.status)||typeof check.basis!=='string'||!check.basis.trim())fail(key+' 未完成审查或缺少具体依据');
+  }
+  if(!Array.isArray(review.issues))fail('需要明确记录 issues（无未决问题可用空数组）');
+  for(const issue of review.issues){
+    if(!['blocking','major','minor'].includes(issue.severity)||!['open','resolved'].includes(issue.status)||typeof issue.description!=='string'||!issue.description.trim())fail('审查问题格式不完整');
+    if(['blocking','major'].includes(issue.severity)&&issue.status!=='resolved')fail('仍有影响交付的问题未解决：'+issue.description);
+  }
+  return review;
+}
+function packageDelivery({htmlFile,pdfFile,outputDir,baseName,auditFile,reviewFile,preview=false,force=false}){
   const inputHtml=path.resolve(htmlFile||''),inputPdf=path.resolve(pdfFile||'');
   if(!fs.statSync(inputHtml,{throwIfNoEntry:false})?.isFile())fail('需要定稿 HTML 文件');
   if(!fs.statSync(inputPdf,{throwIfNoEntry:false})?.isFile())fail('需要已验收 PDF 文件');
@@ -51,26 +77,29 @@ function packageDelivery({htmlFile,pdfFile,outputDir,baseName,auditFile,force=fa
   const htmlPages=pageCountFromHtml(html),pdfPages=pageCountFromPdf(inputPdf);
   if(!htmlPages)fail('HTML 中没有 .slide 页面');
   if(htmlPages!==pdfPages)fail(`HTML 为 ${htmlPages} 页，PDF 为 ${pdfPages} 页，拒绝打包不同版本`);
-  const name=safeName(baseName||path.parse(inputHtml).name),dir=path.resolve(outputDir||'delivery');
+  const name=safeName(baseName||path.parse(inputHtml).name)+(preview?'-preview':''),dir=path.resolve(outputDir||'delivery');
   const outputHtml=path.join(dir,name+'.html'),outputPdf=path.join(dir,name+'.pdf');
   if([outputHtml,outputPdf].includes(inputHtml)||[outputHtml,outputPdf].includes(inputPdf))fail('交付输出不能覆盖输入文件，请指定独立目录或文件名');
   if(!force&&(fs.existsSync(outputHtml)||fs.existsSync(outputPdf)))fail('交付文件已存在；确认替换时使用 --force');
   const pdfSha256=sha256(pdf),auditPath=path.resolve(auditFile||path.join(path.dirname(inputPdf),'audit.json'));
   validateAudit(auditPath,{inputHtml,inputPdf,html,pdf,htmlPages,pdfPages,pdfSha256});
-  const deliveredHtml=injectPdf(html,pdf,path.basename(outputPdf),pdfSha256);
+  const reviewPath=path.resolve(reviewFile||path.join(path.dirname(inputPdf),'review.json'));
+  if(!preview)validateReview(reviewPath,{htmlSha256:sha256(html),pdfSha256});
+  let deliveredHtml=injectPdf(html,pdf,path.basename(outputPdf),pdfSha256);
+  deliveredHtml=markDelivery(deliveredHtml,preview);
   const embedded=Buffer.from(deliveredHtml.match(/<script\b[^>]*\bid="deck-pdf-payload"[^>]*>\s*([A-Za-z0-9+/=\s]+?)\s*<\/script>/i)?.[1].replace(/\s/g,'')||'','base64');
   if(!embedded.equals(pdf))fail('HTML 内嵌 PDF 校验失败');
   fs.mkdirSync(dir,{recursive:true});
   fs.writeFileSync(outputHtml,deliveredHtml);
   fs.copyFileSync(inputPdf,outputPdf);
-  return {html:outputHtml,pdf:outputPdf,pages:htmlPages,pdfBytes:pdf.length,pdfSha256,htmlBytes:Buffer.byteLength(deliveredHtml),audit:auditPath};
+  return {status:preview?'preview':'complete',review:preview?null:reviewPath,html:outputHtml,pdf:outputPdf,pages:htmlPages,pdfBytes:pdf.length,pdfSha256,htmlBytes:Buffer.byteLength(deliveredHtml),audit:auditPath};
 }
 
 if(require.main===module){
-  const args=process.argv.slice(2),force=args.includes('--force'),pos=args.filter(v=>v!=='--force');
+  const args=process.argv.slice(2),force=args.includes('--force'),preview=args.includes('--preview'),pos=args.filter(v=>!['--force','--preview'].includes(v));
   const [htmlFile,pdfFile,outputDir,baseName]=pos;
-  if(!htmlFile||!pdfFile||!outputDir)fail('用法: node scripts/package_delivery.cjs deck.html renders/deck.pdf delivery [文件名] [--force]（PDF 同目录需有 S7 audit.json）');
-  console.log(JSON.stringify(packageDelivery({htmlFile,pdfFile,outputDir,baseName,force}),null,2));
+  if(!htmlFile||!pdfFile||!outputDir)fail('用法: node scripts/package_delivery.cjs deck.html renders/deck.pdf delivery [文件名] [--force] [--preview]（PDF 同目录需有 audit.json；正式交付还需 review.json）');
+  console.log(JSON.stringify(packageDelivery({htmlFile,pdfFile,outputDir,baseName,force,preview}),null,2));
 }
 
-module.exports={packageDelivery,injectPdf,pageCountFromHtml,pageCountFromPdf,validateAudit};
+module.exports={packageDelivery,injectPdf,markDelivery,pageCountFromHtml,pageCountFromPdf,validateAudit,validateReview};

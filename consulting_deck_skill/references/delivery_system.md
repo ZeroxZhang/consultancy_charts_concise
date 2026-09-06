@@ -1,39 +1,39 @@
-# HTML + PDF 交付系统
+# HTML＋PDF交付 · v9
 
-本参考只处理定稿后的交付，不改变分析、storyline、页面规格、图表或字体生成方法。
+交付同名自包含HTML与分页PDF，HTML内嵌同一份PDF供离线下载。修改文字、数据、主题、字体或页序后重建受影响产物并复核。同版路径/页数/SHA-256检查继续保留。
 
-## 正式交付契约
+## 从成稿到交付
 
-- 默认交付同名的 `<报告名>.html` 与 `<报告名>.pdf`。
-- PDF 是经 S7 验收的定稿快照，一张 slide 对应一页，尺寸继承 HTML 的 16:9 或 4:3；不改排为 A4。
-- HTML 内嵌该 PDF 的原始字节。“下载分页 PDF”按钮离线可用，下载结果必须与独立 PDF 的 SHA-256 完全一致。
-- HTML 同时保留“打印 / 另存 PDF”入口。它调用浏览器打印，仅用于临时打印；正式归档与转发使用随附 PDF。
-- 导出控件不进入 PDF。打开 HTML 不需要 Node、Playwright、字体安装或网络。
+1. `node scripts/qa_deck.cjs deck.html renders`：生成逐页PNG、overview和deck.pdf，记录audit.json。自动PASS表示已覆盖工程检查通过，不代表内容或视觉已审。
+2. 实际核对关键分析/证据、逐页与PDF，写简短`renders/review.json`。普通任务可作者复核，复杂新deck使用独立代理，准确记录；不需要外部真人签字或用户逐阶段批准。
+3. `node scripts/package_delivery.cjs deck.html renders/deck.pdf delivery 报告名`：校验审查与成稿版本后打包。未做完审查可加`--preview`；输出名带-preview、HTML标题与元信息标预览，不能对用户称正式通过。预览仍须通过文件一致性和工程底线。
 
-内嵌采用 base64，通常会让 HTML 增加约 `PDF 字节 × 4/3`。这是标准交付的可接受成本；用户明确提出文件大小上限时，才交付不内嵌 PDF 的轻量 HTML，并说明其中只有浏览器打印入口。
+review.json的最小例子（哈希从本次audit复制，basis写真实检查及证据位置，不照抄示例作为已做过）：
 
-## 定稿顺序
-
-1. 完成内容、图表和字体打包，得到最终待验收 HTML。
-2. 运行 `qa_deck.cjs`，它基于该 HTML 生成 `renders/deck.pdf`、逐页截图和 `audit.json`。
-3. 完成逐页图片与 PDF 目视验收，修清 Blocking/Major；任何 HTML 修改都返回第 2 步。
-4. 用同一份 HTML 和刚验收的 PDF 运行交付打包：
-
-```bash
-node scripts/package_delivery.cjs deck.html renders/deck.pdf delivery 报告名
+```json
+{
+  "status":"complete",
+  "reviewer":"实际审查者或代理任务名",
+  "independence":"author",
+  "htmlSha256":"本次audit.htmlArtifact.sha256",
+  "pdfSha256":"本次audit.pdfArtifact.sha256",
+  "checks":{
+    "analysis":{"status":"pass","basis":"关键计算、判断和反证的实际复核记录位置"},
+    "evidence":{"status":"pass","basis":"原文定位及关键数值核对范围"},
+    "visual":{"status":"pass","basis":"实际看过的逐页图片、PDF及问题处置"}
+  },
+  "issues":[]
+}
 ```
 
-输出为 `delivery/报告名.html` 和 `delivery/报告名.pdf`。默认拒绝覆盖已有交付；确认替换同名文件时添加 `--force`。
+independence为author或independent。analysis/evidence在任务范围确实不适用时可not_applicable并说明原因；简单编辑仍做必要内容核对，不补造分析台账。visual需实际看图。issues可记minor未决细节；blocking/major必须resolved，包含severity/status/description。建议字号、模板或审美偏好本身不构成major。
 
-`package_delivery.cjs`默认读取 PDF 同目录的 `audit.json`，核对 S7 记录的 HTML/PDF 路径、页数和 SHA-256。缺少审计、工程验收未通过、任一文件在验收后变化、输入不是 PDF、HTML 没有 slide、HTML/PDF 页数不同或输出会覆盖输入时均拒绝打包。脚本在写出前再次核对内嵌字节，并报告页数、体积和 PDF SHA-256。
+记录要简洁，一份文件即可；不逐页填写相同的通过话术。审查文件不是数字签名或真实性自动证明，不能用脚本替人写出未做过的检查。
 
-## 交付验收
+## 一致性与限制
 
-- 独立 PDF 页数等于 `.slide` 数量，页序、尺寸、背景、字体、关键图表与标签正确。
-- PDF 字体已嵌入、文字可检索；`qa_deck.cjs` 的工程状态通过，且逐页截图和 PDF 已实际目视。
-- 断网从任意本地目录打开交付 HTML，“下载分页 PDF”可见且可用。
-- 下载文件名与独立 PDF 一致，下载内容与独立 PDF 逐字节一致。
-- 下载前后保持当前页、URL hash、总览和全屏状态；按钮不触发翻页。
-- PDF 控件在打印媒介隐藏；取消浏览器打印后恢复原页面状态。
+package_delivery保留audit中的路径、HTML/PDF页数和哈希检查，内嵌字节等于独立PDF；review另绑定相同成稿哈希。打包只增加交付控件需要的内嵌内容和状态元信息，不更改幻灯片正文。
 
-打包后的 PDF 是定稿快照。若之后修改 HTML 的正文、数据、主题、字体或页序，必须重新生成、验收并打包 PDF；不能把旧 PDF 留在新 HTML 中。
+交付时给两个可打开文件、页数、验证状态及需要说明的限制。下载按钮下载已验收PDF；浏览器打印用于临时打印。不要把HTML扩展名改成其他格式。
+
+交付层变更运行test_delivery.cjs；QA规则变更运行test_qa_policy.cjs。本层未改变时，常规制稿只需成稿QA和实际复核。
