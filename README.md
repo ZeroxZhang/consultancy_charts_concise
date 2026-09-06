@@ -1,109 +1,57 @@
-> 🌐 语言 · Language：[简体中文](README.md) · [English](README_EN.md)
+> 语言：[简体中文](README.md) · [English](README_EN.md)
 
-# Consulting Deck Skill
+# Consulting Deck Skill · v9.1
 
-**把一份简报，变成一份咨询级的演示文稿。**
-*Turn a brief into a consulting-grade deck — delivered as HTML and PDF.*
+把简报和丰富的原始材料转成有依据、有判断、可阅读的咨询deck，交付自包含HTML与同版分页PDF。
 
-![version](https://img.shields.io/badge/版本-v8.0-2251FF)
-![claude-code](https://img.shields.io/badge/Claude%20Code-Agent%20Skill-D97757)
-![deliverable](https://img.shields.io/badge/交付-HTML%20%2B%20PDF-E34F26)
-![echarts](https://img.shields.io/badge/ECharts-6.1.0-AA344D)
-![themes](https://img.shields.io/badge/内置主题-3%20套-6C5CE7)
-![print](https://img.shields.io/badge/打印-PDF-374151)
-![offline](https://img.shields.io/badge/离线模式-可用-0E9F6E)
+`consulting_deck_skill`适用于支持Agent Skills的工具。以分析质量、论证和视觉设计共同决定成果；方法、图型与模板供模型选用，允许扩展和自定义。HTML支持翻页、缩放、全屏、深链和离线下载同版PDF。
 
-`consulting_deck_skill` 是一个 Claude Code Agent Skill：你给它简报与原始材料，它走完 **分析 → 叙事 → 视觉 → 制作 → 独立质检** 全流程，同步交付**自包含 HTML 演示文稿与同版分页 PDF**。HTML 支持 16:9 或 4:3、翻页/缩放/全屏演示、URL 深链，并可离线一键下载已验收 PDF。
+v9.1新增低对比中性母版，支持按正文合并或省略标题分隔线；页边装饰保持轻量。见 [母版使用](consulting_deck_skill/references/page_frame.md) 与 [实施验证及成稿](iteration_v9_1_frame/validation.md)。
 
-![样稿预览](docs/showcase/overview-mckinsey.png)
+## 样稿速览
 
-上图及三配色缩略图保留历史版式示例；v7字体效果见[字体对照样稿](iteration_v7_typography/comparison/serif-report.html)，技能内的两份HTML样稿已升级。
+以下截图即当前样稿（v9.1 母版），浏览器直接打开，支持翻页、缩放、全屏与深链；点图直达对应页面。
 
-## 为什么是它
+[![贡献分解：商超减少1.1亿元，电商增长仅抵消其约36%](docs/showcase/demo-waterfall.png)](consulting_deck_skill/assets/reference_deck.html#6)
 
-| 没有它的时候 | 有了它之后 |
-|---|---|
-| 内容、分析、排版、图表在多个工具之间来回搬运 | 一次简报，从分析到成品一条龙 |
-| 图表凭感觉画，数字来源说不清 | 每个数字落到来源，待核缺口显式保留 |
-| 交付 PPTX 要装 Office，字体、版式到处跑 | HTML 浏览器即开即演示，随附 PDF 直接转发和归档 |
-
-## 核心能力
-
-- 🧭 **S0–S8 门禁制工作流** — 简报、资料、分析、叙事、视觉、制作、质检、交付八个阶段，每阶段有明确门禁，不通过不进入下一阶段。
-- 🔬 **先分析，后表达** — 先建立问题、方法、实际结果与反证，再形成页面；覆盖商业/行业、战略/经营、财务、数据、叙事等分析场景的六类方法卡，支持 `analytical`（原始材料）/ `exploratory`（开放研究）/ `editorial`（已确认文稿）三档深度。
-- 📊 **咨询级图表引擎** — ECharts 6.1.0 + 9 种标准配方（带输入校验与容量边界），10 种 SVG 分析组件 + HTML 比较表，瀑布、Mekko、完整表格回退一应俱全。
-- 🎨 **三套内置主题** — McKinsey（默认）/ BCG / Accenture 风格，一次选择、持续继承，色值单一来源。
-- 🔤 **统一字体系统** — 衬线主标题、无衬线正文与数据；中西文字重、图表测量、字体子集和PDF嵌入共同验收。构建依赖见 [字体说明](consulting_deck_skill/references/typography_system.md)，打开成稿无需安装字体。
-- 🧾 **证据纪律** — 页面上每个数字必须来自用户素材或调研来源；仅真正合成数据标注 Illustrative，分析判断与建议分别标注。
-- 🤖 **多 agent 协作** — 调研 2–3 并行、页面设计 2–4 并行、QA 独立 1 个，各司其职。
-- 📦 **HTML + PDF 双格式交付** — 独立 PDF 直接归档；HTML 内嵌同一份 PDF，断网可一键下载，仍保留浏览器打印入口。
-- ✅ **独立 QA** — 分析、证据、视觉、工程四类验收，逐页渲染与打印检查，Blocking/Major 问题清零才算通过。
-
-## 效果：同一份内容，三套主题
-
-| McKinsey（默认） | BCG | Accenture |
+| [![封面与证据台账](docs/showcase/demo-cover.png)](consulting_deck_skill/assets/reference_deck.html#1) | [![地区规模 × 产品构成](docs/showcase/demo-mekko.png)](consulting_deck_skill/assets/reference_deck.html#7) | [![贡献桥与差异注释](docs/showcase/demo-bridge.png)](consulting_deck_skill/assets/analysis_reference_deck.html#1) |
 |---|---|---|
-| ![McKinsey 主题](docs/showcase/theme-mckinsey.png) | ![BCG 主题](docs/showcase/theme-bcg.png) | ![Accenture 主题](docs/showcase/theme-accenture.png) |
+| 有判断的封面与证据台账 | 地区规模 × 产品构成 | 贡献桥与差异注释 |
 
-## 快速开始
+完整资源：[9页设计与组件样稿](consulting_deck_skill/assets/reference_deck.html) · [6页分析表达样稿](consulting_deck_skill/assets/analysis_reference_deck.html)。样稿内数据仅用于展示版式与组件，不是本轮重新验证的行业研究。
 
-### 1. 安装
+## v9：更多创作空间，更直接的质量判断
 
-```bash
-cp -R consulting_deck_skill ~/.claude/skills/consulting_deck_skill
-```
+- **开放分析**：按业务问题选用经典方法或透明的自定义分析，处理明细数据、访谈、文献及混合材料。框架输出要形成发现和取舍。
+- **丰富视觉**：9种ECharts标准配方、10种SVG分析组件和HTML比较表，补充节点／边／分组图示；原生/custom ECharts、自由SVG等路线均可直接使用。
+- **减少流程负担**：S0–S8可合并迭代；固定模板、候选数量、编号齐全、逐页评分都不作为普遍条件。复杂项目才展开详细规格与独立审查。
+- **按成果验收**：字体与标题建议可调整。关键事实、计算、几何编码、可读性、打印完整性及版本一致性需要成立。
+- **保留可靠交付**：三套配色、统一字体资源、自包含HTML和同版PDF；正式打包绑定真实复核记录，未完成审查用预览状态。
 
-也可以软链关联，本仓库修改即时生效：
+## 使用
 
-```bash
-ln -s "$(pwd)/consulting_deck_skill" ~/.claude/skills/consulting_deck_skill
-```
-
-### 2. 使用
-
-在 Claude Code 中输入 `/consulting_deck_skill`，按提示提供简报——受众、要做的决定、素材与截止日期。首次会询问主题，此后继承上次选择。
-
-### 3. 先看样稿（零依赖）
+将技能目录复制或软链到所用工具的技能目录，例如：
 
 ```bash
-open consulting_deck_skill/assets/reference_deck.html          # 9 页引擎样稿，断网完整可读
-open consulting_deck_skill/assets/analysis_reference_deck.html # 6 页分析表达样稿
-open iteration_v8_delivery/delivery/consulting-deck-v8-reference.html # v8 双格式交付与一键下载样稿
+ln -s "$(pwd)/consulting_deck_skill" ~/.codex/skills/consulting_deck_skill
 ```
 
-## 工作流程
+调用`consulting-deck-skill`并提供受众、需回答的问题、原材料和约束。支持analytical（原始材料）、exploratory（开放研究）和editorial（已确认文稿）；已有主题与字体偏好持续继承。无需预先指定页数、图型数量或框架清单。
 
-```
-S0 简报 ──→ S1 资料与问题 ──→ S2 分析规划/执行/审查 ──→ S3 storyline
-──→ S4 视觉与分页 ──→ S5 页面规格 ──→ S6 制作 ──→ S7 独立 QA ──→ S8 交付
-```
+构建环境、渲染命令和交付说明见 [skill README](consulting_deck_skill/README.md)。成稿打开无需构建依赖。
 
-## 仓库里有什么
+## 项目入口
 
-| 目录 | 是什么 |
+| 内容 | 位置 |
 |---|---|
-| [`consulting_deck_skill/`](consulting_deck_skill/) | 技能本体：SKILL.md 主编排 + references 手册 + 引擎/组件 + 验证脚本 |
-| [`report/`](report/) | 《咨询公司 Deck 制作手册 v2.0》：8.6 万字方法论调研 |
-| [`research_notes/`](research_notes/) | 证据底稿：每条结论 = 断言 + 来源 URL + 置信度 |
-| `task_bak/`、`iteration_v*/` | 任务简报与历代迭代记录、样稿与 QA 归档 |
+| 技能主流程 | [SKILL.md](consulting_deck_skill/SKILL.md) |
+| 开放规则与检查范围 | [open_authoring.md](consulting_deck_skill/references/open_authoring.md) |
+| 经典分析扩展 | [framework_extensions.md](consulting_deck_skill/references/framework_extensions.md) |
+| 图示与自定义图表 | [custom_exhibits.md](consulting_deck_skill/references/custom_exhibits.md) |
+| 本轮实施与实际验证 | [v9验证记录](iteration_v9_open/validation.md) |
+| 上轮对抗式审查 | [审查报告](review_partner_2026-09-06/review_report.md) |
+| 当前项目规则 | [AGENTS.md](AGENTS.md) |
 
-## 质量保障
+三套主题为McKinsey、BCG、Accenture公开视觉资料的独立适配，并非官方内部模板。项目聚焦HTML＋PDF。组件回归和单个案例验证各有范围，不以测试通过承诺任意项目都达到顶级咨询成果。
 
-引擎与组件均有自动化验证：headless Chrome 三连测（DOM 完整性 / URL 深链 / 打印每页一张）、图表数据契约、主题对比度、SVG 数值编码；每次迭代独立 QA 并归档。工程细节见 [CLAUDE.md](CLAUDE.md) 与 [skill README](consulting_deck_skill/README.md)。
-
-## 版本历程
-
-- **v1** — 基础引擎与 S0–S8 工作流
-- **v2** — 原创 SVG 组件、9 页样稿与浏览器验收脚本
-- **v3** — 三套内置配色主题
-- **v4** — 分析表达组件：差异注释、堆积图、比较表
-- **v5** — 高密度可视化路由与 ECharts 6.1.0 标准配方
-- **v6** — 分析规划、六类方法卡与论证综合
-- **v7** — 统一字体角色、固定字体资源、离线子集、真实字形测量与字体QA
-- **v8**（当前）— HTML + PDF 双格式交付、离线一键下载、交付版本一致性门禁
-
-详见各 `iteration_v*/` 归档。
-
-## 免责声明
-
-三套主题是基于**公开视觉资料**的独立适配，并非任何咨询公司的官方内部模板。本仓库交付 HTML 与分页 PDF，不冒称原生可编辑 PPTX。
+历代归档：v1引擎与工作流；v2 SVG与样稿；v3主题；v4分析展品；v5高密度路由；v6分析规划；v7字体；v8双格式交付；v9开放分析与创作、按影响验证。`report/`与`research_notes/`保留历史方法论研究。
