@@ -2,8 +2,10 @@
 const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..'),kit=require('../assets/exhibit-kit.js'),themes=require('../assets/deck-themes.js');
 const baseline=require('../assets/analysis_baseline.json');
+const typography=require('../assets/deck-typography.js'),{pack}=require('./pack_fonts.cjs');
 const args=process.argv.slice(2),themeId=(args.find(v=>v.startsWith('--theme='))||'--theme=mckinsey').slice(8),palette=themes.palette(themeId);
-const chart=(type,s)=>kit[type]({width:585,height:360,fontSize:16,palette,...s});
+const profile=(args.find(v=>v.startsWith('--typography='))||'--typography=serif-report').slice(13);
+const chart=(type,s)=>kit[type]({width:585,height:360,fontSize:16,palette,typography_id:profile,...s});
 const ex=(title,unit,body,note)=>`<div class="exhibit"><h2>${title}</h2><div class="unit">${unit}</div><div class="graphic">${body}</div><div class="annotation">${note}</div></div>`;
 const paired=(a,b)=>`<div class="layout-paired">${a}${b}</div>`;
 const slides=[];
@@ -42,5 +44,8 @@ html=html.replace('</style>',css+'\n</style>').replace('<title>Deck Title</title
 html=html.replace(/<script src="[^"]+"><\/script>/g,'').replace(/<script type="module">[\s\S]*?<\/script>/g,'');
 html=html.replace("if(!window.echarts){ document.body.classList.add('no-charts'); return; }","if(!window.echarts){ if(document.querySelector('.chart')) document.body.classList.add('no-charts'); return; }");
 html=themes.apply(html,themeId);
+// 旧快照仍比较原始图形设计；统一文字字体以避免混淆两种变量。
+html=html.replace(/font-family:Arial,'PingFang SC','Microsoft YaHei',sans-serif/g,'font-family:'+typography.get(profile).body);
+html=pack(html,{profile});
 const output=path.resolve(args.find(v=>!v.startsWith('--'))||path.join(root,'assets/analysis_reference_deck.html'));
 fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,html);console.log(`6页分析样稿 → ${output}`);

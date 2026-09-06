@@ -1,11 +1,10 @@
 /* 浏览器/Node共用的画布预算、主题解析和完整表格回退。不承担事实核验。 */
 (function(root,factory){
-  const api=factory(typeof module==='object'&&module.exports?require('./echarts-recipes.js'):root.EChartsRecipes);
+  const api=factory(typeof module==='object'&&module.exports?require('./echarts-recipes.js'):root.EChartsRecipes,typeof module==='object'&&module.exports?require('./deck-typography.js'):root.DeckTypography);
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(root)root.ChartRuntime=api;
-})(typeof window!=='undefined'?window:null,function(recipes){
+})(typeof window!=='undefined'?window:null,function(recipes,typography){
   'use strict';
-  const fontFamily="Arial,'PingFang SC','Microsoft YaHei',sans-serif";
   const required=['ink','accent','gray-1','gray-2','gray-3','gray-4','page-bg','on-accent',...Array.from({length:6},(_,i)=>'cat-'+(i+1)),'seq-1','seq-3','seq-5'];
   const fmt=v=>typeof v==='number'?(v!==0&&Math.abs(v)<.0001?String(v):Number(v.toFixed(4)).toLocaleString('zh-CN',{maximumFractionDigits:4})):String(v??'—');
   function widthOf(s,font=14){return [...String(s)].reduce((sum,c)=>sum+(/[\u0020-\u007e]/.test(c)?font*.68:font),0);}
@@ -30,17 +29,32 @@
     if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).map(([k,x])=>[k,resolve(x,t)]));
     return v;
   }
-  function theme(t,font=14){
+  function theme(t,font=14,typography_id){
+    const fontFamily=typography.get(typography_id).body;
     required.forEach(k=>{if(!t[k])throw Error('主题缺少 '+k);});
     return {animation:false,color:Array.from({length:6},(_,i)=>t['cat-'+(i+1)]),backgroundColor:t['page-bg'],textStyle:{fontFamily,fontSize:font,color:t.ink},
       categoryAxis:{axisLabel:{fontSize:font,color:t.ink},axisTick:{show:false}},valueAxis:{axisLabel:{fontSize:font,color:t['gray-2']},splitLine:{lineStyle:{color:t['gray-4']}}}};
   }
-  function options(raw,t,font=14){
-    const base=theme(t,font),opt=resolve(raw,t);
+  function options(raw,t,font=14,typography_id){
+    const base=theme(t,font,typography_id),opt=resolve(raw,t);
     opt.color=opt.color||base.color;opt.backgroundColor=opt.backgroundColor||base.backgroundColor;opt.textStyle={...base.textStyle,...opt.textStyle};opt.animation=false;opt.tooltip={show:false};
     for(const name of ['xAxis','yAxis'])for(const axis of [].concat(opt[name]||[])){axis.axisLabel={fontSize:font,...axis.axisLabel};axis.nameTextStyle={fontSize:font,...axis.nameTextStyle};}
     for(const s of opt.series||[]){s.label={...s.label,fontSize:Math.max(font,s.label?.fontSize||0)};if(s.endLabel)s.endLabel={...s.endLabel,fontSize:Math.max(font,s.endLabel.fontSize||0)};}
     if(opt.legend)opt.legend.textStyle={fontSize:font,...opt.legend.textStyle};
+    opt.textStyle.fontFamily=base.textStyle.fontFamily;
+    function normalize(v){if(!v||typeof v!=='object')return;for(const k of Object.keys(v)){
+      if(k==='fontFamily')v[k]=base.textStyle.fontFamily;
+      else if(k==='fontStyle'&&v[k]!=='normal')throw Error('交付字体未提供斜体；请改用常规字形');
+      else if(k==='fontWeight')v[k]=v[k]==='bold'||+v[k]>=600?600:+v[k]===500?500:400;
+      else if(k==='font'&&typeof v[k]==='string'){
+        if(/\b(?:italic|oblique)\b/.test(v[k]))throw Error('交付字体未提供斜体；请改用常规字形');
+        const m=v[k].match(/^\s*(?:(normal|bold|[1-9]00)\s+)?([\d.]+)px\s+.+$/);
+        if(!m)throw Error('图表 font 简写需使用常规字形、可选字重和 px 字号');
+        const weight=m[1]==='bold'||+m[1]>=600?600:+m[1]===500?500:400;
+        v[k]=`${weight} ${m[2]}px ${base.textStyle.fontFamily}`;
+      }else normalize(v[k]);
+    }}
+    normalize(opt);
     return opt;
   }
   function tableFor(name,spec,opt){
@@ -56,6 +70,7 @@
     throw Error('未定义回退表: '+name);
   }
   function tablePages(table,ctx,reason){
+    const fontFamily=typography.get(ctx.typography_id).body;
     const {width,height,fontSize:font,tokens:t}=ctx,pad=12,rowPad=6,lineHeight=font*1.4;
     const weights=table.columns.map((c,i)=>Math.max(80,Math.min(260,Math.max(widthOf(c,font),...table.rows.map(r=>Math.min(230,widthOf(r[i],font))))+pad*2)));
     const total=weights.reduce((a,b)=>a+b,0),widths=weights.map(v=>v/total*(width-16));
@@ -68,24 +83,25 @@
     return groups.map((g,page)=>{
       const graphic=[];let y=8;
       function draw(lines,h,isHeader){let x=8;graphic.push({type:'rect',silent:true,shape:{x,y,width:width-16,height:h},style:{fill:isHeader?t['gray-4']:t['page-bg'],stroke:t['gray-3'],lineWidth:.5}});
-        lines.forEach((ls,i)=>{const numeric=!isHeader&&i>0&&ls.every(s=>/^[\d\s.,%+−/()—-]+$/.test(s));graphic.push({type:'text',silent:true,x:numeric?x+widths[i]-pad:x+pad,y:y+rowPad,style:{text:ls.join('\n'),fontSize:font,fontFamily,fontWeight:isHeader?700:400,lineHeight,fill:t.ink,align:numeric?'right':'left',verticalAlign:'top'}});x+=widths[i];});y+=h;
+        lines.forEach((ls,i)=>{const numeric=!isHeader&&i>0&&ls.every(s=>/^[\d\s.,%+−/()—-]+$/.test(s));graphic.push({type:'text',silent:true,x:numeric?x+widths[i]-pad:x+pad,y:y+rowPad,style:{text:ls.join('\n'),fontSize:font,fontFamily,fontWeight:isHeader?600:400,lineHeight,fill:t.ink,align:numeric?'right':'left',verticalAlign:'top'}});x+=widths[i];});y+=h;
       }
       draw(header,headerHeight,true);g.forEach(r=>draw(r.lines,r.h,false));
       graphic.push({type:'text',silent:true,x:8,y:height-20,style:{text:'完整数据表'+(groups.length>1?' · '+(page+1)+'/'+groups.length:''),fontFamily,fontSize:font,fill:t['gray-2']}});
-      return {kind:'table',reason,table:{columns:table.columns,rows:g.map(r=>r.row)},option:options({graphic},t,font)};
+      return {kind:'table',reason,table:{columns:table.columns,rows:g.map(r=>r.row)},option:options({graphic},t,font,ctx.typography_id)};
     });
   }
   function prepare(name,spec,settings){
     const ctx={width:960,height:500,fontSize:14,...settings};const {width,height,fontSize:font,tokens:t}=ctx;
+    const fontFamily=typography.get(ctx.typography_id).body;
     if(!Number.isFinite(width)||!Number.isFinite(height)||width<320||height<200)throw Error('画布至少320×200');
     if(!Number.isFinite(font)||font<14)throw Error('配方数据字号至少14px；放不下时回退');
-    theme(t,font);
+    theme(t,font,ctx.typography_id);
     let raw;
     try{raw=recipes.build(name,spec);}catch(e){
       if(name==='sankey'&&e.message.startsWith('没有正流量')){const reason='无正流量；完整保留零值流量表';return {recipe:name,width,height,fontSize:font,reason,pages:tablePages(tableFor(name,spec,{}),ctx,reason)};}
       throw e;
     }
-    const opt=options(raw,t,font),plotH=height-100;let reason='';
+    const opt=options(raw,t,font,ctx.typography_id),plotH=height-100;let reason='';
     // 值轴名称位于轴端上方：预留名称、nameGap与字体空间，不靠验收失败后每图补坐标。
     if(opt.grid&&opt.yAxis?.name)opt.grid.top=Math.max(opt.grid.top||0,font*2+(opt.yAxis.nameGap??15)+5);
     if(name==='rankedBar'){
@@ -149,5 +165,5 @@
     const reason='最终文字存在越界、重叠或字号不足；改用完整数据表';
     return {...plan,reason,inspection,pages:tablePages(plan.fallback,plan.context,reason)};
   }
-  return {version:'1.0.0',prepare,check,audit,options,theme,resolve,contrast,textColor,interpolate,tablePages,widthOf};
+  return {version:'2.0.0',prepare,check,audit,options,theme,resolve,contrast,textColor,interpolate,tablePages,widthOf};
 });

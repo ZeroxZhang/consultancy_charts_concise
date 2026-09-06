@@ -2,9 +2,11 @@
 const fs=require('node:fs'), path=require('node:path');
 const root=path.resolve(__dirname,'..'), kit=require('../assets/exhibit-kit.js');
 const themes=require('../assets/deck-themes.js');
+const typography=require('../assets/deck-typography.js'),{pack}=require('./pack_fonts.cjs');
 const args=process.argv.slice(2), themeArg=args.find(v=>v.startsWith('--theme=')),themeId=themeArg?themeArg.slice(8):'mckinsey';
 const palette=themes.palette(themeId);
-const chart=(type,s)=>kit[type]({palette,...s});
+const profile=(args.find(v=>v.startsWith('--typography='))||'--typography=serif-report').slice(13);
+const chart=(type,s)=>kit[type]({palette,typography_id:profile,...s});
 const ex=(title,unit,body,note='')=>`<div class="exhibit"><h2>${title}</h2><div class="unit">${unit}</div><div class="graphic">${body}</div>${note?`<div class="annotation">${note}</div>`:''}</div>`;
 const notes=rows=>rows.map(([h,t])=>`<div class="evidence-note"><strong>${h}</strong>${t}</div>`).join('');
 const table=(heads,rows,widths=[])=>`<table class="data-table"><colgroup>${heads.map((h,i)=>`<col${widths[i]?` style="width:${widths[i]}%"`:''}>`).join('')}</colgroup><thead><tr>${heads.map(h=>`<th${/规模|同比/.test(h)?' class="num"':''}>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td${/规模|同比/.test(heads[i])?' class="num"':''}>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
@@ -43,10 +45,12 @@ engine=engine.slice(engine.indexOf('<!DOCTYPE html>'));
 engine='<!-- v2设计验证：前6页沿用用户材料且未重核，后3页为合成数据；全部静态SVG/HTML。 -->\n'+engine;
 let a=engine.indexOf('<section class="slide'),z=engine.indexOf('</div></div><!-- /stage /viewport -->');
 if(a<0||z<a)throw Error('引擎页面边界缺失');engine=engine.slice(0,a)+slides.join('\n')+'\n'+engine.slice(z);
-const css=fs.readFileSync(path.join(root,'assets/consulting-layouts.css'),'utf8')+`\n:root{--fs-note:12px;--font-title:Arial,'PingFang SC','Microsoft YaHei',sans-serif}.reading .slide__body{grid-template-rows:minmax(0,1fr) auto}.reading .slide__sticker{font-size:12px}.reading .data-table{font-size:15px}.reading .data-table td{padding:11px 9px}`;
+const css=fs.readFileSync(path.join(root,'assets/consulting-layouts.css'),'utf8')+`\n.reading .slide__body{grid-template-rows:minmax(0,1fr) auto}.reading .slide__sticker{font-size:12px}.reading .data-table{font-size:15px}.reading .data-table td{padding:11px 9px}`;
 engine=engine.replace('</style>',css+'\n</style>').replace('<title>Deck Title</title>','<title>咨询Deck v2 · 改版验证与图示样例</title>');
 // 本样稿全部为静态SVG/HTML，去除无需使用的外部库，实现真正离线自包含。
 engine=engine.replace(/<script src="[^"]+"><\/script>/g,'').replace(/<script type="module">[\s\S]*?<\/script>/g,'');
 engine=engine.replace('if(!window.echarts){ document.body.classList.add(\'no-charts\'); return; }',"if(!window.echarts){ if(document.querySelector('.chart')) document.body.classList.add('no-charts'); return; }");
 engine=themes.apply(engine,themeId);
+engine=engine.replace("font:16px Arial,'PingFang SC',sans-serif",'font:16px '+typography.get(profile).body);
+engine=pack(engine,{profile});
 const output=path.resolve(args.find(v=>!v.startsWith('--'))||path.join(root,'assets/reference_deck.html'));fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,engine);console.log(`${slides.length}页 → ${output}`);

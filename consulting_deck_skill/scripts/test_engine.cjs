@@ -53,7 +53,7 @@ const {pathToFileURL}=require('node:url');
   assert.match(execFileSync('pdfinfo',[pdf],{encoding:'utf8'}),/Pages:\s+7/);
   fs.copyFileSync(path.resolve(__dirname,'../assets/echarts-recipes.js'),path.join(dir,'echarts-recipes.js'));
   fs.copyFileSync(path.resolve(__dirname,'../assets/chart-runtime.js'),path.join(dir,'chart-runtime.js'));
-  const four=path.join(dir,'4x3.html');fs.writeFileSync(four,fs.readFileSync(engine,'utf8').replace('<body data-ratio="16x9">','<body data-ratio="4x3">'));
+  const four=path.join(dir,'4x3.html');fs.writeFileSync(four,require('./pack_fonts.cjs').pack(fs.readFileSync(engine,'utf8').replace('<body data-ratio="16x9">','<body data-ratio="4x3">')));
   await page.goto(pathToFileURL(four).href+'#4');await page.waitForFunction(()=>window.echarts&&document.querySelector('#waterfall-demo svg'));
   assert.equal(await page.locator('#stage').evaluate(el=>getComputedStyle(el).width),'1024px');
   const pdf43=path.join(dir,'4x3.pdf');await page.pdf({path:pdf43,preferCSSPageSize:true,printBackground:true});

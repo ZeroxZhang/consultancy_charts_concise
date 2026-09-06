@@ -11,7 +11,7 @@ const pw=require(process.env.PLAYWRIGHT_MODULE||'playwright');
    const p=await browser.newPage({viewport:{width:1400,height:900}}),errors=[];
    p.on('pageerror',e=>errors.push(e.message));
    await p.route('https://cdn.jsdelivr.net/npm/echarts@*/dist/echarts.min.js',route=>route.fulfill({path:require.resolve('echarts/dist/echarts.min.js'),contentType:'application/javascript'}));
-   await p.goto(pathToFileURL(file).href+'#3');await p.waitForFunction(()=>window.ChartRuntime&&document.querySelector('.slide.active .chart svg'));
+   await p.goto(pathToFileURL(file).href+'#3');await p.evaluate(()=>window.deckReady);await p.waitForFunction(()=>window.ChartRuntime&&document.querySelector('.slide.active .chart svg'));
    assert.equal(await p.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()),themes.get(id).tokens.accent);
    for(const [name,spec] of Object.entries(cases)){
     const server=render({recipe:name,spec,theme_id:id,width:720,height:360});

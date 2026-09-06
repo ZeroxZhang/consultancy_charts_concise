@@ -28,7 +28,7 @@ kit提供10种SVG和1种HTML比较表，附数字格式与差异计算工具；�
 
 ## EChartsRecipes API（ECharts 6 option与SSR共用）
 
-`assets/echarts-recipes.js`（1.1.0）负责基础输入校验和option；`assets/chart-runtime.js`（1.0.0）统一真实画布预算、主题解析、文字对比度、完整表格与分页。浏览器和SSR均使用这个运行层，不依赖不同的默认ECharts主题。
+`assets/echarts-recipes.js`（1.1.0）负责基础输入校验和option；`assets/chart-runtime.js`（2.0.0）统一真实画布预算、主题/字体配置、文字对比度、完整表格与分页。浏览器和SSR均使用这个运行层，不依赖不同的默认ECharts主题。
 
 生产调用必须是`prepare → setOption → check → 若换型则重绘并再次check`；只调用`build`或`prepare`不是最终验收。`check`读取实际文字包围盒，检查界外、相互遮挡和小于14px的字；不覆盖所有形状遮挡、语义或美学问题。
 
@@ -67,6 +67,7 @@ node scripts/render_echarts_svg.cjs input.json chart.svg --paginate
 ```
 
 输入包含`recipe`、`spec`、`width`、`height`和`theme_id`，可设`fontSize`（至少14）。脚本锁定6.1.0并关闭动画/tooltip；多页默认拒绝，`--paginate`输出`chart-p01.svg`等并在stdout报告原因。不会覆盖已有同名SVG。
+另有typography_id（默认serif-report）。SSR通过fontkit加载固定字体并启用tnum测宽，浏览器在window.deckReady后以同字体/特性测量。输出SVG仍依赖字体，需内联到同配置并已pack_fonts打包的HTML，不能独立冒称字体自包含；详见typography_system.md。
 
 也可传原生`option`，但没有配方的输入语义校验或保真表格转换；文字验收失败会报错，由作者处理。
 浏览器`data-recipe-page="0"`从0起选择逻辑页；作者须安排所有返回页，可按布局并排，不可只留第一页。生成SVG应按其真实逻辑尺寸内联，随后执行截图、PDF和断网复测。
@@ -95,6 +96,7 @@ const svg = kit.waterfall({width:740,height:330,items:[
 ```
 
 共同参数：width/height/fontSize（至少14）、palette=DeckThemes.palette(theme_id)（包含ink,muted,grid,accent,positive,negative,series,sequential,surface,selected,ranges）。
+SVG共同参数另有typography_id；浏览器先加载deck-typography.js。组件无第三方绘图库依赖，但需要本技能统一字体配置；HTML比较表继承所在报告样式。
 参数是SVG内部逻辑像素；嵌入容器缩小后要重新测有效字号，不能用巨大viewBox偷缩字。
 
 | 函数 | 专用数据字段 |

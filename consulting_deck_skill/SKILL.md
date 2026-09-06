@@ -9,7 +9,7 @@ description: >-
   风格材料；默认交付 HTML，可打印 PDF，不冒称原生可编辑 PPTX。
 ---
 
-# 咨询分析与 deck 制作技能 · v6
+# 咨询分析与 deck 制作技能 · v7
 
 目标是让决策者能独立读懂、核对并采取行动。公开咨询演示稿是参考样本，
 不是内部模板或“顶级质量”的认证。保留现有分页引擎，优先改进论证与信息设计。
@@ -27,6 +27,7 @@ description: >-
   未找到来源的事实保留缺口，不改贴 Illustrative 冒充证据。仅真正合成的数据标“示意数据”；
   作者建议标“建议”，主观评估标“分析判断”，估计值列方法与区间。
 - **先写论证再制作；实际看图才可声称视觉验收。** 代码检查和截图像素统计不能替代目视。
+- **字体是交付资源与排版契约。** 新 reading deck 默认衬线主标题、无衬线阅读与数据；从统一配置加载真实字重，字体就绪后绘图，静态 SVG 不自动等于字体自包含。
 - HTML 是当前产品契约；用户明确要求可编辑 PPTX 时先说明当前能力边界，不能改扩展名冒充。
 - 既有用户授权和偏好持续有效。用户已授权自主迭代时记录设计决策并继续，不重复索要签字。
 
@@ -66,6 +67,14 @@ description: >-
 - brief.md记录 `theme_id: mckinsey|bcg|accenture`、`theme_version: 3.0.0`、`selection_basis: explicit|inherited|default`、`overrides: {}`。未填写ID默认mckinsey，非法ID报错。
 - 中途更改主题：更新brief/visual_spec，保留实体→cat索引，重新生成所有SVG、ECharts、表格、截图/PDF并复验。最终交付锁定一套主题，用户未要求时不额外加界面选择器。
 
+### S0b · 字体选择与继承
+
+- 字体与三套配色独立，优先继承用户明确选择和当前项目记录，不增加每次必答的字体问卷。
+- 新 reading 默认 `serif-report`：Noto Serif SC600 + DM Serif Text400 主标题，Noto Sans SC / Inter 阅读与数据；明确选Playfair时使用 `serif-playfair`。新 presentation 默认 `sans-presentation`，用户既有选择优先。
+- 旧报告不自动迁移；保留原有配置，未记录时先识别实际字体，可用 `legacy-system` 记录兼容方案，但不声称复刻任意旧稿的像素布局。
+- brief/visual_spec记录 `typography_id`、`typography_version: 1.0.0`、`typography_selection_basis: explicit|inherited|default`、`font_delivery: embedded-subset|local-assets|legacy-system`。这不改变 `work_mode` 的分析深度。
+- 正式交付默认内嵌最终字体子集，构建依赖见 `references/typography_system.md`；品牌自定义字体需补齐资源、字重、许可与实测，不能只改局部CSS名。
+
 ### S1 · 资料盘点与初步问题
 
 可并行派2–3个研究代理处理独立主题，使用 `assets/subagent_prompts.md`；主会话核验关键事实。
@@ -99,6 +108,7 @@ SCQA 是可选叙事框架，不强行用前三页铺背景。
 ### S4 · 视觉系统、分页与图表选型
 
 读取 `references/color_and_type.md` 与 `references/slide_anatomy.md`；品牌依据见 `references/theme_research.md`。
+读取 `references/typography_system.md`，从 `assets/deck-typography.js` 获取字体、真实字重、字号和行高。衬线只用于封面、章节、页主判断，模块/正文/图注/数据用无衬线。按实际字体重算标题与证据区预算，不靠缩小数据字迁就新标题。
 从 `assets/deck-themes.js` 读取选定主题，作为CSS、SVG和ECharts唯一色值来源；不得混用三套主题。
 锁定品牌、实体、连续值、偏差、状态、强调六类颜色角色；只启用本 deck 用到的角色。
 把实体与颜色写进登记表；增长方向与经营好坏分开。标题、图注、Source 要在打印尺寸可读。
@@ -134,14 +144,16 @@ reading 正文通常2–4个证据模块，但单个完整主展品也可以；�
 
 ### S6 · 制作与验证
 
-1. 用 `node scripts/apply_theme.cjs assets/deck_engine.html deck.html <theme_id>` 生成选定主题引擎，替换其示例页，保留翻页/缩放/总览/打印/深链逻辑。
+1. 用 `node scripts/apply_theme.cjs assets/deck_engine.html draft.html <theme_id> <typography_id>` 生成选定主题和字体的引擎，替换其示例页，保留翻页/缩放/总览/打印/深链逻辑。构建时 `FONT_PYTHON` 指向已安装 `scripts/requirements-fonts.txt` 的Python。
 2. 将 `assets/consulting-layouts.css` 内联到 HTML；按布局变体组装证据区。
 3. 高频定量图走`assets/chart-runtime.js`：`prepare`按真实容器预算构建配方，渲染后必须`check`实际文字；若返回新计划，重绘并再次验收。`echarts-recipes.js`只是底层option构建器，单独调用不代表容量或视觉通过。浏览器引擎固定ECharts 6.1.0、SVG renderer，已接入完整路径。
 4. offline-self-contained优先`npm ci`安装固定依赖后运行`node scripts/render_echarts_svg.cjs input.json output.svg`，脚本执行同一主题/预算/文字验收。需要多页时显式加`--paginate`并嵌入全部输出；浏览器用`data-recipe-page`逐一安排返回页，不能只显示第一页。完整表也装不下则明确报错，作者继续拆分，不能缩字。
 5. `assets/exhibit-kit.js`提供10种零依赖SVG和1种HTML比较表，用于咨询特定校验与静态图示。ECharts原生/custom series处理其他坐标系、统计和关系图；HTML/CSS处理高文本密度表格；D3/ELK/Vega-Lite只按真实需要引入。
 6. 图表必须写单位、直接标签、必要图例；按比较任务添加参考线、差异或关键点注释。差异由源数据计算，关键内容不能藏 hover；过密时执行规格中的回退，不缩放数据图形来迁就标签。
+   定稿后运行 `node scripts/pack_fonts.cjs draft.html deck.html <typography_id>` 重新收集全篇字符并嵌入字体；后续改字需重新打包。隐藏页、data-spec/data-opt会纳入，任意脚本生成的额外字符通过pack API的extraText提供。截图、打印前等待window.deckReady，字体失败不能称完成。
 7. 用`scripts/test_echarts_recipes.cjs`、`test_theme_browser.cjs`和既有组件测试验证数值几何、主题、浏览器/SSR；大量输入另跑`test_dense_inputs.cjs`。用`qa_deck.cjs`渲染每页、检查越界/有效数据字号、PDF标题与页数、离线内容一致性；用可用图片工具实际逐页看图。自动文字验收不能代替证据核验、数据点遮挡或整体视觉判断。
 8. 引擎改动额外检验1280×720与1024×768、#3深链、G/ESC、键盘、缩放、全屏、打印页数和断网。
+9. 字体升级另跑test_typography.cjs和test_typography_browser.cjs，检查实际字体、真实字重、数字等宽、缺字/坏资源拒绝、PDF嵌入与冷缓存断网版式。SSR固定字体测宽不替代最终浏览器边界和目视。
 
 ### S7 · 独立质量验收
 
@@ -164,6 +176,7 @@ Blocking/Major 修复后复验；无法修复则明确不通过，不将未目�
 - 高密度输入、选图与编码：`references/chart_matching.md`；`references/chart_cards.md`
 - 分析语法与示例：`references/analysis_exhibits.md`；`assets/analysis_reference_deck.html`（六页合成数据，含v3前后对照及纯表格反例）
 - 语义配色：`references/color_and_type.md`
+- 字体角色、资源、打包与兼容：`references/typography_system.md`；唯一配置 `assets/deck-typography.js`
 - 论证：`references/storyline_method.md`；`references/logic_frameworks.md`
 - 样例：`references/worked_example.md`（原始数据示例）；`assets/reference_deck.html`（v2复合页实物）
 - 大量输入实测：`assets/dense-input-example/`；`scripts/build_dense_reference.cjs <输出目录>`生成六页离线样稿及来源清单、原子证据、派生公式、选型计划。固定合成夹具，非通用文件抽取器；文本编码和选型仍由作者判断。

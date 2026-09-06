@@ -65,6 +65,7 @@ slide_anatomy.md、exhibit_system.md；按需要读chart_cards与analysis_exhibi
 分析任务保留Q/F/E引用，editorial保留原文定位与必要计算；两者均保留证据边界和主题登记。每页写主判断、证明责任、互补模块及关系、
 阅读顺序、完整数据/公式、input_shape、reader_operation、comparability、
 候选图/淘汰理由、render_route/recipe、标签预算、几何编码、x/y/w/h或Grid、回退。
+继承typography_id/version，按typography_system.md区分主标题、模块、正文、备注与数据，记录真实字重/行高；不在单页自行换字体。
 评论列、KPI、takeaway按是否增加信息使用，不固定必填；一页可以一个完整展品。
 
 若发现标题与证据冲突、因果越界或新缺口，写出受影响F/T、原文依据、
@@ -90,6 +91,7 @@ page_plan、page_specs、HTML、逐页截图与PDF}。
 
 所有CSS、SVG、ECharts、表格使用同一主题及实体索引；不只检查主题变量名，
 需检查实际颜色、有效字号、标签、数值几何、遮挡和完整回退。
+另按typography_system.md检查实际字体/字重、字体就绪、PDF嵌入、冷缓存断网和混排数字；CSS名字与document.fonts.ready本身不足以证明字体身份。记录缺字、伪粗、意外回退与未验收项。
 输出检查范围、逐项依据、页号+严重级+现象+影响+规则+修复建议，及未验收项。
 Blocking/Major未清零不得称通过；作者已修复的说法不能替代复验。
 ```

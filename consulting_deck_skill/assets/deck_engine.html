@@ -23,11 +23,13 @@
 ════════════════════════════════════════════════════════════════════════════
 -->
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="mckinsey">
+<html lang="zh-CN" data-theme="mckinsey" data-typography="serif-report" data-typography-version="1.0.0">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Deck Title</title>
+<script src="./deck-typography.js"></script>
+<link data-deck-fonts rel="stylesheet" href="./fonts/deck-fonts.css">
 <script src="https://cdn.jsdelivr.net/npm/echarts@6.1.0/dist/echarts.min.js"></script>
 <!-- 其他备选：<script src="https://unpkg.com/echarts@6.1.0/dist/echarts.min.js"></script> -->
 <script src="./echarts-recipes.js"></script>
@@ -37,10 +39,7 @@
 :root{
   /* 完整默认色值由 scripts/sync_theme_defaults.cjs 生成到 deck-theme。 */
   --chrome-bg:#16181D; --chrome-text:#B5BDC6;
-  /* 字体：中文系统黑体 + 西文/数字 Arial；英文 deck 可换标题 Georgia */
-  --font-title: "PingFang SC","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC","Helvetica Neue",Arial,sans-serif;
-  --font-body:  "PingFang SC","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",Arial,"Helvetica Neue",sans-serif;
-  --font-num:   Arial,"Helvetica Neue",sans-serif;
+  /* 字体与真实字重由 deck-typography.js 的生成样式统一提供。 */
   /* 字号层级（逻辑像素）*/
   --fs-title:28px; --fs-lead:16px; --fs-body:16px; --fs-note:12px;
   /* 页面与网格（页边距规范 24–32px）*/
@@ -173,6 +172,21 @@ body.no-charts #nocharts{display:block}
 </style>
 <!-- 构建器注入完整主题；不要只替换品牌主色。 -->
 <style id="deck-theme">:root{--brand:#051C2C;--accent:#2251FF;--accent-vivid:#00A9F4;--ink:#172C3B;--gray-1:#445563;--gray-2:#586875;--gray-3:#BFCBD2;--gray-4:#F2F5F7;--selected:#EAF0FF;--cat-1:#2251FF;--cat-2:#007A78;--cat-3:#8652A0;--cat-4:#9C5C14;--cat-5:#667586;--cat-6:#9B4566;--seq-1:#EAF0FF;--seq-2:#BFCFFF;--seq-3:#819EFF;--seq-4:#456CE3;--seq-5:#173D91;--delta-negative:#9C5C14;--delta-neutral:#E8EDF0;--delta-positive:#2251FF;--good:#276749;--risk:#A3313C;--caution:#805B18;--good-soft:#E8F2EC;--risk-soft:#F9E8EC;--caution-soft:#FBF1DC;--page-bg:#FFFFFF;--on-brand:#FFFFFF;--on-accent:#FFFFFF;--on-risk:#FFFFFF;--brand-mid:#051C2C;--surface:#F2F5F7;--neutral:#586875;--pos:#276749;--neg:#A3313C;--warn:#805B18;}</style>
+
+
+
+<style id="deck-typography-style">:root{--font-title:'Deck DM Serif Text','Deck Noto Serif SC',serif;--font-body:'Deck Inter','Deck Noto Sans SC',sans-serif;--font-num:'Deck Inter','Deck Noto Sans SC',sans-serif;--weight-title:600;--weight-title-latin:400;--fs-title:32px;--lh-title:1.28;--fs-body:17px;--fs-note:12px}
+body{font-family:var(--font-body);font-synthesis:none}
+.slide__title,.cover-title,.divider-name{font-family:var(--font-title);font-weight:var(--weight-title);font-synthesis:none;letter-spacing:normal}
+.slide__title,.reading .slide__title{font-size:var(--fs-title);line-height:var(--lh-title);text-wrap:balance}
+.type-latin{font-weight:var(--weight-title-latin)}
+.cover-title{font-size:46px;line-height:1.2}.divider-name{font-size:38px;line-height:1.25}
+.slide h2,.slide h3,.analytical-table caption{font-family:var(--font-body);font-weight:600}
+b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytical-table .total td,.kpi-card .kpi-val,.divider-num{font-weight:600}
+.num,.kpi-val,.kpi-delta{font-family:var(--font-num);font-variant-numeric:lining-nums tabular-nums}
+.slide svg{font-synthesis:none;text-rendering:geometricPrecision}.slide svg text{font-variant-numeric:lining-nums tabular-nums}.slide svg text[font-weight="700"]{font-weight:600}
+.type-note{font-size:14px;line-height:1.5}.source{font-size:12px}
+</style>
 </head>
 <body data-ratio="16x9"><!-- 4:3 时改为 data-ratio="4x3" -->
 <div id="progress" style="width:0%"></div>
@@ -268,7 +282,7 @@ body.no-charts #nocharts{display:block}
   <div class="slide__tracker">2 方案比选 > 2.1 评估</div>
   <div class="slide__sticker">Not exhaustive</div>
   <h1 class="slide__title">渠道重构三方案：全渠道自营在能力与财务上综合最优</h1>
-  <p class="slide__lead">评估口径：●=满足  ◕=部分满足  ◔=基本不满足  ○=不满足；状态符号：●=可行 ▲=有条件 ■=高风险</p>
+  <p class="slide__lead">评估圆填充比例：全满=满足、3/4=部分满足、1/4=基本不满足、空心=不满足；风险：低 / 中 / 高</p>
   <div class="slide__body">
     <table class="tbl">
       <thead><tr><th style="width:22%">评估维度</th><th class="num">方案 A<br>深度经销</th><th class="num">方案 B<br>全渠道自营</th><th class="num">方案 C<br>电商优先</th></tr></thead>
@@ -409,7 +423,7 @@ body.no-charts #nocharts{display:block}
     initCharts: function(){
       /* 只做库存在性检查与主题注册（c-1 修复：不做全量 init——隐藏容器里
          init 会拿到 0 尺寸，产生 100×100 画布。图表在页面可见时懒初始化）*/
-      if(!window.echarts){ document.body.classList.add('no-charts'); return; }
+      if(!window.echarts){ if(document.querySelector('.chart')) document.body.classList.add('no-charts'); return; }
       echarts.registerTheme(THEME_NAME, chartTheme());
     }
   };
@@ -447,14 +461,14 @@ body.no-charts #nocharts{display:block}
       var raw,opt;
       if(el.getAttribute('data-recipe')){
         if(!window.ChartRuntime) throw new Error('ChartRuntime未加载');
-        var plan=ChartRuntime.prepare(el.getAttribute('data-recipe'),JSON.parse(el.getAttribute('data-spec')||'{}'),{width:el.clientWidth,height:el.clientHeight,tokens:runtimeTokens()});
+        var plan=ChartRuntime.prepare(el.getAttribute('data-recipe'),JSON.parse(el.getAttribute('data-spec')||'{}'),{width:el.clientWidth,height:el.clientHeight,tokens:runtimeTokens(),typography_id:document.documentElement.dataset.typography});
         var pageAttr=el.getAttribute('data-recipe-page'),pageIndex=pageAttr===null?0:Number(pageAttr);
         if(!Number.isInteger(pageIndex)||pageIndex<0)throw new Error('配方页号必须是从0起的整数');
         // 总是先用首页探测最终布局；实际验收可能把一张图转成多页表。
         opt=plan.pages[0].option;
       }else{
         raw=JSON.parse(el.getAttribute('data-opt'));
-        opt=window.ChartRuntime?ChartRuntime.options(raw,runtimeTokens()):resolveTokens(raw);
+        opt=window.ChartRuntime?ChartRuntime.options(raw,runtimeTokens(),14,document.documentElement.dataset.typography):resolveTokens(raw);
       }
       opt.animation=false;
       if(!opt.textStyle){opt.textStyle={fontFamily:getComputedStyle(document.documentElement).getPropertyValue('--font-body')};}
@@ -621,10 +635,20 @@ body.no-charts #nocharts{display:block}
       st.textContent='@page{size:1024px 768px;margin:0}';
       document.head.appendChild(st);
     }
-    DECK.init();
+    /* 所有字重和隐藏页所需字形就绪后，才让图表测量与分页开始。 */
+    window.deckReady=DeckTypography.ready(document).then(function(state){
+      window.__deckFontState=state;
+      if(window.echarts)DeckTypography.installMetrics(echarts,document);
+      DECK.init();return state;
+    }).catch(function(error){
+      document.documentElement.dataset.fontStatus='error';
+      window.__deckFontState={status:'error',error:error.message};
+      console.error('字体加载失败',error);var notice=document.createElement('div');notice.textContent='字体资源加载失败，报告尚未就绪：'+error.message;notice.style='position:fixed;top:0;left:0;right:0;background:#fff;color:#900;padding:16px;z-index:1000';document.body.appendChild(notice);throw error;
+    });
     /* 打印事件发生时浏览器尚未必切换媒介；先显式显示所有页再量尺寸。 */
     var printState=null;
     window.addEventListener('beforeprint', function(){
+      if(!window.__deckFontState||!['ready','legacy'].includes(window.__deckFontState.status))throw Error('字体尚未就绪，不能打印');
       if(printState) return;
       printState=DECK.slides.map(function(s){return {slide:s,value:s.style.getPropertyValue('display'),priority:s.style.getPropertyPriority('display')};});
       DECK.slides.forEach(function(s){s.style.setProperty('display','flex','important');});

@@ -1,9 +1,9 @@
 /* 原创零依赖、可打印 SVG 分析图组件。所有数值编码由数据计算。 */
 (function (root, factory) {
-  const api = factory();
+  const api = factory(typeof module==='object'&&module.exports?require('./deck-typography.js'):root.DeckTypography);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.ExhibitKit = api;
-})(typeof window !== 'undefined' ? window : null, function () {
+})(typeof window !== 'undefined' ? window : null, function (typography) {
   'use strict';
   const esc = v => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num = (v, name) => { if (typeof v !== 'number' || !Number.isFinite(v)) throw new Error(name + ' 必须为有限数值'); return v; };
@@ -34,12 +34,13 @@
     if(w<320||h<200) throw new Error('画布至少 320×200');
     const fs=num(s.fontSize===undefined?14:s.fontSize,'fontSize'); if(fs<14) throw new Error('标签字号不得小于14');
     const p=Object.assign({},p0,s.palette||{}); if(s.palette&&s.palette.accent&&!Object.prototype.hasOwnProperty.call(s.palette,'sequential'))p.sequential=null; list(p.series,'palette.series');
+    const fontFamily=typography.get(s.typography_id).body;
     const out=[];
     const text=(x,y,t,anchor='start',color=p.ink,extra='') => { if(t===undefined||t===null||String(t).trim()==='')throw new Error('文字标签不能为空'); out.push(`<text x="${x}" y="${y}" text-anchor="${anchor}" fill="${esc(color)}" ${extra}>${esc(t)}</text>`); };
     const rect=(x,y,width,height,color,extra='') => { if (![x,y,width,height].every(Number.isFinite)||width<0||height<0) throw new Error('非法矩形'); out.push(`<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="${esc(color)}" ${extra}/>`); };
     const line=(x1,y1,x2,y2,color=p.grid,extra='') => out.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${esc(color)}" ${extra}/>`);
     const circle=(cx,cy,r,color,extra='') => out.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${esc(color)}" ${extra}/>`);
-    const end=()=>`<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(s.title||'分析图')}" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="font-family:Arial,'PingFang SC','Microsoft YaHei',sans-serif;font-size:${fs}px"><title>${esc(s.title||'分析图')}</title><rect width="${w}" height="${h}" fill="white"/>${out.join('')}</svg>`;
+    const end=()=>`<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(s.title||'分析图')}" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" data-typography="${typography.get(s.typography_id).id}" style="font-family:${esc(fontFamily)};font-size:${fs}px;font-synthesis:none;text-rendering:geometricPrecision;font-variant-numeric:lining-nums tabular-nums"><title>${esc(s.title||'分析图')}</title><rect width="${w}" height="${h}" fill="white"/>${out.join('').replace(/font-weight="700"/g,'font-weight="600"')}</svg>`;
     return {w,h,fs,p,out,text,rect,line,circle,end};
   }
   function domain(values, supplied) {

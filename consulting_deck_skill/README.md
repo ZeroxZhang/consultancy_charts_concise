@@ -1,10 +1,11 @@
-# consulting_deck_skill · v6
+# consulting_deck_skill · v7
 
 包含分析规划、方法匹配与论证综合的咨询reading deck技能。默认交付固定尺寸分页HTML，可打印PDF；不输出原生可编辑PPTX。
 
 核心入口：`SKILL.md`。先选择analytical/exploratory/editorial深度，再做资料与问题、分析计划、实际分析及审查、storyline、视觉与制作。小任务可合并分析底稿，已确认文稿不强制重做研究。
 
 核心资源：
+
 - `references/analysis_planning.md`：分析蓝图、Q/T/F/E追溯、内容去向与三种任务深度。
 - `references/framework_router.md`：按业务问题检索六类方法；对应商业/行业、战略/经营、财务、数据与叙事卡按需加载。
 - `references/analysis_review.md`：AQ-01…10分析验收与技能行为验证。
@@ -22,6 +23,7 @@
 - `scripts/qa_deck.cjs`：逐页渲染、几何审计、PDF；目視另做。
 
 ```bash
+# 先按下方v7说明准备Node与FONT_PYTHON构建依赖
 node scripts/test_exhibit_kit.cjs
 node scripts/test_analysis_exhibits.cjs
 node scripts/test_echarts_recipes.cjs
@@ -84,4 +86,25 @@ node scripts/render_echarts_svg.cjs assets/echarts-recipe-example.json chart.svg
 S2现为分析规划、执行与审查，视觉系统移至S4；S3只综合已审查发现。方法卡记录输入、步骤/公式、假设、核验、回退和来源，不能仅凭框架名称生成结论。
 分析任务的`analysis_plan.md`、`findings.md`、`content_map.md`、`analysis_review.md`在小任务中可合并为`analysis_brief.md`；editorial可直接在标题骨架中附必要核对和原文定位，无需完整编号/审查台账。关键问题有回答或明确未知，重要反证进入相关正文，目标与预测分开。
 `references/worked_example.md`演示从销售表到有限判断和验证建议，修正旧例的因果与时限跳跃。技能行为验证与限制见项目`iteration_v6_analysis/qa_report.md`。
-本轮方法与文档升级不改变图表运行代码；runtime package版本仍为5.0.0，主题仍为3.0.0，ECharts仍为6.1.0。
+v6方法与文档升级未改变当时运行代码；v7运行包为7.0.0，ChartRuntime为2.0.0，字体配置1.0.0；主题仍3.0.0，ECharts仍6.1.0。
+
+## v7字体与交付一致性
+
+新reading默认Noto Serif SC600 + DM Serif Text400主标题，Noto Sans SC / Inter阅读和数据；可选Playfair标题与全无衬线演示配置，三套配色独立。已安装的系统字体不作为正式交付依据。角色、继承、真实字重与资源说明见 `references/typography_system.md`。
+
+字体主资源随skill提供；HTML成稿内嵌按文字裁剪的子集，打开成稿仍零安装。构建新增Python/fonttools（只在构建端需要）：
+
+```bash
+python3 -m venv .font-venv
+.font-venv/bin/pip install -r scripts/requirements-fonts.txt
+export FONT_PYTHON="$PWD/.font-venv/bin/python"
+npm ci
+node scripts/apply_theme.cjs assets/deck_engine.html draft.html mckinsey serif-report
+# 修改内容后，重新打包最终字符
+node scripts/pack_fonts.cjs draft.html deck.html serif-report
+node scripts/build_typography_reference.cjs typography-preview
+node scripts/test_typography.cjs
+node scripts/test_typography_browser.cjs
+```
+
+所有构建样稿默认嵌入字体；build_reference_deck/build_analysis_reference/build_dense_reference可用 `--typography=serif-playfair`。SSR输出仍是依赖字体的SVG文字，需嵌入已打包同配置的HTML。QA检查实际字体身份、字体加载失败、数字等宽、PDF字体嵌入和冷缓存断网版式；仍需逐页目视。字体测试包括test_typography、test_font_metrics、test_typography_browser和test_svg_scaling。

@@ -5,7 +5,7 @@
 **Turn a brief into a consulting-grade deck — delivered as a single HTML file.**
 *把一份简报，变成一份咨询级的演示文稿。*
 
-![version](https://img.shields.io/badge/version-v6.0-2251FF)
+![version](https://img.shields.io/badge/version-v7.0-2251FF)
 ![claude-code](https://img.shields.io/badge/Claude%20Code-Agent%20Skill-D97757)
 ![deliverable](https://img.shields.io/badge/deliverable-single%20HTML-E34F26)
 ![echarts](https://img.shields.io/badge/ECharts-6.1.0-AA344D)
@@ -16,6 +16,8 @@
 `consulting_deck_skill` is a Claude Code Agent Skill: give it a brief and your raw materials, and it runs the full **analysis → storyline → visual design → build → independent QA** pipeline, delivering **one self-contained HTML deck** — 16:9 or 4:3, paging/zoom/presentation mode, deep links, and print-to-PDF page by page.
 
 ![Sample deck preview](docs/showcase/overview-mckinsey.png)
+
+The overview and theme thumbnails retain historical layouts. See the [v7 typography sample](iteration_v7_typography/comparison/serif-report.html) for the new fonts; both bundled HTML reference decks have been upgraded.
 
 ## Why use it
 
@@ -31,6 +33,7 @@
 - 🔬 **Analysis first, expression second** — problems, methods, actual results, and counter-evidence are established before pages are formed; six method families spanning business/industry, strategy/operations, finance, data, and narrative, with three depth modes: `analytical` (raw materials), `exploratory` (open research), `editorial` (confirmed draft).
 - 📊 **Consulting-grade chart engine** — ECharts 6.1.0 with 9 validated recipes (input checks + capacity bounds), 10 SVG analytical components + an HTML comparison table, waterfall, Mekko, and full table fallback.
 - 🎨 **Three built-in themes** — McKinsey (default), BCG, Accenture; chosen once, inherited thereafter, colors from a single source of truth.
+- 🔤 **Unified typography** — serif main headings, sans-serif reading and data; pinned font assets, subset embedding, real glyph measurement and PDF font checks. Build dependencies are described in the [typography guide](consulting_deck_skill/references/typography_system.md); readers need no font installation.
 - 🧾 **Evidence discipline** — every number on a page must come from your materials or research sources; only genuinely synthesized data is marked Illustrative, and analytical judgments are labeled separately from recommendations.
 - 🤖 **Multi-agent collaboration** — 2–3 research agents in parallel, 2–4 page designers in parallel, one independent QA agent.
 - 📦 **Single-file delivery, offline-readable** — one HTML file; offline scenarios use a static-SVG path for fully self-contained output.
@@ -94,7 +97,8 @@ The engine and components ship automated verification: headless-Chrome triple ch
 - **v3** — three built-in color themes
 - **v4** — analytical exhibits: derived annotations, stacking, comparison table
 - **v5** — dense-input visualization routing and ECharts 6.1.0 recipes
-- **v6** (current) — analysis planning, six method families, and argument synthesis
+- **v6** — analysis planning, six method families, and argument synthesis
+- **v7** (current) — unified typography roles, pinned font resources, offline subsets, real glyph measurement and font QA
 
 See the `iteration_v*/` archives for details.
 

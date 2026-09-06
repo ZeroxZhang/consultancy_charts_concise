@@ -3,6 +3,8 @@
 
 # Node
 node_modules/
+.font-venv/
+__pycache__/
 
 # Logs
 *.log
