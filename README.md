@@ -1,118 +1,103 @@
-# consulting_charts
+> 🌐 语言 · Language：[简体中文](README.md) · [English](README_EN.md)
 
-**把一份简报变成咨询级 HTML 演示文稿的能力工作区 · Turning a brief into consulting-grade HTML decks**
+# Consulting Deck Skill
 
-一个「咨询级 HTML 演示文稿」能力的工作区。主交付物是 [`consulting_deck_skill/`](consulting_deck_skill/) —— 一个 Agent Skill，把用户的简报与原始材料变成**分页 HTML 文件**（PPT 尺寸、演示模式、ECharts 图表 + IconPark 图标）。引擎模板默认依赖 CDN；静态内联或完整打包后才是离线自包含交付。方法论沉淀自《咨询公司 Deck 制作手册 v2.0》（[`report/`](report/)，8.6 万字调研成果）。
+**把一份简报，变成一份咨询级的演示文稿。**
+*Turn a brief into a consulting-grade deck — as a single HTML file.*
 
-A workspace for consulting-style HTML presentations. The main deliverable is [`consulting_deck_skill/`](consulting_deck_skill/), an Agent Skill for paginated decks. The engine uses CDN dependencies; offline delivery requires static charts or bundled dependencies. Its methodology builds on the *Consulting Deck Playbook v2.0* ([`report/`](report/)).
+![version](https://img.shields.io/badge/版本-v6.0-2251FF)
+![claude-code](https://img.shields.io/badge/Claude%20Code-Agent%20Skill-D97757)
+![deliverable](https://img.shields.io/badge/交付-单个自包含%20HTML-E34F26)
+![echarts](https://img.shields.io/badge/ECharts-6.1.0-AA344D)
+![themes](https://img.shields.io/badge/内置主题-3%20套-6C5CE7)
+![print](https://img.shields.io/badge/打印-PDF-374151)
+![offline](https://img.shields.io/badge/离线模式-可用-0E9F6E)
 
-> 说明文档为中文写作（专有名词保留英文）。Documentation is written in Chinese, with proper nouns kept in English.
+`consulting_deck_skill` 是一个 Claude Code Agent Skill：你给它简报与原始材料，它走完 **分析 → 叙事 → 视觉 → 制作 → 独立质检** 全流程，交付**一个自包含 HTML 演示文稿**——16:9 或 4:3、翻页/缩放/全屏演示、URL 深链，浏览器打印即得逐页 PDF。
 
-## 目录与数据流 · Repository Map
+![样稿预览](docs/showcase/overview-mckinsey.png)
 
-三层沉淀关系 — three layers of sedimentation: evidence → methodology → execution.
+## 为什么是它
 
-```
-task_bak/            任务简报归档（只读，不再更新） · brief archives (read-only)
-research_notes/      证据底稿：每个事实 = 断言 + 来源 URL + 置信度 + 检索日期（7 份，按主题分文件）
-                     evidence notes: every fact = claim + source URL + confidence + retrieval date
-report/              《咨询公司 Deck 制作手册 v2.0》：方法论正文 + 8 份附录
-                     the playbook: methodology + 8 appendices
-consulting_deck_skill/  实战化执行层：SKILL.md 主编排 + references/ 手册浓缩版 + assets/ 引擎与组件 + scripts/ 验证脚本
-                     the skill itself: orchestration + condensed references + engine/assets + verification scripts
-iteration_v2/        v2 迭代记录、备份、基线截图与验收产物 · v2 iteration records & QA artifacts
-iteration_v3_color/  v3 配色迭代记录、三套同内容样稿与独立 QA · v3 color iteration records & QA
-iteration_v4_thinkcell/  v4 分析表达升级、前后对照与验收 · v4 analytical exhibits & QA
-iteration_v5_validation/  v5 运行层修正、两类原始输入实测、三主题截图与验收 · v5 runtime & dense-input QA
-```
+| 没有它的时候 | 有了它之后 |
+|---|---|
+| 内容、分析、排版、图表在多个工具之间来回搬运 | 一次简报，从分析到成品一条龙 |
+| 图表凭感觉画，数字来源说不清 | 每个数字落到来源，待核缺口显式保留 |
+| 交付 PPTX 要装 Office，字体、版式到处跑 | 单个 HTML 文件，浏览器即开即演示，可打印 PDF |
 
-数据流：`research_notes`（证据）→ `report`（方法论）→ `skill`（执行）。修改下层结论时需沿链检查上层是否受影响。
+## 核心能力
 
-Data flow: `research_notes` (evidence) → `report` (methodology) → `skill` (execution). Changes at a lower layer must be checked against upper layers.
+- 🧭 **S0–S8 门禁制工作流** — 简报、资料、分析、叙事、视觉、制作、质检、交付八个阶段，每阶段有明确门禁，不通过不进入下一阶段。
+- 🔬 **先分析，后表达** — 先建立问题、方法、实际结果与反证，再形成页面；覆盖商业/行业、战略/经营、财务、数据、叙事等分析场景的六类方法卡，支持 `analytical`（原始材料）/ `exploratory`（开放研究）/ `editorial`（已确认文稿）三档深度。
+- 📊 **咨询级图表引擎** — ECharts 6.1.0 + 9 种标准配方（带输入校验与容量边界），10 种 SVG 分析组件 + HTML 比较表，瀑布、Mekko、完整表格回退一应俱全。
+- 🎨 **三套内置主题** — McKinsey（默认）/ BCG / Accenture 风格，一次选择、持续继承，色值单一来源。
+- 🧾 **证据纪律** — 页面上每个数字必须来自用户素材或调研来源；仅真正合成数据标注 Illustrative，分析判断与建议分别标注。
+- 🤖 **多 agent 协作** — 调研 2–3 并行、页面设计 2–4 并行、QA 独立 1 个，各司其职。
+- 📦 **单文件交付，离线可读** — 交付物为单个 HTML；离线场景经静态 SVG 路径完整自包含，断网可读。
+- ✅ **独立 QA** — 分析、证据、视觉、工程四类验收，逐页渲染与打印检查，Blocking/Major 问题清零才算通过。
 
-## 核心特性 · Highlights
+## 效果：同一份内容，三套主题
 
-- **分页 HTML 与离线交付** / Paginated HTML & offline delivery — 16:9（1280×720）或 4:3；分页、缩放、演示、打印、URL 深链已实测。离线模式要求关键内容完整，不以“图表不可用”提示作为通过。
-- **论证驱动的工作流** / Argument-driven workflow — S0 简报/模式 → S1 资料/问题 → S2 分析规划/执行/审查 → S3 storyline → S4 视觉/分页 → S5 逐页设计 → S6 制作 → S7 独立 QA → S8 交付，每阶段有门禁。
-- **多 agent 协作** / Multi-agent collaboration — 调研 2–3 并行、页面设计 2–4 并行、QA 独立 1 个（模板见 `assets/subagent_prompts.md`）。
-- **证据纪律** / Evidence discipline — 页面上每个数字必须来自用户素材或调研来源，否则保留待核缺口；仅真正合成数据标 Illustrative，分析判断与建议分别标注。
-- **图表与图标** / Charts & icons — ECharts 6.1.0 + 9种标准配方 + Node静态SVG渲染；ExhibitKit处理瀑布、Mekko等咨询展品；IconPark离线降级到内置SVG迷你集。
-- **三套配色主题** / Three color themes — 麦肯锡风格（默认）、BCG 风格、埃森哲风格；S0 一次询问，已有选择持续继承。
-- **分析表达组件** / Analytical exhibits — `assets/exhibit-kit.js` 10 种 SVG + 1 种 HTML 比较表；支持派生差异标注、构成标签与完整表格回退。
-- **高密度可视化路由** / Dense visualization routing — 15类输入结构×16类读者操作，覆盖大量原始数据、编码文本、长文本论证、关系、层级、流程和决策材料。
-- **分析表达样稿** / Analytical reference deck — `assets/analysis_reference_deck.html`：6 页合成数据，含v3前后对照与保留普通表格的反例。
-- **离线样稿** / Offline sample deck — `assets/reference_deck.html`：9 页可离线打开的样稿，覆盖全部引擎能力。
-- **编号体系** / Shared numbering — I-01…I-15输入结构、A-01…A-16读者操作、B-01…B-56图表卡片、D-01…D-12页面原型、E-01…E-16 QA清单、M-01…M-10流行说法证伪结论。
+| McKinsey（默认） | BCG | Accenture |
+|---|---|---|
+| ![McKinsey 主题](docs/showcase/theme-mckinsey.png) | ![BCG 主题](docs/showcase/theme-bcg.png) | ![Accenture 主题](docs/showcase/theme-accenture.png) |
 
-## 快速开始 · Quick Start
+## 快速开始
 
-```bash
-# 双击打开 9 页离线样稿（零依赖，断网完整可读）
-open consulting_deck_skill/assets/reference_deck.html
-
-# 引擎三连测：DOM 完整性 / 深链 #3 / 打印每页一张（需 Node + Playwright/Chrome）
-node consulting_deck_skill/scripts/test_engine.cjs
-
-# 验证 SVG 组件数值编码（零浏览器依赖）
-node consulting_deck_skill/scripts/test_exhibit_kit.cjs
-node consulting_deck_skill/scripts/test_echarts_recipes.cjs
-```
-
-安装使用：把 skill 目录复制到支持 Agent Skills 的目录（或软链关联），在 Claude Code 中即可以 `/consulting_deck_skill` 调用。
-
-Install & use: copy (or symlink) the skill directory into your agent's skills directory, then invoke it as `/consulting_deck_skill` in Claude Code.
+### 1. 安装
 
 ```bash
 cp -R consulting_deck_skill ~/.claude/skills/consulting_deck_skill
 ```
 
-## 工作流 · Workflow
+也可以软链关联，本仓库修改即时生效：
 
-| 阶段 Stage | 输出 Output | 进入下一阶段的门禁 Gate |
-|---|---|---|
-| S0 简报 Brief | `brief.md` | 受众、要做的决定、reading/presentation、范围、素材、截止日期明确 |
-| S1 证据与输入建模 Evidence | `source_inventory.json` + `evidence.json` + `research_notes.md` | 原始材料有清单；输入结构、缺口、推断、口径差异显式列出 |
-| S2 分析 Analysis | `analysis_plan.md` + `findings.md` + `content_map.md` + `analysis_review.md` | 方法适配且实际执行；关键问题有答案或明确未知，重大分析问题已处理 |
-| S3 storyline | `ghost_deck.md` | 问题→发现→证据/边界→决策或研究结论闭合 |
-| S4 视觉与分页 Visual/pagination | `visual_spec.md` + `page_plan.md` | 内容骨架稳定后确定语义色、预算、证明责任和图型 |
-| S5 页面规格 Page specs | `page_specs.md` | 证据充分、几何编码合法、内容预算可装下 |
-| S6 制作 Build | `deck.html` | 复用引擎、逐页截图与打印检查 |
-| S7 独立 QA | `qa_report.md` + `renders/` | 分析、证据、视觉、工程分别验收；Blocking/Major 为零才称通过 |
-| S8 交付 Deliver | HTML、预览、QA 与限制 | 交付可打开文件，准确说明在线/离线、核验范围与遗留项 |
+```bash
+ln -s "$(pwd)/consulting_deck_skill" ~/.claude/skills/consulting_deck_skill
+```
 
-原始材料选analytical，开放研究选exploratory，已确认文稿选editorial；小型分析的S2产物可合并为analysis_brief.md；editorial可将必要核对、限制与原文定位直接附于标题骨架，不强制完整台账。方法入口见[framework_router.md](consulting_deck_skill/references/framework_router.md)。
+### 2. 使用
 
-## 验证脚本 · Verification Scripts
+在 Claude Code 中输入 `/consulting_deck_skill`，按提示提供简报——受众、要做的决定、素材与截止日期。首次会询问主题，此后继承上次选择。
 
-| 脚本 Script | 用途 Purpose |
+### 3. 先看样稿（零依赖）
+
+```bash
+open consulting_deck_skill/assets/reference_deck.html          # 9 页引擎样稿，断网完整可读
+open consulting_deck_skill/assets/analysis_reference_deck.html # 6 页分析表达样稿
+```
+
+## 工作流程
+
+```
+S0 简报 ──→ S1 资料与问题 ──→ S2 分析规划/执行/审查 ──→ S3 storyline
+──→ S4 视觉与分页 ──→ S5 页面规格 ──→ S6 制作 ──→ S7 独立 QA ──→ S8 交付
+```
+
+## 仓库里有什么
+
+| 目录 | 是什么 |
 |---|---|
-| `scripts/test_engine.cjs` | 引擎 headless Chrome 三连测（DOM 完整性 / 深链 / 打印） |
-| `scripts/test_exhibit_kit.cjs` | SVG 组件数值编码验证 |
-| `scripts/test_analysis_exhibits.cjs` | 差异计算、构成比例、标签回退、表格量尺与输入边界 |
-| `scripts/test_echarts_recipes.cjs` | 9种ECharts配方的数据契约、密度边界与可选SSR |
-| `scripts/render_echarts_svg.cjs` | 用固定ECharts 6依赖把配方/option构建为静态SVG |
-| `scripts/test_dense_inputs.cjs` | 大表/长文本来源、派生、选型、全量保留与错误输入门禁 |
-| `scripts/build_dense_reference.cjs <output-dir>` | 两类合成原始材料→六页离线样稿、来源清单、句级证据和选型计划 |
-| `scripts/build_analysis_reference.cjs` | 重建6页分析表达样稿（支持三套主题） |
-| `scripts/build_reference_deck.cjs` | 重建 9 页样稿（`--theme=bcg\|accenture` 切换主题） |
-| `scripts/qa_deck.cjs <html> <renders>` | 逐页渲染图与 PDF；自动 PASS 不能替代看图 |
-| `scripts/test_themes.cjs` | 主题隔离、对比度与快照验证 |
-| `scripts/test_theme_browser.cjs` | 主题实际渲染验证 |
-| `scripts/sync_theme_defaults.cjs` | 从 `deck-themes.js` 同步引擎与组件默认快照 |
+| [`consulting_deck_skill/`](consulting_deck_skill/) | 技能本体：SKILL.md 主编排 + references 手册 + 引擎/组件 + 验证脚本 |
+| [`report/`](report/) | 《咨询公司 Deck 制作手册 v2.0》：8.6 万字方法论调研 |
+| [`research_notes/`](research_notes/) | 证据底稿：每条结论 = 断言 + 来源 URL + 置信度 |
+| `task_bak/`、`iteration_v*/` | 任务简报与历代迭代记录、样稿与 QA 归档 |
 
-## 迭代记录 · Iteration History
+## 质量保障
 
-- **v1** — 基础引擎与 8 阶段工作流（备份、基线与验收产物见 `iteration_v2/`）。Baseline engine & workflow.
-- **v2** — 原创 SVG 组件（exhibit-kit）、9 页样稿、浏览器验收脚本；取消统一字数/要点上限，阅读型密度按证明责任。Original SVG components, 9-page sample deck, browser QA scripts; density is evidence-driven.
-- **v3** — 三套内置配色主题（mckinsey 默认 / bcg / accenture），`assets/deck-themes.js` 为色值唯一来源；三套同内容样稿与独立 QA 见 `iteration_v3_color/`。Three built-in color themes; `deck-themes.js` is the single source of truth.
-- **v4** — 按信息任务借鉴think-cell的分析表达：数据派生注释、堆积图、Mekko完整标签回退、比较表与阶段门禁；六页对照样稿和验收见 `iteration_v4_thinkcell/`。Information-led analytical exhibits, computed annotations, complete label fallback and comparison tables.
-- **v5** — 面向大量数据与文本的可视化路由：输入结构→读者操作→候选图→实现路径→容量回退；引入ECharts 6.1.0、标准配方和Node静态SVG路径。Dense-input visualization routing, validated ECharts recipes, and build-time SVG rendering.
-- **v5 复核迭代** — 共用ChartRuntime补齐真实文字验收、完整表格分页、比例/零值/负值与主题校验；1,152条明细、42段文本的六页实测及独立验收见 [`iteration_v5_validation/qa_report.md`](iteration_v5_validation/qa_report.md)。选型映射是作者指引，不冒称通用自动语义推荐。
+引擎与组件均有自动化验证：headless Chrome 三连测（DOM 完整性 / URL 深链 / 打印每页一张）、图表数据契约、主题对比度、SVG 数值编码；每次迭代独立 QA 并归档。工程细节见 [CLAUDE.md](CLAUDE.md) 与 [skill README](consulting_deck_skill/README.md)。
 
-- **v6** — 补齐问题→分析任务→方法→结果→论证与内容覆盖，六类方法按需加载；分析验收先于视觉，已确认文稿保留轻量路径。记录与验证见 [`iteration_v6_analysis/qa_report.md`](iteration_v6_analysis/qa_report.md)。
+## 版本历程
 
-## 免责声明 · Disclaimer
+- **v1** — 基础引擎与 S0–S8 工作流
+- **v2** — 原创 SVG 组件、9 页样稿与浏览器验收脚本
+- **v3** — 三套内置配色主题
+- **v4** — 分析表达组件：差异注释、堆积图、比较表
+- **v5** — 高密度可视化路由与 ECharts 6.1.0 标准配方
+- **v6**（当前）— 分析规划、六类方法卡与论证综合
 
-三套主题是基于**公开视觉资料**的独立适配，并非任何咨询公司的官方内部模板；本仓库不冒称原生可编辑 PPTX —— 交付物为 HTML（可打印 PDF）。
+详见各 `iteration_v*/` 归档。
 
-The three themes are independent adaptations based on **public visual materials**, not official internal templates of any consulting firm. This repository does not claim native editable PPTX output — the deliverable is HTML (printable to PDF).
+## 免责声明
+
+三套主题是基于**公开视觉资料**的独立适配，并非任何咨询公司的官方内部模板。本仓库交付 HTML（可打印为 PDF），不冒称原生可编辑 PPTX。
