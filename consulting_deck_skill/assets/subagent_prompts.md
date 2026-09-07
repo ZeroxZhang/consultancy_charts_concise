@@ -1,4 +1,4 @@
-# 子代理任务模板 · v9
+# 子代理任务模板 · v9.2
 
 按任务复杂度使用当前环境实际提供的代理工具，不设固定人数。下列完整字段是复杂任务的参考，简单任务可合并、省略重复台账；检查实质保留。任务按可独立完成的议题或页面拆分，不依赖特定CLI的Agent参数；无代理能力时由主会话执行并如实记录独立审查未执行。
 模板中的占位符在派发时替换。约定独立输出路径，避免多人改同一文件。主会话统一议题、口径、语义色与最终结论，并抽查返回依据。
@@ -54,18 +54,41 @@ findings、content_map}。输出{目录}/analysis_review.md。
 ready_with_limits或rework。没有看到的事实、计算或页面不能宣称已核验。
 ```
 
+## V · 可视化选型（S4–S5）
+
+```text
+使用 echarts-viz-planner skill，解决{读者问题/相关页面组}的可视化匹配。
+技能位置由主会话load_viz_planner.cjs返回：{planner_root}。
+先读取该路径SKILL.md，再按其流程读取catalog与相关references，不能只凭技能名猜流程。
+输入：{数据/分析结果、必要明细、相关原文定位、发现与结论类型、边界与反证}；
+上下文：{读者任务、相邻论证、正文区域、主题字体及既有角色层级/视觉基线、静态/离线约束、实际依赖}。
+mode=api，contract_version=1.1，output_level=decision，data.transform_policy=propose。
+
+按技能完成选型与映射，给理由、局部组合与阅读顺序、必要疑点；已有观点需核查表达前提。
+不重新开展无关研究，不修改原始或标准数据，不冻结全篇结论，不继续派发其他技能任务。
+缺口返回合法status/missing；高影响假设完整交回，不能以api不提问为由默认解决。
+表格、文字、机制与信息图参与匹配，给可制作语义，不强制转换为ECharts。
+
+输出{独立目录}/plan.json；复杂spec_ref文件写在同目录并保持可定位。
+用{planner_root}/scripts/validate_plan.py plan.json --schema实际校验，按返回内容修正。
+最后给主会话plan路径、读取的关键资源与实际检查结果；不冒称已渲染或通过成稿QA。
+```
+
 ## B · 页面规格（S5）
 
 ```text
 请完成{页面范围}的页面规格，输出{目录}/page_specs_{批次}.md。
-输入：{brief、visual_spec、ghost_deck、findings、对应证据、content_map、page_plan}。
+输入：{brief、visual_spec、ghost_deck、findings、对应证据、content_map、page_plan、已采纳planner结果（如有）}。
 先读{skill}/references/evidence_design.md、chart_matching.md、layout_templates.md、
 slide_anatomy.md、exhibit_system.md；按需要读chart_cards与analysis_exhibits。
 
 分析任务保留Q/F/E引用，editorial保留原文定位与必要计算；两者均保留证据边界和主题登记。复杂页按需写主判断、证明责任、互补模块及关系、
 阅读顺序、完整数据/公式、input_shape、reader_operation、comparability、
-候选图/淘汰理由、render_route/recipe、标签预算、几何编码、x/y/w/h或Grid、回退。
+已采纳选型的引用与重要调整、render_route/recipe、标签预算、几何编码、x/y/w/h或Grid、回退。
+已有planner结果时先读取spec/spec_ref与bindings，进入页面设计，不重复跑一遍候选选择；
+出现新的实质选型问题才交回主会话安排V任务。简单页不要求增加选型产物。
 继承typography_id/version，按typography_system.md区分主标题、模块、正文、备注与数据，记录真实字重/行高；不在单页自行换字体。
+已有认可基线时连同角色字号、数字特性和强调用途继承；选型建议中的尺寸在该载体内适配。常规查数表不因换图型自动变成大号KPI；有意改变层级时说明阅读任务依据。
 评论列、KPI、takeaway按是否增加信息使用，不固定必填；一页可以一个完整展品。
 
 若发现标题与证据冲突、因果越界或新缺口，写出受影响F/T、原文依据、
@@ -92,6 +115,7 @@ page_plan、page_specs、HTML、逐页截图与PDF}。
 所有CSS、SVG、ECharts、表格使用同一主题及实体索引；不只检查主题变量名，
 需检查实际颜色、有效字号、标签、数值几何、遮挡和完整回退。
 另按typography_system.md检查实际字体/字重、字体就绪、PDF嵌入、冷缓存断网和混排数字；CSS名字与document.fonts.ready本身不足以证明字体身份。记录缺字、伪粗、意外回退与未验收项。
+涉及样式变化时读取{认可基线、明确新增偏好}，在相同内容和显示比例下比较角色层级与强调范围；不要把工程PASS当成风格继承已验收。
 输出检查范围、具体依据、有问题的页号/严重级/影响/修复建议，及未验收项。
 Blocking/Major未清零不得称通过；作者已修复的说法不能替代复验。
 ```

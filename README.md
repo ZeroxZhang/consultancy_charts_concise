@@ -1,12 +1,14 @@
 > 语言：[简体中文](README.md) · [English](README_EN.md)
 
-# Consulting Deck Skill · v9.1
+# Consulting Deck Skill · v9.3.1
 
 把简报和丰富的原始材料转成有依据、有判断、可阅读的咨询deck，交付自包含HTML与同版分页PDF。
 
 `consulting_deck_skill`适用于支持Agent Skills的工具。以分析质量、论证和视觉设计共同决定成果；方法、图型与模板供模型选用，允许扩展和自定义。HTML支持翻页、缩放、全屏、深链和离线下载同版PDF。
 
-v9.1新增低对比中性母版，支持按正文合并或省略标题分隔线；页边装饰保持轻量。见 [母版使用](consulting_deck_skill/references/page_frame.md) 与 [实施验证及成稿](iteration_v9_1_frame/validation.md)。
+v9.3.1将McKinsey标题与主强调统一为`#000080`，辅助底色采用`#D9D9EC`，延续真实粗标题和按角色继承的正文层级。见[本轮验证与样稿](iteration_v9_3_1_navy/validation.md)。
+
+v9.2在S4–S5按需调用独立的`echarts-viz-planner`选型模块；主技能仍统筹分析、数据和成稿。只安装主技能也能按需加载随包依赖快照，支持离线。见 [协作与加载](consulting_deck_skill/references/viz_planner_integration.md) 和 [实施验证](iteration_v9_2_viz_planner/validation.md)。沿用v9.1的低对比中性母版。
 
 ## 样稿速览
 
@@ -38,6 +40,8 @@ ln -s "$(pwd)/consulting_deck_skill" ~/.codex/skills/consulting_deck_skill
 
 调用`consulting-deck-skill`并提供受众、需回答的问题、原材料和约束。支持analytical（原始材料）、exploratory（开放研究）和editorial（已确认文稿）；已有主题与字体偏好持续继承。无需预先指定页数、图型数量或框架清单。
 
+复制完整`consulting_deck_skill`目录，包括`dependencies/`。无需另装planner：加载器优先复用本地兼容版本，缺失则解包经过内容校验的快照；模型直接读取返回的技能路径。源码在[独立仓库](https://github.com/ZeroxZhang/echarts-viz-planner)维护，快照作为主技能分发产物生成。
+
 构建环境、渲染命令和交付说明见 [skill README](consulting_deck_skill/README.md)。成稿打开无需构建依赖。
 
 ## 项目入口
@@ -48,7 +52,7 @@ ln -s "$(pwd)/consulting_deck_skill" ~/.codex/skills/consulting_deck_skill
 | 开放规则与检查范围 | [open_authoring.md](consulting_deck_skill/references/open_authoring.md) |
 | 经典分析扩展 | [framework_extensions.md](consulting_deck_skill/references/framework_extensions.md) |
 | 图示与自定义图表 | [custom_exhibits.md](consulting_deck_skill/references/custom_exhibits.md) |
-| 本轮实施与实际验证 | [v9验证记录](iteration_v9_open/validation.md) |
+| 本轮实施与实际验证 | [v9.2验证记录](iteration_v9_2_viz_planner/validation.md) |
 | 上轮对抗式审查 | [审查报告](review_partner_2026-09-06/review_report.md) |
 | 当前项目规则 | [AGENTS.md](AGENTS.md) |
 

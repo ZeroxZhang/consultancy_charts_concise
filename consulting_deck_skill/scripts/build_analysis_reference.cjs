@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..'),kit=require('../assets/exhibit-kit.js'),
 const baseline=require('../assets/analysis_baseline.json');
 const typography=require('../assets/deck-typography.js'),{pack}=require('./pack_fonts.cjs');
 const args=process.argv.slice(2),themeId=(args.find(v=>v.startsWith('--theme='))||'--theme=mckinsey').slice(8),palette=themes.palette(themeId);
-const profile=(args.find(v=>v.startsWith('--typography='))||'--typography=serif-report').slice(13);
+const profile=(args.find(v=>v.startsWith('--typography='))||'--typography=serif-report-bold').slice(13);
 const chart=(type,s)=>kit[type]({width:585,height:360,fontSize:16,palette,typography_id:profile,...s});
 const ex=(title,unit,body,note)=>`<div class="exhibit"><h2>${title}</h2><div class="unit">${unit}</div><div class="graphic">${body}</div><div class="annotation">${note}</div></div>`;
 const paired=(a,b)=>`<div class="layout-paired">${a}${b}</div>`;

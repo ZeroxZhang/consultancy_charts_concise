@@ -25,7 +25,7 @@
 ════════════════════════════════════════════════════════════════════════════
 -->
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="mckinsey" data-typography="serif-report" data-typography-version="1.0.0" data-frame="quiet" data-frame-version="1.0.0">
+<html lang="zh-CN" data-typography="serif-report-bold" data-typography-version="1.1.0" data-frame="quiet" data-frame-version="1.0.0" data-theme="mckinsey">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -181,22 +181,11 @@ body.no-charts #nocharts{display:block}
 }
 </style>
 <!-- 构建器注入完整主题；不要只替换品牌主色。 -->
-<style id="deck-theme">:root{--brand:#051C2C;--accent:#2251FF;--accent-vivid:#00A9F4;--ink:#172C3B;--gray-1:#445563;--gray-2:#586875;--gray-3:#BFCBD2;--gray-4:#F2F5F7;--selected:#EAF0FF;--cat-1:#2251FF;--cat-2:#007A78;--cat-3:#8652A0;--cat-4:#9C5C14;--cat-5:#667586;--cat-6:#9B4566;--seq-1:#EAF0FF;--seq-2:#BFCFFF;--seq-3:#819EFF;--seq-4:#456CE3;--seq-5:#173D91;--delta-negative:#9C5C14;--delta-neutral:#E8EDF0;--delta-positive:#2251FF;--good:#276749;--risk:#A3313C;--caution:#805B18;--good-soft:#E8F2EC;--risk-soft:#F9E8EC;--caution-soft:#FBF1DC;--page-bg:#FFFFFF;--on-brand:#FFFFFF;--on-accent:#FFFFFF;--on-risk:#FFFFFF;--brand-mid:#051C2C;--surface:#F2F5F7;--neutral:#586875;--pos:#276749;--neg:#A3313C;--warn:#805B18;}</style>
+<style id="deck-theme">:root{--brand:#000080;--accent:#000080;--accent-vivid:#D9D9EC;--ink:#172C3B;--gray-1:#445563;--gray-2:#50606E;--gray-3:#BFCBD2;--gray-4:#F2F5F7;--selected:#D9D9EC;--cat-1:#000080;--cat-2:#007A78;--cat-3:#8652A0;--cat-4:#9C5C14;--cat-5:#667586;--cat-6:#9B4566;--seq-1:#D9D9EC;--seq-2:#A3A3D1;--seq-3:#6D6DB6;--seq-4:#36369B;--seq-5:#000080;--delta-negative:#9C5C14;--delta-neutral:#E8EDF0;--delta-positive:#000080;--good:#276749;--risk:#A3313C;--caution:#805B18;--good-soft:#E8F2EC;--risk-soft:#F9E8EC;--caution-soft:#FBF1DC;--page-bg:#FFFFFF;--on-brand:#FFFFFF;--on-accent:#FFFFFF;--on-risk:#FFFFFF;--brand-mid:#000080;--surface:#F2F5F7;--neutral:#50606E;--pos:#276749;--neg:#A3313C;--warn:#805B18;}</style>
 
 
 
-<style id="deck-typography-style">:root{--font-title:'Deck DM Serif Text','Deck Noto Serif SC',serif;--font-body:'Deck Inter','Deck Noto Sans SC',sans-serif;--font-num:'Deck Inter','Deck Noto Sans SC',sans-serif;--weight-title:600;--weight-title-latin:400;--fs-title:32px;--lh-title:1.28;--fs-body:17px;--fs-note:12px}
-body{font-family:var(--font-body);font-synthesis:none}
-.slide__title,.cover-title,.divider-name{font-family:var(--font-title);font-weight:var(--weight-title);font-synthesis:none;letter-spacing:normal}
-.slide__title,.reading .slide__title{font-size:var(--fs-title);line-height:var(--lh-title);text-wrap:balance}
-.type-latin{font-weight:var(--weight-title-latin)}
-.cover-title{font-size:46px;line-height:1.2}.divider-name{font-size:38px;line-height:1.25}
-.slide h2,.slide h3,.analytical-table caption{font-family:var(--font-body);font-weight:600}
-b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytical-table .total td,.kpi-card .kpi-val,.divider-num{font-weight:600}
-.num,.kpi-val,.kpi-delta{font-family:var(--font-num);font-variant-numeric:lining-nums tabular-nums}
-.slide svg{font-synthesis:none;text-rendering:geometricPrecision}.slide svg text{font-variant-numeric:lining-nums tabular-nums}.slide svg text[font-weight="700"]{font-weight:600}
-.type-note{font-size:14px;line-height:1.5}.source{font-size:12px}
-</style>
+
 <style id="deck-frame">
 /* 低对比母版：只负责页面分区与识别，不复用数据强调色。 */
 :root{
@@ -235,6 +224,18 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
     print-color-adjust:exact;-webkit-print-color-adjust:exact;
   }
 }
+</style>
+<style id="deck-typography-style">:root{--font-title:'Deck Playfair Display','Deck Noto Serif SC',serif;--font-body:'Deck Inter','Deck Noto Sans SC',sans-serif;--font-num:'Deck Inter','Deck Noto Sans SC',sans-serif;--weight-title:700;--weight-title-latin:700;--fs-title:32px;--lh-title:1.28;--fs-body:17px;--fs-data:16px;--fs-table-head:15px;--fs-subtitle:15px;--fs-exhibit-title:19px;--fs-annotation:15px;--fs-note:12px}
+body{font-family:var(--font-body);font-synthesis:none}
+.slide__title,.cover-title,.divider-name{font-family:var(--font-title);font-weight:var(--weight-title);font-synthesis:none;letter-spacing:normal}
+.slide__title,.reading .slide__title{font-size:var(--fs-title);line-height:var(--lh-title);text-wrap:balance}
+.type-latin{font-weight:var(--weight-title-latin)}
+.cover-title{font-size:46px;line-height:1.2}.divider-name{font-size:38px;line-height:1.25}
+.slide h2,.slide h3,.analytical-table caption{font-family:var(--font-body);font-weight:600}
+b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytical-table .total td,.kpi-card .kpi-val,.divider-num{font-weight:600}
+.num,.kpi-val,.kpi-delta{font-family:var(--font-num);font-variant-numeric:lining-nums tabular-nums}
+.slide svg{font-synthesis:none;text-rendering:geometricPrecision}.slide svg text{font-variant-numeric:lining-nums tabular-nums}.slide svg text[font-weight="700"]{font-weight:600}
+.type-note{font-size:14px;line-height:1.5}.source{font-size:12px}
 </style>
 </head>
 <body data-ratio="16x9"><!-- 4:3 时改为 data-ratio="4x3" -->

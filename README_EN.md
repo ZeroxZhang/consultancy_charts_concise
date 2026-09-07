@@ -1,12 +1,14 @@
 > Language: [English](README_EN.md) · [简体中文](README.md)
 
-# Consulting Deck Skill · v9.1
+# Consulting Deck Skill · v9.3.1
 
 Turn a brief and rich source material into an evidence-based consulting deck, delivered as self-contained HTML and a matching paginated PDF.
 
 The skill works with Agent Skills-compatible tools. Analysis, argument and visual design determine the result. Method cards, chart recipes and layouts are reusable starting points; the author can extend them or choose a custom implementation. HTML includes navigation, scaling, fullscreen, deep links and offline download of the same PDF.
 
-v9.1 adds a quiet neutral page frame, with per-slide boundary integration or omission. See [frame guidance](consulting_deck_skill/references/page_frame.md) and [implementation and validated artifacts](iteration_v9_1_frame/validation.md).
+v9.3.1 unifies McKinsey headings and primary emphasis in `#000080`, with `#D9D9EC` for secondary fills, while retaining true bold headings and the established body text hierarchy. See [validation and the revised sample](iteration_v9_3_1_navy/validation.md).
+
+v9.2 delegates substantive visual selection at S4–S5 to the independently maintained `echarts-viz-planner`. The main skill owns analysis, data, page design and delivery. A verified dependency snapshot supports on-demand loading even when only the main skill is installed, including offline use. See [integration and loading](consulting_deck_skill/references/viz_planner_integration.md) and [validation](iteration_v9_2_viz_planner/validation.md). The v9.1 quiet page frame is retained.
 
 ## Live samples
 
@@ -38,6 +40,8 @@ ln -s "$(pwd)/consulting_deck_skill" ~/.codex/skills/consulting_deck_skill
 
 Invoke `consulting-deck-skill` with the audience, question, sources and constraints. Choose analytical, exploratory or editorial depth as needed; preserve existing theme and typography preferences. No fixed slide count or quota of charts/frameworks is required.
 
+Copy the complete skill directory, including `dependencies/`. The loader prefers a compatible local planner; otherwise it verifies and extracts the bundled snapshot. The agent reads the resolved SKILL.md directly, with no separate global installation or session restart. Planner source is maintained in its [own repository](https://github.com/ZeroxZhang/echarts-viz-planner); the snapshot is a generated distribution artifact.
+
 Build dependencies and commands are in the [skill README](consulting_deck_skill/README.md). Finished artifacts need no build tools to open.
 
 ## Project references
@@ -46,7 +50,7 @@ Build dependencies and commands are in the [skill README](consulting_deck_skill/
 - [Authoring freedom and proportionate checks](consulting_deck_skill/references/open_authoring.md)
 - [Framework extensions](consulting_deck_skill/references/framework_extensions.md)
 - [Custom charts and diagrams](consulting_deck_skill/references/custom_exhibits.md)
-- [v9 implementation and validation](iteration_v9_open/validation.md)
+- [v9.2 integration and validation](iteration_v9_2_viz_planner/validation.md)
 - [Adversarial review](review_partner_2026-09-06/review_report.md)
 - [Current project rules](AGENTS.md)
 

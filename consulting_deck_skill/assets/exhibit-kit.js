@@ -8,7 +8,7 @@
   const esc = v => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num = (v, name) => { if (typeof v !== 'number' || !Number.isFinite(v)) throw new Error(name + ' 必须为有限数值'); return v; };
   const list = (v, name) => { if (!Array.isArray(v) || !v.length) throw new Error(name + ' 不可为空'); return v; };
-  const p0 = {"ink":"#172C3B","muted":"#586875","grid":"#BFCBD2","accent":"#2251FF","positive":"#2251FF","negative":"#9C5C14","surface":"#F2F5F7","selected":"#EAF0FF","series":["#2251FF","#007A78","#8652A0","#9C5C14","#667586","#9B4566"],"sequential":["#EAF0FF","#BFCFFF","#819EFF","#456CE3","#173D91"],"ranges":["#F2F5F7","#E8EDF0","#BFCBD2"]};
+  const p0 = {"ink":"#172C3B","muted":"#50606E","grid":"#BFCBD2","accent":"#000080","positive":"#000080","negative":"#9C5C14","surface":"#F2F5F7","selected":"#D9D9EC","series":["#000080","#007A78","#8652A0","#9C5C14","#667586","#9B4566"],"sequential":["#D9D9EC","#A3A3D1","#6D6DB6","#36369B","#000080"],"ranges":["#F2F5F7","#E8EDF0","#BFCBD2"]};
   /* 透明填充叠加白底后计算实际亮度，不能用透明度阈值推断文字颜色。 */
   function rgb(color) {
     if (typeof color !== 'string') throw new Error('颜色需要字符串');

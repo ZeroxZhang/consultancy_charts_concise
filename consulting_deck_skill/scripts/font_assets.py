@@ -16,11 +16,11 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 REVISION = '5e35378e6bda803962ee6fd257e444a7d459660d'
 BASE = f'https://raw.githubusercontent.com/google/fonts/{REVISION}/ofl/'
 SOURCES = [
-    ('notoserifsc', 'NotoSerifSC[wght].ttf', 'Deck Noto Serif SC', [('noto-serif-sc-600', 600)]),
+    ('notoserifsc', 'NotoSerifSC[wght].ttf', 'Deck Noto Serif SC', [('noto-serif-sc-600', 600), ('noto-serif-sc-700', 700)]),
     ('notosanssc', 'NotoSansSC[wght].ttf', 'Deck Noto Sans SC', [('noto-sans-sc-400', 400), ('noto-sans-sc-600', 600)]),
     ('inter', 'Inter[opsz,wght].ttf', 'Deck Inter', [('inter-400', 400), ('inter-500', 500), ('inter-600', 600)]),
     ('dmseriftext', 'DMSerifText-Regular.ttf', 'Deck DM Serif Text', [('dm-serif-text-400', 400)]),
-    ('playfairdisplay', 'PlayfairDisplay[wght].ttf', 'Deck Playfair Display', [('playfair-display-500', 500)]),
+    ('playfairdisplay', 'PlayfairDisplay[wght].ttf', 'Deck Playfair Display', [('playfair-display-500', 500), ('playfair-display-700', 700)]),
 ]
 
 def sha(data):
@@ -61,13 +61,23 @@ class RoleText(HTMLParser):
         if not skip:
             self.texts[role].append(data)
 
-def prepare():
+def prepare(requested=None):
     dest = ROOT / 'assets/fonts'
     dest.mkdir(exist_ok=True)
-    entries = []
+    previous = json.loads((dest / 'manifest.json').read_text()) if (dest / 'manifest.json').exists() else {'faces': []}
+    known = {name for _, _, _, instances in SOURCES for name, _ in instances}
+    if requested and set(requested) - known:
+        raise ValueError('未知字体实例: ' + ', '.join(sorted(set(requested) - known)))
+    entries = [e for e in previous['faces'] if e['id'] not in set(requested or known)]
     for directory, filename, family, instances in SOURCES:
+        instances = [(name, weight) for name, weight in instances if not requested or name in requested]
+        if not instances:
+            continue
         url = BASE + directory + '/' + urllib.parse.quote(filename)
         raw = urllib.request.urlopen(url, timeout=90).read()
+        expected = {e['source_sha256'] for e in previous['faces'] if e['source'] == url}
+        if expected and sha(raw) not in expected:
+            raise ValueError('固定上游源摘要不符: ' + url)
         license_text = urllib.request.urlopen(BASE + directory + '/OFL.txt', timeout=90).read()
         (dest / (directory + '-OFL.txt')).write_bytes(license_text)
         for name, weight in instances:
@@ -87,7 +97,7 @@ def prepare():
                             'sha256': sha(data), 'bytes': len(data), 'source': url, 'source_sha256': sha(raw),
                             'license': directory + '-OFL.txt', 'upstream_revision': REVISION})
             print(name, len(data), flush=True)
-    (dest / 'manifest.json').write_text(json.dumps({'version': '1.0.0', 'faces': entries}, ensure_ascii=False, indent=2) + '\n')
+    (dest / 'manifest.json').write_text(json.dumps({'version': '1.1.0', 'faces': entries}, ensure_ascii=False, indent=2) + '\n')
 
 def package(payload):
     dest = pathlib.Path(payload.get('assetDir') or ROOT / 'assets/fonts')
@@ -156,7 +166,7 @@ def package(payload):
 
 if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == 'prepare':
-        prepare()
+        prepare(sys.argv[2:] or None)
     else:
         try:
             print(json.dumps(package(json.load(sys.stdin)), ensure_ascii=False))

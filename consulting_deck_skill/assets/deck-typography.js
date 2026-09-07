@@ -1,23 +1,25 @@
 /* 字体唯一配置：与配色独立；浏览器和 Node 共用，不读取本机安装字体。 */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.DeckTypography=api;})(typeof window!=='undefined'?window:null,function(){
   'use strict';
-  const version='1.0.0';
+  const version='1.1.0',defaultId='serif-report-bold';
   const body="'Deck Inter','Deck Noto Sans SC',sans-serif";
   const faces={
     'inter-400':{family:'Deck Inter',weight:400},'inter-500':{family:'Deck Inter',weight:500},'inter-600':{family:'Deck Inter',weight:600},
     'noto-sans-sc-400':{family:'Deck Noto Sans SC',weight:400},'noto-sans-sc-600':{family:'Deck Noto Sans SC',weight:600},
     'noto-serif-sc-600':{family:'Deck Noto Serif SC',weight:600},'dm-serif-text-400':{family:'Deck DM Serif Text',weight:400},
-    'playfair-display-500':{family:'Deck Playfair Display',weight:500}
+    'playfair-display-500':{family:'Deck Playfair Display',weight:500},
+    'noto-serif-sc-700':{family:'Deck Noto Serif SC',weight:700},'playfair-display-700':{family:'Deck Playfair Display',weight:700}
   };
   const common=['inter-400','inter-500','inter-600','noto-sans-sc-400','noto-sans-sc-600'];
   const presets={
+    'serif-report-bold':{title:"'Deck Playfair Display','Deck Noto Serif SC',serif",latin:'Deck Playfair Display',zh:'Deck Noto Serif SC',weights:{title:700,titleLatin:700},faces:[...common,'noto-serif-sc-700','playfair-display-700']},
     'serif-report':{title:"'Deck DM Serif Text','Deck Noto Serif SC',serif",latin:'Deck DM Serif Text',zh:'Deck Noto Serif SC',weights:{title:600,titleLatin:400},faces:[...common,'noto-serif-sc-600','dm-serif-text-400']},
     'serif-playfair':{title:"'Deck Playfair Display','Deck Noto Serif SC',serif",latin:'Deck Playfair Display',zh:'Deck Noto Serif SC',weights:{title:600,titleLatin:500},faces:[...common,'noto-serif-sc-600','playfair-display-500']},
     'sans-presentation':{title:body,latin:'Deck Inter',zh:'Deck Noto Sans SC',weights:{title:600,titleLatin:600},faces:common},
     'legacy-system':{title:"'PingFang SC','Microsoft YaHei',Arial,sans-serif",body:"Arial,'PingFang SC','Microsoft YaHei',sans-serif",latin:'Arial',zh:'PingFang SC',weights:{title:700,titleLatin:700},faces:[]}
   };
-  function get(id){id=id||'serif-report';if(!Object.prototype.hasOwnProperty.call(presets,id))throw Error('未知字体配置: '+id);const p=presets[id];return JSON.parse(JSON.stringify({id,version,body:p.body||body,num:p.body||body,...p}));}
-  function css(id){const p=get(id);return `:root{--font-title:${p.title};--font-body:${p.body};--font-num:${p.num};--weight-title:${p.weights.title};--weight-title-latin:${p.weights.titleLatin};--fs-title:32px;--lh-title:1.28;--fs-body:17px;--fs-note:12px}
+  function get(id){id=id||defaultId;if(!Object.prototype.hasOwnProperty.call(presets,id))throw Error('未知字体配置: '+id);const p=presets[id];return JSON.parse(JSON.stringify({id,version,body:p.body||body,num:p.body||body,...p}));}
+  function css(id){const p=get(id);return `:root{--font-title:${p.title};--font-body:${p.body};--font-num:${p.num};--weight-title:${p.weights.title};--weight-title-latin:${p.weights.titleLatin};--fs-title:32px;--lh-title:1.28;--fs-body:17px;--fs-data:16px;--fs-table-head:15px;--fs-subtitle:15px;--fs-exhibit-title:19px;--fs-annotation:15px;--fs-note:12px}
 body{font-family:var(--font-body);font-synthesis:none}
 .slide__title,.cover-title,.divider-name{font-family:var(--font-title);font-weight:var(--weight-title);font-synthesis:none;letter-spacing:normal}
 .slide__title,.reading .slide__title{font-size:var(--fs-title);line-height:var(--lh-title);text-wrap:balance}
@@ -57,5 +59,5 @@ ${id==='legacy-system'?'.reading .slide__title{font-size:30px;line-height:1.22}'
     const probe=doc.createElement('span');probe.setAttribute('aria-hidden','true');probe.style.cssText='position:fixed;left:-100000px;top:0;white-space:pre;visibility:hidden;width:auto;height:auto;padding:0;border:0;letter-spacing:normal;font-synthesis:none;font-variant-numeric:lining-nums tabular-nums';doc.body.appendChild(probe);
     echarts.setPlatformAPI({measureText(text,font){probe.style.font=font||'14px '+get(doc.documentElement.dataset.typography).body;probe.style.fontVariantNumeric='lining-nums tabular-nums';probe.textContent=text;return {width:probe.getBoundingClientRect().width};}});
   }
-  return {version,ids:Object.keys(presets),faces,get,css,fontCSS,markTitles,ready,installMetrics};
+  return {version,defaultId,ids:Object.keys(presets),faces,get,css,fontCSS,markTitles,ready,installMetrics};
 });

@@ -7,6 +7,9 @@ assert.match(plan.pages[0].option.textStyle.fontFamily,/Deck Inter/,'配方必�
 assert.match(plan.pages[0].option.textStyle.fontFamily,/Deck Noto Sans SC/,'配方必须包含统一中文字体');
 assert.throws(()=>runtime.prepare('rankedBar',{items:[{label:'收入',value:1}]},{...settings,typography_id:'unknown'}),/字体|typography/);
 const type=require('../assets/deck-typography.js'),kit=require('../assets/exhibit-kit.js');
+assert.equal(type.get().id,'serif-report-bold');
+assert.deepEqual(type.get().weights,{title:700,titleLatin:700});
+assert.equal(type.get().body,type.get('serif-report').body);
 assert.equal(type.get('serif-report').weights.titleLatin,400);
 assert.equal(type.get('serif-playfair').weights.titleLatin,500);
 assert.throws(()=>type.get('__proto__'),/字体/);
@@ -15,6 +18,9 @@ assert.match(svg,/Deck Inter/);assert.doesNotMatch(svg,/Arial/);
 assert.match(kit.dumbbell({typography_id:'legacy-system',items:[{label:'收入',start:1,end:2}]}),/Arial/);
 const {pack}=require('./pack_fonts.cjs');
 const html='<html lang="zh-CN"><head></head><body><h1 class="slide__title">增长13%：Revenue</h1><p>收入 −1,234.50 亿元</p></body></html>';
+const bold=pack(html,{profile:'serif-report-bold'});
+const boldFaces=JSON.parse(bold.match(/id="deck-font-manifest"[^>]*>(.*?)<\/script>/s)[1]).faces;
+for(const id of ['noto-serif-sc-700','playfair-display-700'])assert.equal(boldFaces.find(f=>f.id===id).weight,700);
 const packed=pack(html,{profile:'serif-report'});
 assert.match(packed,/data:font\/woff2;base64,/);assert.match(packed,/data-typography="serif-report"/);
 assert.doesNotMatch(packed,/@import|fonts\.googleapis/);
@@ -29,4 +35,5 @@ const escapedJSON=pack('<html><head></head><body><div data-spec=\'{"label":"\\u9
 assert.ok(jsonFaces.some(f=>f.sample.includes('雪')),'JSON转义后的真实字符须进入子集');
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'deck-font-negative-'));
 assert.throws(()=>pack(html,{profile:'serif-report',assetDir:tmp}),/资源|manifest|ENOENT/,'缺少字体资源不能标称自包含');
-console.log('PASS: 统一字体、配置拒绝、真实字重、SVG继承、子集嵌入、幂等、缺字和缺资源拒绝');
+fs.rmSync(tmp,{recursive:true,force:true});
+console.log('PASS: 粗标题与旧预设隔离、统一字体、配置拒绝、真实字重、SVG继承、子集嵌入、幂等、缺字和缺资源拒绝');

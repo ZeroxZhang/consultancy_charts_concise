@@ -2,7 +2,7 @@ const frame=require('./apply_frame.cjs');
 /* 同内容对照：中文长标题、英文分析页、混排财务表；全部数字为合成示意。 */
 const fs=require('node:fs'),path=require('node:path'),type=require('../assets/deck-typography.js'),themes=require('../assets/deck-themes.js'),kit=require('../assets/exhibit-kit.js'),{pack}=require('./pack_fonts.cjs');
 const root=path.resolve(__dirname,'..');
-function build(out,profile='serif-report',theme='mckinsey'){
+function build(out,profile='serif-report-bold',theme='mckinsey'){
  const p=type.get(profile),palette=themes.palette(theme),slides=[];
  const page=(title,lead,body,lang='zh-CN')=>{const n=slides.length+1;slides.push(`<section class="slide reading analytical${n===1?' active':''}" lang="${lang}">${frame.markup}<div class="slide__tracker">字体与排版验证 · ${p.id}</div><div class="slide__sticker">示意数据 · 非真实结论</div><header class="slide__header"><h1 class="slide__title">${title}</h1><div class="slide__lead">${lead}</div></header><div class="slide__body">${body}</div><div class="source">来源：本技能固定合成数据。用途：比较字体层级、长标题、混排、数字对齐与打印效果；不用于经营决策。</div><div class="slide__page">${n}</div></section>`);};
  const graph=kit.dumbbell({typography_id:profile,palette,width:740,height:300,fontSize:16,startLabel:'2024年',endLabel:'2025年',items:[{label:'企业客户',start:6.4,end:8.2},{label:'中小企业',start:3.1,end:3.5},{label:'个人客户',start:1.8,end:2.7}]});
@@ -14,5 +14,5 @@ function build(out,profile='serif-report',theme='mckinsey'){
  const css=fs.readFileSync(path.join(root,'assets/consulting-layouts.css'),'utf8')+'\n.comparison-layout{display:grid;grid-template-columns:740px 436px;gap:24px}.comparison-layout svg{flex:none;max-width:100%}.type-note{margin-top:16px}.finance td{padding:18px 9px}.slide.reading{--frame-rule-offset:-11px}.reading .slide__body{margin-top:22px}.reading .source{margin-top:auto}';
  html=html.replace('</style>',css+'\n</style>');html=pack(frame.apply(themes.apply(html,theme)),{profile});fs.mkdirSync(out,{recursive:true});const file=path.join(out,profile+'.html');fs.writeFileSync(file,html);return file;
 }
-if(require.main===module){const dir=path.resolve(process.argv[2]||'typography-preview');for(const id of ['legacy-system','serif-report','serif-playfair'])console.log(build(dir,id));}
+if(require.main===module){const dir=path.resolve(process.argv[2]||'typography-preview');for(const id of ['legacy-system','serif-report','serif-playfair','serif-report-bold'])console.log(build(dir,id));}
 module.exports={build};

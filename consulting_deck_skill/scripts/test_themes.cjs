@@ -6,7 +6,7 @@ let keys,geometry;
 for(const id of themes.ids){
  const t=themes.get(id),v=t.tokens;assert.deepEqual(Object.keys(v).sort(),keys||Object.keys(v).sort());keys=Object.keys(v).sort();
  for(const val of Object.values(v))assert.match(val,/^#[0-9A-F]{6}$/);
- for(const [fg,bg] of [['on-brand','brand'],['on-accent','accent'],['ink','page-bg'],['gray-1','page-bg'],['gray-2','page-bg'],['ink','selected'],['good','good-soft'],['risk','risk-soft'],['caution','caution-soft']])assert.ok(ratio(v[fg],v[bg])>=4.5,`${id} ${fg}/${bg}`);
+ for(const [fg,bg] of [['on-brand','brand'],['on-accent','accent'],['ink','page-bg'],['gray-1','page-bg'],['gray-2','page-bg'],['ink','selected'],['gray-2','selected'],['good','good-soft'],['risk','risk-soft'],['caution','caution-soft']])assert.ok(ratio(v[fg],v[bg])>=4.5,`${id} ${fg}/${bg}`);
  for(let i=1;i<5;i++)assert.ok(lum(v['seq-'+i])>lum(v['seq-'+(i+1)]),id+'色阶不单调');
  t.tokens.accent='#000000';assert.notEqual(themes.get(id).tokens.accent,'#000000');
  const svg=kit.waterfall({palette:themes.palette(id),items:[{label:'起点',type:'total',value:10},{label:'增',type:'delta',value:3},{label:'减',type:'delta',value:-5},{label:'终点',type:'subtotal'}]});

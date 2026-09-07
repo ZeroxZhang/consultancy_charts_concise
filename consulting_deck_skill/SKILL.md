@@ -6,7 +6,7 @@ description: >-
   SVG及文字组织论证，交付自包含HTML与同版分页PDF。
 ---
 
-# 咨询分析与 deck 制作 · v9.1
+# 咨询分析与 deck 制作 · v9.3.1
 
 目标：让读者理解重要判断、核对依据，并完成本次需要的选择或研究。给模型充分的分析和设计空间；方法库、图型库与模板是工具箱，不是能力上限。交付合同为HTML＋PDF。
 
@@ -28,7 +28,7 @@ description: >-
 | S1 资料 | 找到重要数据结构、证据、反证和缺口 | 原材料可定位；大量文件保留清单，按问题抽取而非先穷尽登记 |
 | S2 分析 | 选方法，实际执行，检验竞争解释 | 可复核结果和允许表达的结论；重要未知说明影响及最有价值的补证方向 |
 | S3 综合 | 把发现变成有分量的答案和storyline | 标题骨架＋证明关系；决策有取舍，研究有发现，不能用计划冒充结果 |
-| S4 视觉 | 选择最能表达关系的展品与全篇节奏 | 主题、媒介、主比较与大致版面；简单页面直接制作即可 |
+| S4 视觉 | 委派有实质取舍的展品选型，统筹全篇节奏 | planner建议、主题、媒介、主比较与大致版面；已有清晰选择直接制作 |
 | S5 规格 | 解决复杂页的数据与几何问题 | 关键来源、编码、阅读顺序和容量；复杂页才写详细坐标/候选/回退 |
 | S6 制作 | 在现有引擎上完成页面和字体 | 成稿HTML，所有核心内容静态可读；截图/PDF实际验证 |
 | S7 复核 | 内容有用且成立，视觉和交付可靠 | 简短审查记录、实际看图、问题处置；不强制逐页打分表 |
@@ -40,7 +40,7 @@ work_mode按任务选：analytical处理原始材料；exploratory允许先探�
 
 - 深度研究／预读默认reading，明确现场讲述用presentation；默认中文随用户、16:9 1280×720，4:3需重排。页数由论证和使用时间决定。
 - 主题沿用用户或项目已有选择；无选择时可在简报中一次询问McKinsey／BCG／Accenture；用户授权自主决定或跳过可选问询则使用mckinsey并记录默认。不要按行业猜品牌，也不要反复问。色值读取assets/deck-themes.js；自定义品牌可以覆盖并实际验证。
-- 字体独立于配色：新reading默认serif-report，可选serif-playfair；presentation默认sans-presentation。旧稿继承既有选择。assets/deck-typography.js是角色与真实字重来源；正式稿默认嵌入字体子集。细节见 [字体系统](references/typography_system.md)。
+- 字体独立于配色：新reading默认serif-report-bold，标题中西文均真实700；presentation默认sans-presentation。旧稿继承既有选择，serif-report与serif-playfair保留原含义，不随换色自动迁移。正文仍为Noto Sans SC／Inter。assets/deck-typography.js是角色与真实字重来源；正式稿默认嵌入字体子集。细节见 [字体系统](references/typography_system.md)。
 - offline-self-contained是默认交付；online-single-file需要网络时明确记录。不得把CDN入口称为离线完整。
 
 ## S1–S2：丰富材料先变成可分析的结构
@@ -65,7 +65,11 @@ work_mode按任务选：analytical处理原始材料；exploratory允许先探�
 
 ## S4–S5：开放选图与编辑设计
 
-从“读者需要看出的关系”选图，按需查询 [输入与图型路由](references/chart_matching.md)、[B-01…56索引](references/chart_cards.md)、[展品实现](references/exhibit_system.md)。这些索引不是白名单。可以用原生/custom ECharts、D3、Vega-Lite、HTML/CSS、自由SVG或复杂布局工具；按实际需要引入，最终满足离线和打印。
+混合材料、图表与表格取舍、复杂比较或机制与数字组合需要选型时，按 [可视化专家协作](references/viz_planner_integration.md) 派子代理执行 `echarts-viz-planner`。先运行 `node scripts/load_viz_planner.cjs`，读取其返回的 `skill_file`；即使只安装本技能，也可按需从随包快照加载，无需预装第二个技能。子代理读取实际技能及相关目录，使用 `mode: api`、`contract_version: "1.1"`、`output_level: decision`。没有子代理工具时主会话执行同一路径；加载失败明确记录并处理可完成部分。
+
+输入围绕读者问题，附已有发现、结论边界、相关数据和原文定位、真实正文尺寸与静态约束；保留必要明细入口。主会话负责分析、标准数据、全篇论证与最终页面，planner负责局部选型、映射及组合建议。发现证据冲突退回受影响分析；不把返回 `ok` 当成数据或成稿已验收。按独立证明任务或相关页面组委派，已有清晰选择、简单编辑和成熟展品复用可直接制作。
+
+从“读者需要看出的关系”吸收选型建议，按需查询 [证据与deck适配](references/chart_matching.md)、[B-01…56制作索引](references/chart_cards.md)、[展品实现](references/exhibit_system.md)。通用候选目录与选型方法由planner维护；这些索引不是白名单。可以用原生/custom ECharts、D3、Vega-Lite、HTML/CSS、自由SVG或复杂布局工具；按实际需要引入，最终满足离线和打印。
 
 数字图表、机制图、信息图和矢量图可以混合。战略屋、价值链、客户旅程、服务蓝图、鱼骨、决策树、能力地图、网络、时间线等都有合理位置；不把复杂度本身当专业。通用节点／边／分组SVG可用scripts/render_diagram.cjs，或直接写专用SVG；参见 [自定义展品](references/custom_exhibits.md)。
 
@@ -73,14 +77,16 @@ work_mode按任务选：analytical处理原始材料；exploratory允许先探�
 
 视觉精编关注：让关键差异少心算，注释靠近对象；不同模块的面积与强调匹配证明责任；文本先综合成机制/共同维度，再决定是否保留引文矩阵。计算保留精度，显示按任务舍入；不可把非零小项误显示为零。低密度、纯表格、长文字或自定义复合页均可能是最佳选择。
 
+已有认可成稿时继承其角色层级与视觉基线；功能或选型优化不自动重设字号、字重和密度。常规数据约15–16px、正文16–17px、副题15px、表头600，优先使用字体配置的角色变量。少量关键指标可放大，但不把整张查数表默认做成KPI。强调用于重点值或对象，整行文字优先保持深色；质疑或调整这些建议以实际阅读任务为依据。
+
 标题区和正文用留白或低对比中性细线区隔，页边轻量标记建立全篇识别。正文首排已有分区顶线时合并边界，特殊页可省略；装饰不借用数据强调色、不争夺注意力。默认 quiet 母版的容器、可调参数与页级选择见 [页面母版](references/page_frame.md)，不要求每页相同线条数量。
 
-主题语义和实体身份保持一致；关键内容不依赖hover。定性关系可由作者布局；长度、位置、面积用于定量时必须遵循数据映射。箭头说明关系，假设不能画成已证实因果。
+主题语义和实体身份保持一致；McKinsey的主标题与主强调统一为#000080，辅助强调#D9D9EC用于底纹/色块，搭配深色文字，不用于白底小字或单独承担关键细线。正文与次级说明使用中性色；多类别、正负偏差与风险状态按语义保留区分，不将所有数据染成藏青。关键内容不依赖hover。定性关系可由作者布局；长度、位置、面积用于定量时必须遵循数据映射。箭头说明关系，假设不能画成已证实因果。
 
 ## S6：制作入口
 
 1. 用 `node scripts/apply_theme.cjs assets/deck_engine.html draft.html <theme> <typography>` 初始化，替换示例页并内联assets/consulting-layouts.css；已接入quiet母版，新增页显式保留slide__header标题组和slide__frame空装饰节点，按正文选择边界。保留导航、缩放、打印、深链与下载底座。
-2. 适配的高频图可用ChartRuntime的prepare/render/check路径；需要更好表达时直接用原生option、自定义series或SVG。配方内部容量阈值保护该实现，不是全局创作限制；超限可聚合、分面、总览＋局部、分页或换实现，完整记录有去向。
+2. 消费已采纳的视觉规格；核对模块数据绑定、来源与主会话落实的变换，采用同一数据版本。适配的高频图可用ChartRuntime的prepare/render/check路径；需要更好表达时直接用原生option、自定义series或SVG。planner的decision规格由作者实现，不假定已生成可运行option。配方内部容量阈值保护该实现，不是全局创作限制；超限可聚合、分面、总览＋局部、分页或换实现，完整记录有去向。
 3. `scripts/render_echarts_svg.cjs`接受配方或原生option；自定义图示用`render_diagram.cjs`或专用代码。静态SVG内联到HTML；最终离线复测。需要多页的配方用`--paginate`并安排全部结果，不漏页。
 4. 定稿运行 `node scripts/pack_fonts.cjs draft.html deck.html <typography>`；FONT_PYTHON指向已安装scripts/requirements-fonts.txt的Python。新增动态字符用extraText传入；改字后重新打包。
 5. 用 `node scripts/qa_deck.cjs deck.html renders` 生成截图和分页PDF；截图前等待window.deckReady，实际看每页与PDF。自动提醒先判断影响；只对真实错误返工，不为一个建议字号或第三行标题机械拆页。
@@ -92,6 +98,8 @@ work_mode按任务选：analytical处理原始材料；exploratory允许先探�
 复杂新deck或重大结论安排未参与制作的独立QA，输入成稿、关键底稿、截图/PDF和 [验收参考](references/workflow_qa.md)。简单编辑可作者复核，准确记录独立性；没有实际看图不能写视觉通过。
 
 记录内容/证据、视觉、工程的检查范围、影响判断的缺陷与重要取舍。不强制逐页评分、全字段清单或外部真人签字。审美偏好和建议阈值可合理调整；错误数字、误导编码、关键证据丢失、不可读和旧版PDF必须修正。
+
+涉及样式变化或用户要求延续旧稿时，让审查者同时看到认可基线与明确的新要求；以同内容、同显示比例核对实际字形、角色字号/字重、数字特性及强调范围。字体加载成功不等于风格延续；区分已恢复的基线与有意新增的设计。
 
 按 [交付系统](references/delivery_system.md) 写一份简短review.json，绑定已看过的HTML/PDF哈希、检查证据与未决项，不另建四套审批文件。`node scripts/package_delivery.cjs deck.html renders/deck.pdf delivery <报告名>` 输出同名文件；未完成审查可用明确的`--preview`生成预览，不能称正式通过。改正文、数据、主题、字体或页序后重建受影响产物并复验。
 

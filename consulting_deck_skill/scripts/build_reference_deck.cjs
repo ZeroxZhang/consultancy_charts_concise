@@ -6,7 +6,7 @@ const themes=require('../assets/deck-themes.js');
 const typography=require('../assets/deck-typography.js'),{pack}=require('./pack_fonts.cjs');
 const args=process.argv.slice(2), themeArg=args.find(v=>v.startsWith('--theme=')),themeId=themeArg?themeArg.slice(8):'mckinsey';
 const palette=themes.palette(themeId);
-const profile=(args.find(v=>v.startsWith('--typography='))||'--typography=serif-report').slice(13);
+const profile=(args.find(v=>v.startsWith('--typography='))||'--typography=serif-report-bold').slice(13);
 const chart=(type,s)=>kit[type]({palette,typography_id:profile,...s});
 const ex=(title,unit,body,note='')=>`<div class="exhibit"><h2>${title}</h2><div class="unit">${unit}</div><div class="graphic">${body}</div>${note?`<div class="annotation">${note}</div>`:''}</div>`;
 const notes=rows=>rows.map(([h,t])=>`<div class="evidence-note"><strong>${h}</strong>${t}</div>`).join('');

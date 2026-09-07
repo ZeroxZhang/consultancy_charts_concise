@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "faces": [
     {
       "id": "noto-serif-sc-600",
@@ -92,6 +92,30 @@
       "file": "playfair-display-500.woff2",
       "sha256": "1a7096c91d344e3ccc9eb52625c678b408fb78bcc85f9eb6fc017eeb4964625f",
       "bytes": 66156,
+      "source": "https://raw.githubusercontent.com/google/fonts/5e35378e6bda803962ee6fd257e444a7d459660d/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf",
+      "source_sha256": "c40f2293766a503bc70cce9e512ef844a4ccb7cbcde792fe2ea31d191917d8d6",
+      "license": "playfairdisplay-OFL.txt",
+      "upstream_revision": "5e35378e6bda803962ee6fd257e444a7d459660d"
+    },
+    {
+      "id": "noto-serif-sc-700",
+      "family": "Deck Noto Serif SC",
+      "weight": 700,
+      "file": "noto-serif-sc-700.woff2",
+      "sha256": "5f9ea1f47fcc46540e199586cc7c0a5799a9fa8473ca82d950ea6b779ed405cc",
+      "bytes": 5925560,
+      "source": "https://raw.githubusercontent.com/google/fonts/5e35378e6bda803962ee6fd257e444a7d459660d/ofl/notoserifsc/NotoSerifSC%5Bwght%5D.ttf",
+      "source_sha256": "050080d9255a86808f2945bffac582b31ef32bc36411ce29563b4961670c66f9",
+      "license": "notoserifsc-OFL.txt",
+      "upstream_revision": "5e35378e6bda803962ee6fd257e444a7d459660d"
+    },
+    {
+      "id": "playfair-display-700",
+      "family": "Deck Playfair Display",
+      "weight": 700,
+      "file": "playfair-display-700.woff2",
+      "sha256": "2a1484e446c8d29f3cc74f29ad1aec21ae7d5162cf80aa4e38bb2426724226c0",
+      "bytes": 66724,
       "source": "https://raw.githubusercontent.com/google/fonts/5e35378e6bda803962ee6fd257e444a7d459660d/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf",
       "source_sha256": "c40f2293766a503bc70cce9e512ef844a4ccb7cbcde792fe2ea31d191917d8d6",
       "license": "playfairdisplay-OFL.txt",
