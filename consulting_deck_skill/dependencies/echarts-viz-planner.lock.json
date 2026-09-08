@@ -2,13 +2,13 @@
   "format": 1,
   "name": "echarts-viz-planner",
   "repository": "https://github.com/ZeroxZhang/echarts-viz-planner",
-  "base_revision": "960375e97127a63053710975b843b89599814e9a",
-  "source_dirty": false,
-  "fetch_revision": "960375e97127a63053710975b843b89599814e9a",
-  "source_sha256": "54aa7f9f057c3230211feb2edccff02dcea075b05c861fe51f7144e0ab953ea3",
-  "bundle_sha256": "48bf568f3741958a3b4399e83656f08be8db6a2e7a812e795dfba9b449d19806",
-  "bundle_bytes": 67213,
-  "file_count": 56,
+  "base_revision": "fbca3ce5734471dcdc909b065000ac57482516c5",
+  "source_dirty": true,
+  "fetch_revision": null,
+  "source_sha256": "d9b109177eeff68e0270e9531f0224f36399fa259f768724f111ff6fd092a1ef",
+  "bundle_sha256": "2a2f76d690d89356ade02dc525ede71a6fefbeef19d1eab6a56ce3b32b25ba5a",
+  "bundle_bytes": 72257,
+  "file_count": 59,
   "files": [
     {
       "path": "LICENSE",
@@ -22,13 +22,13 @@
     },
     {
       "path": "capabilities.json",
-      "sha256": "53380770a1a3fa6716b039c9dfc5519f9838bf5b270ec6f2f7799de0781cb144",
-      "bytes": 2164
+      "sha256": "ab13f94ea55c23c6edbb8d14ddbeee709b05fdb0b5329c84cf62ec7bc84147d4",
+      "bytes": 2323
     },
     {
       "path": "catalog/details/comparison.yaml",
-      "sha256": "b584b9b094c79f735a200bec7e7a2e5ec3ed367ef44ddc3232f8d83ce748eb28",
-      "bytes": 8338
+      "sha256": "ef6fecae51b19e4ae5dd29ea01935a587640401a8425225b6acfab1384d01cd9",
+      "bytes": 9721
     },
     {
       "path": "catalog/details/composition.yaml",
@@ -39,6 +39,11 @@
       "path": "catalog/details/correlation.yaml",
       "sha256": "603004f176000f6e8a5dd042a2fafe5cc9039a75145a0f7bc051f611644e8ae9",
       "bytes": 4999
+    },
+    {
+      "path": "catalog/details/diagrams.yaml",
+      "sha256": "4e97dd801123e596805ccedb80ab6c54e66881eb27d45d70b033937e0bf340a7",
+      "bytes": 4353
     },
     {
       "path": "catalog/details/distribution.yaml",
@@ -77,8 +82,8 @@
     },
     {
       "path": "catalog/index.md",
-      "sha256": "5aeb7fbd80416f12fb22a69ebf065fb8018148d6a6c203b00d4e7ba3d93796e9",
-      "bytes": 8433
+      "sha256": "8f3af558d89bedc6c507521bd7bb00c572e22cc79405904fbcf293d47afab7b8",
+      "bytes": 9662
     },
     {
       "path": "references/antipatterns.md",
@@ -87,8 +92,8 @@
     },
     {
       "path": "references/api-contract.md",
-      "sha256": "4940f62e94f70abc3a6bc8e7a2ff2c71893a6e255084f66987aa4e0e50f33469",
-      "bytes": 11852
+      "sha256": "383e205df63c16b7aeffe3c1f90b4c103a229f14b6908d467c432629d280fa61",
+      "bytes": 12309
     },
     {
       "path": "references/composition.md",
@@ -101,14 +106,19 @@
       "bytes": 4231
     },
     {
+      "path": "references/diagram-handoff.md",
+      "sha256": "53f2a96771587e0d7736e680d27608d8c7d5573bb83370b82bafec88bbc70956",
+      "bytes": 1733
+    },
+    {
       "path": "references/handoff.md",
       "sha256": "6edcf48c7d48488a89e0768adb7c33d405377efc5b77f4bd2d1638831f0ebfad",
       "bytes": 4333
     },
     {
       "path": "references/selection.md",
-      "sha256": "6863f43a55ae9ba16221ad0faf8fb0f93cffa689882d8fee65cb154646faf2ba",
-      "bytes": 5754
+      "sha256": "59a70bf835b49d9402fae2e8a2e5178c3e2cacddb46455d50d15ccefa90bb519",
+      "bytes": 7410
     },
     {
       "path": "references/visual-quality.md",
@@ -132,13 +142,13 @@
     },
     {
       "path": "scripts/validate_plan.py",
-      "sha256": "5fa5ecfc83cab76a5f04ccde83a41fa812d6f33ecdf468f970eb60bc8d6c776b",
-      "bytes": 21987
+      "sha256": "303a0f6117c1c945898c1bd2e471a0b20bc0e28dfb868b842c4c405c622ebf15",
+      "bytes": 22333
     },
     {
       "path": "templates/README.md",
-      "sha256": "868dd1ab2cb49e23407731f1fdbe0e4a373292352fb6b144003dd3ece571fc46",
-      "bytes": 6212
+      "sha256": "9bf0b07e18d7d236ec44837aa1e79591efcd8d917208c99b76b65055bad19c48",
+      "bytes": 6521
     },
     {
       "path": "templates/bar.basic.json",
@@ -184,6 +194,11 @@
       "path": "templates/chord.chord.json",
       "sha256": "a581b538c783b8ba1b442350127163397dd1f589de9795b904c09c3186fc75c9",
       "bytes": 201
+    },
+    {
+      "path": "templates/diagram.semantic.json",
+      "sha256": "062ac40ddb4c6737b7f63f97b5661a970cd2c6608535428787ab4e3a5d465195",
+      "bytes": 960
     },
     {
       "path": "templates/funnel.funnel.json",

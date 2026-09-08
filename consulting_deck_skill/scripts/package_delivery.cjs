@@ -45,16 +45,26 @@ function validateAudit(file,{inputHtml,inputPdf,html,pdf,htmlPages,pdfPages,pdfS
   if(!fs.statSync(file,{throwIfNoEntry:false})?.isFile())fail('缺少 S7 audit.json，不能确认 HTML 与 PDF 来自同一次验收');
   let audit;try{audit=JSON.parse(fs.readFileSync(file,'utf8'))}catch(error){fail('无法读取 S7 audit.json：'+error.message)}
   if(audit.geometryStatus!=='PASS'||audit.errors?.length)fail('S7 工程验收未通过，拒绝打包');
+  // 从当前HTML读契约，不能因audit遗漏字段就跳过V11覆盖核对。
+  const root=html.match(/<html\b[^>]*>/i)?.[0]||'';
+  const attr=name=>root.match(new RegExp('\\b'+name+'\\s*=\\s*([\"\'])'+'([^\"\']*)'+'\\1','i'))?.[2];
+  const reliability=attr('data-reliability-version'),kind=attr('data-deck-kind');
+  if(reliability&&(audit.documentContract?.reliability!==reliability||audit.documentContract?.kind!==kind))fail('audit缺少或错配当前HTML的V11交付契约');
   if(path.resolve(audit.input||'')!==inputHtml)fail('audit.json 对应另一份 HTML，拒绝打包');
   if(audit.pages!==htmlPages||audit.pdfPages!==pdfPages)fail('audit.json 页数与当前 HTML/PDF 不一致');
   if(audit.htmlArtifact?.sha256!==sha256(html))fail('HTML 在 S7 验收后已修改，请重新生成 PDF 并复验');
   if(path.resolve(audit.pdfArtifact?.path||'')!==inputPdf||audit.pdfArtifact?.sha256!==pdfSha256||audit.pdfArtifact?.sha256!==sha256(pdf))fail('PDF 不是 S7 验收产物或验收后已修改');
   return audit;
 }
-function validateReview(file,{htmlSha256,pdfSha256}){
+function validateReview(file,{htmlSha256,pdfSha256,pages,requireCoverage=false,requireIndependent=false}){
   if(!fs.existsSync(file))fail('缺少成稿 review.json；完成内容与目视复核，或用 --preview 导出预览');
   const review=JSON.parse(fs.readFileSync(file,'utf8'));
+  if(requireCoverage||review.schemaVersion===2){
+    const errors=require('./aggregate_reviews.cjs').inspectCoverage(review,{htmlSha256,pdfSha256,pages,requireIndependent,baseDir:path.dirname(path.resolve(file))});
+    if(errors.length)fail('审查覆盖不完整：'+errors.join('；'));
+  }
   if(review.htmlSha256!==htmlSha256||review.pdfSha256!==pdfSha256)fail('review.json 对应旧版成稿，请复核当前 HTML/PDF');
+  if(review.aggregationErrors?.length)fail('审查聚合仍有未解决错误');
   if(review.status!=='complete'||typeof review.reviewer!=='string'||!review.reviewer.trim()||!['author','independent'].includes(review.independence))fail('成稿审查状态、审查者或独立性记录不完整');
   for(const key of ['analysis','evidence','visual']){
     const check=review.checks?.[key];
@@ -82,9 +92,9 @@ function packageDelivery({htmlFile,pdfFile,outputDir,baseName,auditFile,reviewFi
   if([outputHtml,outputPdf].includes(inputHtml)||[outputHtml,outputPdf].includes(inputPdf))fail('交付输出不能覆盖输入文件，请指定独立目录或文件名');
   if(!force&&(fs.existsSync(outputHtml)||fs.existsSync(outputPdf)))fail('交付文件已存在；确认替换时使用 --force');
   const pdfSha256=sha256(pdf),auditPath=path.resolve(auditFile||path.join(path.dirname(inputPdf),'audit.json'));
-  validateAudit(auditPath,{inputHtml,inputPdf,html,pdf,htmlPages,pdfPages,pdfSha256});
+  const audit=validateAudit(auditPath,{inputHtml,inputPdf,html,pdf,htmlPages,pdfPages,pdfSha256});
   const reviewPath=path.resolve(reviewFile||path.join(path.dirname(inputPdf),'review.json'));
-  if(!preview)validateReview(reviewPath,{htmlSha256:sha256(html),pdfSha256});
+  if(!preview)validateReview(reviewPath,{htmlSha256:sha256(html),pdfSha256,pages:htmlPages,requireCoverage:!!audit.documentContract?.reliability,requireIndependent:!!audit.documentContract?.reliability&&audit.documentContract?.kind==='report'});
   let deliveredHtml=injectPdf(html,pdf,path.basename(outputPdf),pdfSha256);
   deliveredHtml=markDelivery(deliveredHtml,preview);
   const embedded=Buffer.from(deliveredHtml.match(/<script\b[^>]*\bid="deck-pdf-payload"[^>]*>\s*([A-Za-z0-9+/=\s]+?)\s*<\/script>/i)?.[1].replace(/\s/g,'')||'','base64');

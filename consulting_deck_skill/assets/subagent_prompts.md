@@ -81,9 +81,8 @@ mode=api，contract_version=1.1，output_level=decision，data.transform_policy=
 
 ```text
 请完成{页面范围}的页面规格，输出{目录}/page_specs_{批次}.md。
-输入：{brief、visual_spec、ghost_deck、findings、对应证据、content_map、page_plan、已采纳planner结果（如有）}。
-先读{skill}/references/evidence_design.md、chart_matching.md、layout_templates.md、
-slide_anatomy.md、exhibit_system.md；按需要读chart_cards与analysis_exhibits。
+输入：{原始目标、用户明确偏好与认可/否定基线、已有简报/分析、相关原材料、已采纳planner结果（如有）}。
+先读{skill}/references/slide_anatomy.md，再按实际问题读取evidence_design、chart_matching、exhibit_system；需要骨架才查layout_templates，不全量加载图型索引。
 
 分析任务保留Q/F/E引用，editorial保留原文定位与必要计算；两者均保留证据边界和主题登记。复杂页按需写主判断、证明责任、互补模块及关系、
 阅读顺序、完整数据/公式、input_shape、reader_operation、comparability、
@@ -92,7 +91,7 @@ slide_anatomy.md、exhibit_system.md；按需要读chart_cards与analysis_exhibi
 出现新的实质选型问题才交回主会话安排V任务。简单页不要求增加选型产物。
 继承typography_id/version，按typography_system.md区分主标题、模块、正文、备注与数据，记录真实字重/行高；不在单页自行换字体。
 已有认可基线时连同角色字号、数字特性和强调用途继承；选型建议中的尺寸在该载体内适配。常规查数表不因换图型自动变成大号KPI；有意改变层级时说明阅读任务依据。
-评论列、KPI、takeaway按是否增加信息使用，不固定必填；一页可以一个完整展品。
+评论列、KPI、takeaway按是否增加信息使用，不固定必填；一页可以一个完整展品。先构思完整视觉论证，再使用组件；让复杂关系充分展开，收束短模块后重新组织全页。记录关系如何可见、主次、阅读顺序和空间取舍，不靠增大空框填满或把正文全部贴顶结束制作。
 
 若发现标题与证据冲突、因果越界或新缺口，写出受影响F/T、原文依据、
 建议收窄/补分析及受影响页面，退回分析层；不得以“禁止改变标题”为由继续包装。
@@ -103,15 +102,14 @@ slide_anatomy.md、exhibit_system.md；按需要读chart_cards与analysis_exhibi
 
 ```text
 请独立验收{deck绝对路径}，输出{目录}/qa_report.md。
-输入：{brief、分析底稿/审查、findings、content_map、evidence、visual_spec、
-page_plan、page_specs、HTML、逐页截图与PDF}。
+输入：{原始用户目标、已明确偏好与认可/否定基线、已有分析与原材料定位、作者规格、HTML、逐页截图与PDF}。
 先读{skill}/references/workflow_qa.md、page_frame.md、analysis_review.md、color_and_type.md，
 完整报告另读report_bookends.md，检查首尾页职责、元信息、单页书目及节选规则；按需读取图表/组件契约。editorial以原文定位和必要核对记录替代完整分析台账，不为验收反向补建编号体系。未看到的输入与未执行的检查如实写明。
 
 分别报告分析、证据、视觉、工程状态：
 分析/证据：从最终标题回溯F/T/E及原文，复算关键派生数；检查重要反证、
 目标与预测、时期/单位/范围、建议条件是否保留；查content_map中的重要材料去向。
-视觉：实际读取每页原尺寸图、总览与打印，判断读者能否理解关键证据与具体缺陷，评分可选。
+视觉：先独立看总览、每页原尺寸图及实际PDF，判断成品是否兑现原始目标；再查局部排印。具体指出标题关系如何展开、主证据与面积是否匹配、最大空白的作用及全篇分工；核对用户的密度与风格要求。作者规格可能有问题，不能仅核对按规格完成；无错位/遮挡不能单独支持视觉通过。评分可选。
 母版与组件合规必查（workflow_qa.md 的 E-V01…04）：每页 boundary 显式声明、标题灰线与正文首排顶线不并存、注释/判断条与左边界条之间的内边距（文字不贴边条）、页边识别不被遮挡；先按 page_frame.md「检查与交付」逐项核对。
 完整报告首尾：封面/封底成对检查，参考资料紧邻封底且仅一页；核对真实来源、语义去重、摘选优先级与完整出处去向，逐项PDF书目和链接实际复核，不用动作标题或图表密度评价功能页。
 工程：按workflow_qa执行实际浏览器/打印/离线检查；使用qa_deck输出作证据，
@@ -135,4 +133,4 @@ Blocking/Major未清零不得称通过；作者已修复的说法不能替代复
 
 ## v9编排补充
 
-复杂新deck或重大建议安排独立审查，普通局部编辑可作者核对。S7实际看图后写简短review.json绑定当前audit哈希，格式见delivery_system.md；不得由自动脚本伪造目视结论。方法、图型、布局和建议字号可自主调整，不因未填写候选表/编号/评分退回；客观错误和关键遗漏才阻断。
+复杂新deck或重大建议安排独立审查，普通局部编辑可作者核对。S7实际看图后写简短review.json绑定当前audit哈希，格式见delivery_system.md；不得由自动脚本伪造目视结论。方法、图型、布局和建议字号可自主调整，不因未填写候选表/编号/评分退回；客观错误、关键遗漏、整页关系/重心缺陷及未兑现本次明确成品要求均需返工；不能把用户要求归为审美偏好而跳过。

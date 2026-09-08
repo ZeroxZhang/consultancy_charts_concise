@@ -5,9 +5,11 @@ const {createHash}=require('node:crypto');
 const themes=require('../assets/deck-themes.js');
 const typography=require('../assets/deck-typography.js');
 const {measurer}=require('./font_metrics.cjs');
+const {layout}=require('./diagram_layout.cjs');
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
 function number(value,label){if(typeof value!=='number'||!Number.isFinite(value))throw Error(label+'必须为有限数字');return value;}
 function render(spec){
+  if(spec.layout)spec=layout(spec);
   const width=number(spec.width??1000,'width'),height=number(spec.height??500,'height');
   if(width<=0||height<=0)throw Error('画布尺寸必须为正');
   const type=typography.get(spec.typography_id),palette=themes.palette(spec.theme_id),measure=measurer(type.id);
@@ -49,7 +51,7 @@ function render(spec){
     for(const pt of points){if(!Array.isArray(pt)||pt.length!==2)throw Error('折线点需[x,y]');number(pt[0],'边x');number(pt[1],'边y');if(pt[0]<0||pt[0]>width||pt[1]<0||pt[1]>height)throw Error('边超出画布');}
     const stroke=color(e.color,palette.muted),strokeWidth=number(e.width??1.8,'线宽');if(strokeWidth<=0)throw Error('线宽必须为正');
     const center=points[Math.floor((points.length-1)/2)],next=points[Math.ceil((points.length-1)/2)];
-    return `<g><polyline points="${points.map(p=>p.join(',')).join(' ')}" fill="none" stroke="${stroke}" stroke-width="${strokeWidth}"${e.dashed?' stroke-dasharray="6 4"':''}${e.arrow===false?'':` marker-end="url(#${id}-arrow)"`}/>${e.label?label(e.label,e.labelX??(center[0]+next[0])/2,e.labelY??(center[1]+next[1])/2-10,{size:e.fontSize??14,anchor:'middle',fill:stroke}):''}</g>`;
+    return `<g data-edge="${escape(e.id||e.from+'--'+e.to)}" data-from="${escape(e.from)}" data-to="${escape(e.to)}"><polyline points="${points.map(p=>p.join(',')).join(' ')}" fill="none" stroke="${stroke}" stroke-width="${strokeWidth}"${e.dashed?' stroke-dasharray="6 4"':''}${e.arrow===false?'':` marker-end="url(#${id}-arrow)"`}/>${e.labelBox?`<rect x="${e.labelBox.x}" y="${e.labelBox.y}" width="${e.labelBox.w}" height="${e.labelBox.h}" fill="${palette.bg||'#FFFFFF'}"/>`:""}${e.label?label(e.label,e.labelX??(center[0]+next[0])/2,e.labelY??(center[1]+next[1])/2-10,{size:e.fontSize??14,anchor:'middle',fill:stroke}):''}</g>`;
   }).join('');
   const nodeSVG=nodes.map(n=>{
     const shape=n.shape||'rect',fill=color(n.fill,palette.surface),stroke=color(n.stroke,palette.grid);
@@ -78,4 +80,4 @@ function render(spec){
 if(require.main===module){
   try{const [input,output]=process.argv.slice(2);if(!input||!output)throw Error('用法: node scripts/render_diagram.cjs input.json output.svg');if(fs.existsSync(output))throw Error('输出已存在，请使用新路径');const svg=render(JSON.parse(fs.readFileSync(input,'utf8')));fs.mkdirSync(path.dirname(path.resolve(output)),{recursive:true});fs.writeFileSync(output,svg);console.log('SVG已生成；需内联字体并检查实际页面：'+output);}catch(e){console.error(e.message);process.exitCode=1;}
 }
-module.exports={render};
+module.exports={render,layout};

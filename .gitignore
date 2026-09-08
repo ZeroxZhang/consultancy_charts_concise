@@ -8,3 +8,12 @@ __pycache__/
 
 # Logs
 *.log
+
+# V11 本地历史备份与已取消实验的原始会话；摘要和成稿证据仍入库
+/iteration_v11_reliability/baseline/
+/iteration_v11_reliability/new/
+/iteration_v11_reliability/release/*.zip
+/iteration_v11_reliability/experiments/runs/
+/iteration_v11_reliability/experiments/pilots/
+/iteration_v11_reliability/experiments/blind/
+/iteration_v11_reliability/experiments/probes/

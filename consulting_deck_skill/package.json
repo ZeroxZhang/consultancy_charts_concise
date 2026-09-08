@@ -1,6 +1,6 @@
 {
   "name": "consulting-deck-skill-runtime",
-  "version": "9.1.0",
+  "version": "11.1.0",
   "private": true,
   "description": "Optional pinned runtime for build-time ECharts SVG rendering.",
   "dependencies": {

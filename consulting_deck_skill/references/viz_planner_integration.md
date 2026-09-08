@@ -2,11 +2,11 @@
 
 S4–S5按需读取。`echarts-viz-planner`是独立维护的选型模块；本文件只约定deck上下文、加载与接回方式。通用输出字段及语义以实际加载的planner `references/api-contract.md`为准。
 
-## 何时委派
+## 何时选型与委派
 
-混合材料、复杂比较、图表/表格取舍、机制与数字组合、现有表达无法承担证明任务时，默认派选型子代理。S3的骨架提供方向但仍可被证据质疑。探索任务可在S2按需调用，探索建议经分析确认后才进入报告。
+混合材料、复杂比较、图表/表格取舍、机制与数字组合、现有表达无法承担证明任务时，需要实质选型。可独立的问题且当前允许委派时交给子代理，否则主会话读取同一planner执行；不为遵循流程增加固定代理。S3的骨架提供方向但仍可被证据质疑。探索任务可在S2按需调用，探索建议经分析确认后才进入报告。
 
-按可独立判断的问题或相关页面组分派，给相邻论证上下文；任务较小只派一个。全篇节奏、页面排布与实体语义由主会话统一。已明确图型的实现、简单查数/文字编辑与成熟页面复用直接制作，不重复选型。
+按可独立判断的问题或相关页面组分派，给相邻论证上下文；任务较小只派一个。全篇节奏、页面排布与实体语义由主会话统一。先提出页面要显露的关系和空间需求，planner规格再进入[整页创作](slide_anatomy.md)；不能只把局部展品与说明拼接、自然高度贴顶就当页面完成。已明确图型的实现、简单查数/文字编辑与成熟页面复用直接制作，不重复选型。
 
 ## 加载：只装主技能也能运行
 
@@ -61,6 +61,7 @@ contract_version: "1.1"
 output_level: decision
 data:
   file: /absolute/path/analysed-data.json
+  sha256: 实际输入文件SHA256
   transform_policy: propose
 goal: 让读者看清当前页面需要完成的比较或判断
 questions: [本次需要解决的视觉问题]
@@ -92,6 +93,8 @@ composition: false
 ```bash
 python3 /resolved/planner/scripts/validate_plan.py /absolute/path/plan.json --schema
 ```
+
+落地执行记录使用本地冻结文件：plan.data.ref.id指向该文件（相对plan位置解析），plan.data.sha256保留规划时的实际文件SHA256，并与page_spec的record.data三方一致。外部引用或多源材料先按原始结构冻结为一个可追溯输入；不要修改数据后仅刷新record哈希而复用旧plan。
 
 检查已解析的规格与证据，不只读一句summary。主会话采纳或作有依据的调整，复用该结果进入page_plan/page_spec，不另建一套候选评分。普通页可只保留plan引用和必要制作决定；复杂页展开实际几何和容量。
 
@@ -129,3 +132,7 @@ node scripts/test_viz_planner_loader.cjs
 planner的`capabilities.json.required_files`声明完整运行资源；增删运行文件时在独立源目录同步该清单。加载与打包都会检查，防止缺少目录或模板的残缺安装抢先挡住完整快照。
 
 接入规则或契约改变时，用真实代理做前向选型，并制作代表性的数值、表格/机制、复杂绑定页面。校验器通过不代替选型质量，成功解包不代替实际调用；最终沿用S7–S8作者复核、独立看图与同版交付检查。常规制稿只检查受影响成稿，不重复加载器和整套组件回归。
+
+## V11成稿接回
+
+在既有page_spec记录同一数据/plan版本及实际图元关系，保存为deck.html.page-spec.json可被QA自动核对；接口见 [visual_reliability.md](visual_reliability.md)。load/plan/implement分别记录，加载成功不能算已选型，计划schema与图元存在不能算关系已经视觉验收。无子代理时主会话读取同一资源、实际规划、校验并落实。流程、机制、责任/旅程与条件的检索卡维护在独立源，主技能自动布局见 [diagram_layouts.md](diagram_layouts.md)。

@@ -26,9 +26,13 @@ review.json的最小例子（哈希从本次audit复制，basis写真实检查�
 }
 ```
 
-independence为author或independent。analysis/evidence在任务范围确实不适用时可not_applicable并说明原因；简单编辑仍做必要内容核对，不补造分析台账。visual需实际看图。issues可记minor未决细节；blocking/major必须resolved，包含severity/status/description。建议字号、模板或审美偏好本身不构成major。
+independence为author或independent。analysis/evidence在任务范围确实不适用时可not_applicable并说明原因；简单编辑仍做必要内容核对，不补造分析台账。visual需实际看图。issues可记minor未决细节；blocking/major必须resolved，包含severity/status/description。建议字号或审查者个人偏好不自动构成major；用户明确的构图/风格要求、关键关系和整页完成度按任务合同验收，不能用工程通过代替。
 
 记录要简洁，一份文件即可；不逐页填写相同的通过话术。审查文件不是数字签名或真实性自动证明，不能用脚本替人写出未做过的检查。
+
+成稿复核先按workflow_qa的“成品是否完成任务”判断，再填写记录；覆盖每页和哈希绑定仅证明记录指向哪些文件，不证明设计达标。后续反馈推翻原验收时保留原记录，另明确标注已撤回的范围与后继结果，不继续引用原PASS作为当前质量证据。
+
+本脚本装配同版HTML/PDF及下载控件，不生成技能分发ZIP。技能维护直接改实际源目录；没有用户的分发要求，不另外生成ZIP、安装副本或发布产物。
 
 ## 一致性与限制
 
@@ -37,3 +41,7 @@ package_delivery保留audit中的路径、HTML/PDF页数和哈希检查，内嵌
 交付时给两个可打开文件、页数、验证状态及需要说明的限制。下载按钮下载已验收PDF；浏览器打印用于临时打印。不要把HTML扩展名改成其他格式。
 
 交付层变更运行test_delivery.cjs；QA规则变更运行test_qa_policy.cjs。本层未改变时，常规制稿只需成稿QA和实际复核。
+
+## V11覆盖集合
+
+新初始化稿自动声明data-reliability-version="1"，review增加schemaVersion:2及coverage，字段见 [visual_reliability.md](visual_reliability.md)。完整报告作者与独立审查分别覆盖每页HTML和实际PDF、四层目标与当前证据哈希；简单片段可作者复核。旧稿继续兼容原review；不要删除版本属性绕过新版检查。`aggregate_reviews.cjs`可聚合真实返回，输出incomplete须补查；不会把自然语言或缺结果当成空问题。

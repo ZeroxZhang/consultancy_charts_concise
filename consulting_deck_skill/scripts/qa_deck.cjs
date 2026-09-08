@@ -2,6 +2,7 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),{pathToFileURL}=require('node:url'),{execFileSync}=require('node:child_process');
 const fontAudit=require('./browser_font_audit.cjs');
 const bookends=require('./check_bookends.cjs');
+const geometry=require('./browser_geometry_audit.cjs');
 let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)throw Error('请安装playwright，或将PLAYWRIGHT_MODULE设为现有模块路径');pw=require(process.env.PLAYWRIGHT_MODULE)}
 (async()=>{
  const input=path.resolve(process.argv[2]||''),out=path.resolve(process.argv[3]||'renders');if(!fs.statSync(input).isFile())throw Error('需要HTML文件');fs.mkdirSync(out,{recursive:true});
@@ -11,10 +12,12 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
  await fontAudit.attach(p);
  await p.goto(pathToFileURL(input).href,{waitUntil:'networkidle'});await p.evaluate(()=>window.deckReady||document.fonts.ready);
  const n=await p.locator('.slide').count(),rows=[];if(!n)throw Error('没有幻灯片');
- const documentContract=await p.evaluate(()=>({kind:document.documentElement.dataset.deckKind}));
+ const documentContract=await p.evaluate(()=>({kind:document.documentElement.dataset.deckKind,reliability:document.documentElement.dataset.reliabilityVersion}));
+ if(documentContract.reliability&&!await p.locator('#deck-layouts').count())errors.push('初始化缺少必需布局资源deck-layouts');
  for(let i=0;i<n;i++){
   await p.keyboard.press('Home');for(let k=0;k<i;k++)await p.keyboard.press('ArrowRight');
   await p.waitForTimeout(100);
+  await geometry.settle(p);
   const result=await p.locator('.slide.active').evaluate(s=>{
    const box=s.getBoundingClientRect(),bad=[],tiny=[],smallData=[],unreadable=[],logicalScale=box.width/s.offsetWidth;
    for(const e of s.querySelectorAll('*')){
@@ -47,6 +50,8 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
    return {exhibits,textEvidence,unreadableText:unreadable,title:s.querySelector('.slide__title,.cover-title,.divider-name')?.textContent||'',overflow:bad,tinyText:tiny,smallDataText:smallData,charts:[...s.querySelectorAll('.chart')].map(e=>({width:e.clientWidth,height:e.clientHeight,rendered:!!e.querySelector('svg,canvas'),error:e.dataset.chartError||null})),textLength:s.innerText.length,frame,notePad};
   });result.page=i+1;result.screenshot=`p${String(i+1).padStart(2,'0')}.png`;
   result.bookends=await p.locator('.slide.active').evaluate(bookends.inspectPage);
+  result.relations=await p.locator('.slide.active').evaluate(geometry.inspectSlide);
+  errors.push(...result.relations.errors.map(e=>'第'+(i+1)+'页几何关系：'+JSON.stringify(e)));
   result.fonts=await fontAudit.inspect(p);result.layoutSignature=await fontAudit.signature(p);
   if(result.fonts.identity==='FAIL')errors.push('第'+(i+1)+'页字体未就绪或出现系统回退');
   const titleFit=await p.locator('.slide.active .slide__title').evaluateAll(es=>es.map(e=>{const cs=getComputedStyle(e);return {text:e.textContent,lines:e.offsetHeight/parseFloat(cs.lineHeight)};}));if(titleFit.some(t=>t.lines>2.1))warnings.push('第'+(i+1)+'页标题超过两行建议，请目视判断');
@@ -59,6 +64,9 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
  const bookendsCheck=bookends.checkDocument(rows,documentContract);errors.push(...bookendsCheck.errors);warnings.push(...bookendsCheck.warnings);
  await p.keyboard.press('g');await p.screenshot({path:path.join(out,'overview.png'),fullPage:true});await p.keyboard.press('Escape');
  // 对照屏幕上已存在的展品，检查打印布局中是否仍可见；实际PDF另核关键标签并目视。
+ const specFile=input+'.page-spec.json';
+ let plannerExecution={status:'NOT_PROVIDED'};
+ if(fs.existsSync(specFile)){plannerExecution=await require('./check_planner_execution.cjs').check(JSON.parse(fs.readFileSync(specFile,'utf8')),p,{baseDir:path.dirname(specFile)});errors.push(...plannerExecution.errors);}
  const expected=rows.flatMap(r=>r.exhibits.map(e=>({...e,page:r.page})));
  await p.emulateMedia({media:'print'});await p.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));
  const printMissing=await p.evaluate(expected=>expected.filter(item=>{const e=document.querySelector('[data-deck-exhibit-id="'+item.id+'"]');if(!e)return true;const r=e.getBoundingClientRect();if(!r.width||!r.height)return true;for(let n=e;n&&n.nodeType===1;n=n.parentElement){const s=getComputedStyle(n);if(s.display==='none'||s.visibility==='hidden'||s.visibility==='collapse'||Number(s.opacity)===0)return true;}return false;}),expected);
@@ -104,7 +112,7 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
  // 离线延迟图表须与在线采用相同的逐页初始化时点，再比较内容。
  if(offlineState.externalScripts===0){const offContent=await offline.locator('.slide').evaluateAll(es=>es.map(s=>({text:s.textContent.replace(/\s+/g,''),svg:s.querySelectorAll('svg text').length})));offlineState.contentParity=JSON.stringify(onlineContent)===JSON.stringify(offContent);if(!offlineState.contentParity)errors.push('断网前后逐页文字或SVG标签不一致');}
  const htmlBuffer=fs.readFileSync(input),htmlArtifact={path:input,bytes:htmlBuffer.length,sha256:crypto.createHash('sha256').update(htmlBuffer).digest('hex')};
- const report={warnings,bookendsCheck,printCheck:{expected:expected.length,missing:printMissing},input,pages:n,pdfPages,htmlArtifact,pdfArtifact,pdfFonts,navigation:{fullscreen,deepLink,scales},errors,offline:offlineState,rows,visualStatus:'NOT_REVIEWED：必须实际查看每页图片与PDF',geometryStatus:rows.some(r=>r.overflow.length||r.unreadableText.length||r.charts.some(c=>!c.rendered||c.error))||errors.length?'FAIL':'PASS'};
+ const report={plannerExecution,documentContract,warnings,bookendsCheck,printCheck:{expected:expected.length,missing:printMissing},input,pages:n,pdfPages,htmlArtifact,pdfArtifact,pdfFonts,navigation:{fullscreen,deepLink,scales},errors,offline:offlineState,rows,visualStatus:'NOT_REVIEWED：必须实际查看每页图片与PDF',geometryStatus:rows.some(r=>r.overflow.length||r.unreadableText.length||r.charts.some(c=>!c.rendered||c.error))||errors.length?'FAIL':'PASS'};
  fs.writeFileSync(path.join(out,'audit.json'),JSON.stringify(report,null,2));console.log(JSON.stringify({pages:n,geometry:report.geometryStatus,errors,warnings,overflow:rows.filter(r=>r.overflow.length).map(r=>({page:r.page,items:r.overflow})),tiny:rows.filter(r=>r.tinyText.length).map(r=>r.page),offline:offlineState}));if(report.geometryStatus==='FAIL')process.exitCode=1;
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
