@@ -6,7 +6,7 @@ description: >-
   SVG及文字组织论证，交付自包含HTML与同版分页PDF。
 ---
 
-# 咨询分析与 deck 制作 · v9.3.1
+# 咨询分析与 deck 制作 · v9.3.2
 
 目标：让读者理解重要判断、核对依据，并完成本次需要的选择或研究。给模型充分的分析和设计空间；方法库、图型库与模板是工具箱，不是能力上限。交付合同为HTML＋PDF。
 
@@ -85,7 +85,7 @@ work_mode按任务选：analytical处理原始材料；exploratory允许先探�
 
 ## S6：制作入口
 
-1. 用 `node scripts/apply_theme.cjs assets/deck_engine.html draft.html <theme> <typography>` 初始化，替换示例页并内联assets/consulting-layouts.css；已接入quiet母版，新增页显式保留slide__header标题组和slide__frame空装饰节点，按正文选择边界。保留导航、缩放、打印、深链与下载底座。
+1. 用 `node scripts/apply_theme.cjs assets/deck_engine.html draft.html <theme> <typography>` 初始化，替换示例页并内联assets/consulting-layouts.css；已接入quiet母版，新增页显式保留slide__header标题组和slide__frame空装饰节点。**每页必须显式声明 `data-frame-boundary`**：line（需要标题线）/ integrated（正文首排模块已有顶线，省去标题线）/ space（留白已足够），封面/全出血用 `data-frame="off"`；不留静默默认值。不得单独压缩 `.slide__body` 的 margin-top 而不调整母版 `--frame-rule-offset`（配对关系见 [页面母版](references/page_frame.md)）。保留导航、缩放、打印、深链与下载底座。
 2. 消费已采纳的视觉规格；核对模块数据绑定、来源与主会话落实的变换，采用同一数据版本。适配的高频图可用ChartRuntime的prepare/render/check路径；需要更好表达时直接用原生option、自定义series或SVG。planner的decision规格由作者实现，不假定已生成可运行option。配方内部容量阈值保护该实现，不是全局创作限制；超限可聚合、分面、总览＋局部、分页或换实现，完整记录有去向。
 3. `scripts/render_echarts_svg.cjs`接受配方或原生option；自定义图示用`render_diagram.cjs`或专用代码。静态SVG内联到HTML；最终离线复测。需要多页的配方用`--paginate`并安排全部结果，不漏页。
 4. 定稿运行 `node scripts/pack_fonts.cjs draft.html deck.html <typography>`；FONT_PYTHON指向已安装scripts/requirements-fonts.txt的Python。新增动态字符用extraText传入；改字后重新打包。
@@ -95,9 +95,9 @@ work_mode按任务选：analytical处理原始材料；exploratory允许先探�
 
 ## S7–S8：简洁而真实的质量判断
 
-复杂新deck或重大结论安排未参与制作的独立QA，输入成稿、关键底稿、截图/PDF和 [验收参考](references/workflow_qa.md)。简单编辑可作者复核，准确记录独立性；没有实际看图不能写视觉通过。
+复杂新deck或重大结论安排未参与制作的独立QA，输入成稿、关键底稿、截图/PDF、[验收参考](references/workflow_qa.md) 和 [页面母版](references/page_frame.md)；母版与组件合规（E-V01…04）属于视觉检查的一部分，不能只查图表编码。简单编辑可作者复核，准确记录独立性；没有实际看图不能写视觉通过。
 
-记录内容/证据、视觉、工程的检查范围、影响判断的缺陷与重要取舍。不强制逐页评分、全字段清单或外部真人签字。审美偏好和建议阈值可合理调整；错误数字、误导编码、关键证据丢失、不可读和旧版PDF必须修正。
+记录内容/证据、视觉、工程的检查范围、影响判断的缺陷与重要取舍。不强制逐页评分、全字段清单或外部真人签字。审美偏好和建议阈值可合理调整；错误数字、误导编码、关键证据丢失、不可读和旧版PDF必须修正。视觉检查必须覆盖：每页母版边界显式选择（不静默默认）、标题区隔线与正文首排顶线不并存（integrated）、注释/判断条与左边界条之间的内边距（不贴字）、页边识别不被内容遮挡；自动检查不能代替这些目视项。
 
 涉及样式变化或用户要求延续旧稿时，让审查者同时看到认可基线与明确的新要求；以同内容、同显示比例核对实际字形、角色字号/字重、数字特性及强调范围。字体加载成功不等于风格延续；区分已恢复的基线与有意新增的设计。
 

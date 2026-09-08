@@ -30,12 +30,27 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
     const text=node.nodeValue.trim(),parent=node.parentElement;if(!text||!parent||parent.closest('script,style,[data-decorative="true"]'))continue;
     const r=parent.getBoundingClientRect(),cs=getComputedStyle(parent);if(r.width&&r.height&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity)!==0)textEvidence.push(text);
    }
-   return {exhibits,textEvidence,unreadableText:unreadable,title:s.querySelector('.slide__title,.cover-title,.divider-name')?.textContent||'',overflow:bad,tinyText:tiny,smallDataText:smallData,charts:[...s.querySelectorAll('.chart')].map(e=>({width:e.clientWidth,height:e.clientHeight,rendered:!!e.querySelector('svg,canvas'),error:e.dataset.chartError||null})),textLength:s.innerText.length};
+   // 母版与组件合规提示：边界显式声明、双层边界、边条内边距（仅提示，不代替目视）
+   const headerEl=s.querySelector('.slide__header'),frame={boundary:s.getAttribute('data-frame-boundary'),ruleVisible:false,doubleBorder:[]};
+   if(headerEl){const ac=getComputedStyle(headerEl,'::after').content;if(ac&&ac!=='none'){frame.ruleVisible=true;const body=s.querySelector('.slide__body');if(body){const bodyTop=body.getBoundingClientRect().top;for(const e of body.querySelectorAll('*')){const r=e.getBoundingClientRect();if(r.height<3||Math.abs(r.top-bodyTop)>12)continue;const cs=getComputedStyle(e);if(parseFloat(cs.borderTopWidth)>=1&&cs.borderTopStyle!=='none'&&!/rgba?\([^)]*,\s*0\)|transparent/i.test(cs.borderTopColor)){frame.doubleBorder.push((e.tagName+(e.className&&typeof e.className==='string'?'.'+String(e.className).trim().replace(/\s+/g,'.').slice(0,40):'')).toLowerCase());break;}}}}}
+   const notePad=[],noteSeen=new Set();
+   for(const e of s.querySelectorAll('*')){
+    if(noteSeen.has(e))continue;
+    const isNote=e.classList&&e.classList.length>0&&/annotation|decision-strip|evidence-note|callout|takeaway|insight/i.test(String(e.className));
+    const leaf=!e.children.length&&(e.textContent||'').trim();
+    if(!isNote&&!leaf)continue;if(e.closest('table,svg,[data-decorative="true"]'))continue;
+    const cs=getComputedStyle(e);
+    if(parseFloat(cs.borderLeftWidth)>=2&&cs.borderLeftStyle!=='none'&&parseFloat(cs.paddingLeft)<6&&e.getBoundingClientRect().height>10){noteSeen.add(e);notePad.push({cls:String(e.className).slice(0,40),pad:cs.paddingLeft,text:(e.textContent||'').trim().slice(0,40)});}
+   }
+   return {exhibits,textEvidence,unreadableText:unreadable,title:s.querySelector('.slide__title,.cover-title,.divider-name')?.textContent||'',overflow:bad,tinyText:tiny,smallDataText:smallData,charts:[...s.querySelectorAll('.chart')].map(e=>({width:e.clientWidth,height:e.clientHeight,rendered:!!e.querySelector('svg,canvas'),error:e.dataset.chartError||null})),textLength:s.innerText.length,frame,notePad};
   });result.page=i+1;result.screenshot=`p${String(i+1).padStart(2,'0')}.png`;
   result.fonts=await fontAudit.inspect(p);result.layoutSignature=await fontAudit.signature(p);
   if(result.fonts.identity==='FAIL')errors.push('第'+(i+1)+'页字体未就绪或出现系统回退');
   const titleFit=await p.locator('.slide.active .slide__title').evaluateAll(es=>es.map(e=>{const cs=getComputedStyle(e);return {text:e.textContent,lines:e.offsetHeight/parseFloat(cs.lineHeight)};}));if(titleFit.some(t=>t.lines>2.1))warnings.push('第'+(i+1)+'页标题超过两行建议，请目视判断');
   if(result.tinyText.length||result.smallDataText.length)warnings.push('第'+(i+1)+'页部分文字低于建议字号，请按实际可读性复核');
+  if(result.frame.ruleVisible&&!result.frame.boundary)warnings.push('第'+(i+1)+'页标题线已生效但未显式声明 data-frame-boundary（line/integrated/space），请按正文结构选择边界');
+  if(result.frame.ruleVisible&&result.frame.doubleBorder.length)warnings.push('第'+(i+1)+'页标题区隔线与正文首排顶线可能并存（'+result.frame.doubleBorder[0]+'）：首排模块已有顶线时建议 data-frame-boundary="integrated"');
+  if(result.notePad.length)warnings.push('第'+(i+1)+'页有文字贴近左侧边条（padding-left<6px）：'+result.notePad.slice(0,4).map(x=>(x.text||x.cls||'?')+'('+x.pad+')').join('；'));
   await p.locator('.slide.active').screenshot({path:path.join(out,result.screenshot)});rows.push(result);
  }
  await p.keyboard.press('g');await p.screenshot({path:path.join(out,'overview.png'),fullPage:true});await p.keyboard.press('Escape');
@@ -44,9 +59,11 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
  await p.emulateMedia({media:'print'});await p.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));
  const printMissing=await p.evaluate(expected=>expected.filter(item=>{const e=document.querySelector('[data-deck-exhibit-id="'+item.id+'"]');if(!e)return true;const r=e.getBoundingClientRect();if(!r.width||!r.height)return true;for(let n=e;n&&n.nodeType===1;n=n.parentElement){const s=getComputedStyle(n);if(s.display==='none'||s.visibility==='hidden'||s.visibility==='collapse'||Number(s.opacity)===0)return true;}return false;}),expected);
  printMissing.forEach(e=>errors.push('打印缺少第'+e.page+'页展品 '+e.id));
+ let pdfPages=null,pdfFonts=null,pdfArtifact={skipped:true,reason:'QA_SKIP_PDF'};
+ if(!process.env.QA_SKIP_PDF){
  const pdfPath=path.join(out,'deck.pdf');await p.pdf({path:pdfPath,printBackground:true,preferCSSPageSize:true});
- const pdfInfo=execFileSync('pdfinfo',[pdfPath],{encoding:'utf8'});const pdfPages=Number(pdfInfo.match(/Pages:\s+(\d+)/)?.[1]);if(pdfPages!==n)errors.push('PDF页数与deck不符');
- const pdfFonts=execFileSync('pdffonts',[pdfPath],{encoding:'utf8'});const fontRows=pdfFonts.split('\n').slice(2).filter(Boolean);if(!fontRows.length||fontRows.some(row=>row.trim().split(/\s+/).slice(-5,-2).some(v=>v!=='yes')))errors.push('PDF 字体未完整嵌入或缺少字符映射');
+ const pdfInfo=execFileSync('pdfinfo',[pdfPath],{encoding:'utf8'});pdfPages=Number(pdfInfo.match(/Pages:\s+(\d+)/)?.[1]);if(pdfPages!==n)errors.push('PDF页数与deck不符');
+ pdfFonts=execFileSync('pdffonts',[pdfPath],{encoding:'utf8'});const fontRows=pdfFonts.split('\n').slice(2).filter(Boolean);if(!fontRows.length||fontRows.some(row=>row.trim().split(/\s+/).slice(-5,-2).some(v=>v!=='yes')))errors.push('PDF 字体未完整嵌入或缺少字符映射');
  const normalize=s=>s.replace(/\s+/g,'');
  const printedPages=execFileSync('pdftotext',['-layout',pdfPath,'-'],{encoding:'utf8'}).split('\f').map(normalize);
  for(const row of rows){
@@ -61,6 +78,8 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
    row.printText={expectedUnits:textUnits.length,missingUnits:missingText.length,coverage:Number(textCoverage.toFixed(4))};
    if(textUnits.length>=8&&textCoverage<.85)errors.push('PDF第'+row.page+'页正文文字覆盖率不足：'+(textCoverage*100).toFixed(1)+'%；缺少片段 '+missingText.slice(0,8).join(' / '));
  }
+ pdfArtifact={path:pdfPath,bytes:fs.statSync(pdfPath).size,sha256:crypto.createHash('sha256').update(fs.readFileSync(pdfPath)).digest('hex'),pages:pdfPages};
+ }
  await p.evaluate(()=>window.dispatchEvent(new Event('afterprint')));await p.emulateMedia({media:'screen'});
  const onlineContent=await p.locator('.slide').evaluateAll(es=>es.map(s=>({text:s.textContent.replace(/\s+/g,''),svg:s.querySelectorAll('svg text').length})));
  await p.keyboard.press('Home');await p.keyboard.press('f');await p.waitForTimeout(100);const fullscreen=await p.evaluate(()=>!!document.fullscreenElement);if(fullscreen)await p.evaluate(()=>document.exitFullscreen());
@@ -71,7 +90,6 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
  // 离线延迟图表须与在线采用相同的逐页初始化时点，再比较内容。
  if(offlineState.externalScripts===0){const offContent=await offline.locator('.slide').evaluateAll(es=>es.map(s=>({text:s.textContent.replace(/\s+/g,''),svg:s.querySelectorAll('svg text').length})));offlineState.contentParity=JSON.stringify(onlineContent)===JSON.stringify(offContent);if(!offlineState.contentParity)errors.push('断网前后逐页文字或SVG标签不一致');}
  const htmlBuffer=fs.readFileSync(input),htmlArtifact={path:input,bytes:htmlBuffer.length,sha256:crypto.createHash('sha256').update(htmlBuffer).digest('hex')};
- const pdfArtifact={path:pdfPath,bytes:fs.statSync(pdfPath).size,sha256:crypto.createHash('sha256').update(fs.readFileSync(pdfPath)).digest('hex'),pages:pdfPages};
  const report={warnings,printCheck:{expected:expected.length,missing:printMissing},input,pages:n,pdfPages,htmlArtifact,pdfArtifact,pdfFonts,navigation:{fullscreen,deepLink,scales},errors,offline:offlineState,rows,visualStatus:'NOT_REVIEWED：必须实际查看每页图片与PDF',geometryStatus:rows.some(r=>r.overflow.length||r.unreadableText.length||r.charts.some(c=>!c.rendered||c.error))||errors.length?'FAIL':'PASS'};
  fs.writeFileSync(path.join(out,'audit.json'),JSON.stringify(report,null,2));console.log(JSON.stringify({pages:n,geometry:report.geometryStatus,errors,warnings,overflow:rows.filter(r=>r.overflow.length).map(r=>({page:r.page,items:r.overflow})),tiny:rows.filter(r=>r.tinyText.length).map(r=>r.page),offline:offlineState}));if(report.geometryStatus==='FAIL')process.exitCode=1;
  }finally{await browser.close()}

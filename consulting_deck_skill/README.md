@@ -1,4 +1,4 @@
-# consulting_deck_skill · v9.3.1
+# consulting_deck_skill · v9.3.2
 
 以业务问题组织原始数据、研究和访谈，通过分析、叙事与视觉设计交付自包含HTML和同版分页PDF。入口是 [SKILL.md](SKILL.md)。v9让优秀模型自由选择方法、图型、布局和实现方式，同时保留事实、计算、可读性与版本一致性。
 
@@ -7,6 +7,8 @@
 S4–S5按需派子代理执行独立维护的 `echarts-viz-planner`，主会话负责分析、数据与成稿。选型返回决策规格，表格/机制图也有可制作语义；已有清晰选择保持轻量路径。见 [可视化专家协作](references/viz_planner_integration.md)。
 
 v9.3.1正式采用藏青`#000080`作为McKinsey标题及主强调、`#D9D9EC`作为辅助底纹；次级灰字适度加深以保证底纹上可读。延续真实粗标题及常规数据/正文角色，避免换色顺带改变排版层级。见项目[验证与同内容样稿](../iteration_v9_3_1_navy/validation.md)。
+
+v9.3.2收紧母版与组件视觉合规：`.annotation`注释/判断条解除展品作用域、页级同层可用（左3px边条＋12px内边距是组件契约）；每页必须显式声明`data-frame-boundary`，正文首排已有顶线用integrated合并不留双线；QA新增E-V01…04母版合规检查，qa_deck.cjs对应告警。见[修复验证](../iteration_v9_3_2_visual_compliance/validation.md)。
 
 只复制本技能目录也可用：`node scripts/load_viz_planner.cjs`优先查兼容的本地安装，缺失时校验并解包`dependencies/`随包快照到缓存，离线可用；代理读取返回的`skill_file`即可执行，无需全局安装或重启。外部源码独立维护，快照由`pack_viz_planner.cjs`生成。分发时保留整个技能目录及`dependencies/`，不要只复制SKILL.md。
 
