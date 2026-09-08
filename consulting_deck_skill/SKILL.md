@@ -70,7 +70,9 @@ work_mode按任务选：analytical处理原始材料；exploratory允许先探�
 
 ## S4–S5：开放选图与编辑设计
 
-混合材料、图表与表格取舍、复杂比较或机制与数字组合需要选型时，按 [可视化专家协作](references/viz_planner_integration.md) 派子代理执行 `echarts-viz-planner`。先运行 `node scripts/load_viz_planner.cjs`，读取其返回的 `skill_file`；即使只安装本技能，也可按需从随包快照加载，无需预装第二个技能。子代理读取实际技能及相关目录，使用 `mode: api`、`contract_version: "1.1"`、`output_level: decision`。没有子代理工具时主会话执行同一路径；加载失败明确记录并处理可完成部分。
+混合材料、图表与表格取舍、复杂比较或机制与数字组合需要选型时，按 [可视化专家协作](references/viz_planner_integration.md) 派子代理执行 `echarts-viz-planner`。先运行 `node scripts/load_viz_planner.cjs`，读取其返回的 `skill_file`；无需预装第二个技能，兼容的本地安装、缓存或随包快照均可在当前任务使用。
+
+本地未安装且需在线获取独立版本，或本地/随包资源均不可用时，从 [官方仓库](https://github.com/ZeroxZhang/echarts-viz-planner) 下载完整技能，再用 `--planner <下载目录>` 校验并加载；具体命令和失败处理见协作文件。下载成功不等于版本兼容，读取实际 `origin` 与 `attempts`，不能把回退到快照说成已采用下载版。离线时保留随包加载能力，不因未预装就跳过选型。子代理读取实际技能及相关目录，使用 `mode: api`、`contract_version: "1.1"`、`output_level: decision`。没有子代理工具时主会话执行同一路径；确实无法取得兼容资源时明确记录限制并处理可完成部分。
 
 输入围绕读者问题，附已有发现、结论边界、相关数据和原文定位、真实正文尺寸与静态约束；保留必要明细入口。主会话负责分析、标准数据、全篇论证与最终页面，planner负责局部选型、映射及组合建议。发现证据冲突退回受影响分析；不把返回 `ok` 当成数据或成稿已验收。按独立证明任务或相关页面组委派，已有清晰选择、简单编辑和成熟展品复用可直接制作。
 

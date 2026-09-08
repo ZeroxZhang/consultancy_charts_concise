@@ -56,9 +56,12 @@ ready_with_limits或rework。没有看到的事实、计算或页面不能宣称
 
 ## V · 可视化选型（S4–S5）
 
+主会话先按`references/viz_planner_integration.md`解析可用路径；本地未安装时可使用随包快照，需在线获取时从[官方仓库](https://github.com/ZeroxZhang/echarts-viz-planner)下载完整技能并校验。准备好实际路径后再委派，避免每个子代理重复下载；记录实际采用来源，不以下载成功代替兼容性检查。
+
 ```text
 使用 echarts-viz-planner skill，解决{读者问题/相关页面组}的可视化匹配。
 技能位置由主会话load_viz_planner.cjs返回：{planner_root}。
+该位置可能是本地安装、随包缓存或已校验下载版；不要求它出现在全局技能列表。
 先读取该路径SKILL.md，再按其流程读取catalog与相关references，不能只凭技能名猜流程。
 输入：{数据/分析结果、必要明细、相关原文定位、发现与结论类型、边界与反证}；
 上下文：{读者任务、相邻论证、正文区域、主题字体及既有角色层级/视觉基线、静态/离线约束、实际依赖}。

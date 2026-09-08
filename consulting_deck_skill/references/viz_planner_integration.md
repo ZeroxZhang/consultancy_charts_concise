@@ -1,4 +1,4 @@
-# 可视化专家协作 · v9.2
+# 可视化专家协作 · V10
 
 S4–S5按需读取。`echarts-viz-planner`是独立维护的选型模块；本文件只约定deck上下文、加载与接回方式。通用输出字段及语义以实际加载的planner `references/api-contract.md`为准。
 
@@ -18,13 +18,38 @@ node scripts/load_viz_planner.cjs
 node scripts/load_viz_planner.cjs --planner /path/to/echarts-viz-planner --cache-dir /path/to/cache --offline
 ```
 
-加载器优先检查显式路径（也支持`ECHARTS_VIZ_PLANNER_PATH`）、本地常见技能目录，再检查与锁文件一致的缓存、解包随本技能分发的快照；最后仅在锁文件提供可获取的固定revision且允许联网时获取源码。相容性要求契约1.1与decision输出，旧安装跳过并在`attempts`中给理由，不覆盖原安装。
+加载器优先检查显式路径（也支持`ECHARTS_VIZ_PLANNER_PATH`）、本地常见技能目录，再检查与锁文件一致的缓存、解包随本技能分发的快照。仅当快照文件缺失、锁文件提供可获取的固定revision且允许联网时，才自动获取固定版本源码；没有固定revision不会自动下载仓库HEAD，损坏快照也不会被网络静默替换。相容性要求契约1.1、decision输出、ECharts6.1.0及完整运行资源清单，旧安装跳过并在`attempts`中给理由，不覆盖原安装。
 
 快照是从独立仓库生成的分发产物，源码只维护一处。目录缓存按内容寻址；解包、复用均核对完整性。快照存在时首次调用无需网络，不写全局技能注册配置，不要求新开会话或出现第二个斜杠命令。缓存中技能尚未进入工具的技能目录时，代理直接读取返回路径的`SKILL.md`及其相对引用，即可在当前任务执行；不要只在提示里写技能名而不读取它。
 
 `ok`返回`skill_root`、`skill_file`、来源与契约信息。将这个绝对路径交给子代理，模板见`assets/subagent_prompts.md`的V任务。加载器只准备可读技能资源，**不会自动创建子代理或完成选型**。
 
-`unavailable`/`incompatible`返回原因和下一步，主会话记录实际限制：可用相容路径或恢复随包文件时继续；无法加载时用已有分析和制作能力完成可成立的部分，选型独立性如实标记。无文件工具时使用当前已加载资源；没有任何planner资源就不能声称已调用它。敏感方向性歧义由主会话处理，不因加载失败向用户重复询问已给过的业务信息。
+`unavailable`/`incompatible`返回原因和下一步，主会话先按下节尝试可行的获取/恢复路径，不因“未安装”就省去本应执行的选型。确实无法取得兼容资源时，用已有分析和制作能力完成可成立的部分，记录未调用planner及实际限制。无文件工具时使用当前已加载资源；没有任何planner资源就不能声称已调用它。不因加载失败向用户重复询问已给过的业务信息。
+
+## 本地未安装时：官方仓库与在线获取
+
+独立技能的官方来源是 [ZeroxZhang/echarts-viz-planner](https://github.com/ZeroxZhang/echarts-viz-planner)。已有可用缓存或随包快照时可直接执行，尤其在离线环境；需要独立下载版，或本地、缓存和随包资源均不可用且允许联网时，先下载完整仓库，再校验加载。不要只下载`SKILL.md`，其目录、契约、schema和脚本属于运行依赖。
+
+以下命令从本主技能目录执行，将源码放入任务可用的缓存目录，不修改已有安装；同一任务已有下载目录时直接复用并校验，无须反复下载：
+
+```bash
+planner_base="${CONSULTING_DECK_CACHE_DIR:-$HOME/.cache/consulting-deck-skill}/external"
+mkdir -p "$planner_base"
+planner_source="$(mktemp -d "$planner_base/echarts-viz-planner.XXXXXX")"
+git clone --depth 1 https://github.com/ZeroxZhang/echarts-viz-planner.git "$planner_source"
+git -C "$planner_source" rev-parse HEAD
+node scripts/load_viz_planner.cjs --planner "$planner_source"
+```
+
+也可从官方仓库下载完整源码压缩包，解压后将含`SKILL.md`的仓库根目录传给`--planner`。记录实际提交或版本及加载器返回的`source_sha256`，不要仅记录“最新版”。这只是当前任务的源码准备，不要求全局安装、注册技能或重启会话。
+
+根据返回结果继续：
+
+- `status: ok`且`origin: explicit`：下载版通过校验，主会话/子代理读取返回的`skill_file`及相关资源后执行。
+- `status: ok`但`origin`为`installed`、`cache`或`bundled-snapshot`等其他来源：实际采用了其他可用版本；检查`attempts`中下载路径的原因，准确记录回退来源。
+- 下载失败、返回`unavailable`/`incompatible`或下载版较旧：保留兼容缓存/随包快照，或恢复主技能完整分发包；资源均不可用时说明未调用planner。不能通过降低契约版本、跳过校验或更改锁文件把不兼容源码冒充可用依赖。
+
+在线HEAD与随包快照可能处于不同发布状态，不能假定最新下载必然支持主技能要求。主技能维护者更新依赖时，应先在独立仓库发布兼容提交，再同步bundle与lock，才能让自动固定版本获取可复现。
 
 ## 主会话交接
 

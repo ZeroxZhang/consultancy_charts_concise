@@ -14,6 +14,8 @@ v9.3.2收紧母版与组件视觉合规：`.annotation`注释/判断条解除展
 
 只复制本技能目录也可用：`node scripts/load_viz_planner.cjs`优先查兼容的本地安装，缺失时校验并解包`dependencies/`随包快照到缓存，离线可用；代理读取返回的`skill_file`即可执行，无需全局安装或重启。外部源码独立维护，快照由`pack_viz_planner.cjs`生成。分发时保留整个技能目录及`dependencies/`，不要只复制SKILL.md。
 
+未安装planner且需独立下载版，或本地/随包资源不可用时，可从[官方仓库](https://github.com/ZeroxZhang/echarts-viz-planner)下载完整技能，再执行`node scripts/load_viz_planner.cjs --planner <下载目录>`。先校验契约1.1与decision能力，再读取实际返回路径；仓库HEAD不保证与随包版相同。获取命令、缓存复用和失败处理见[在线获取](references/viz_planner_integration.md#本地未安装时官方仓库与在线获取)。
+
 沿用 [轻量页面母版](references/page_frame.md)：中性标题细线与页边标记，按正文选择 line / integrated / space，或逐页关闭。
 
 

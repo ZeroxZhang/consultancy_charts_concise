@@ -217,7 +217,7 @@ function loadPlanner(options = {}) {
   }
   return { status: hadIncompatible ? 'incompatible' : 'unavailable', attempts,
     reasons: attempts.filter(a => a.reason).map(a => a.reason),
-    action: '继续主技能可完成的工作并说明未调用 planner；可提供兼容的 --planner 路径，或更新主技能随附的依赖快照。不要声称已完成专家委派。' };
+    action: '可恢复主技能完整依赖快照，或在允许联网时从 https://github.com/ZeroxZhang/echarts-viz-planner 下载完整技能，用 --planner <下载目录> 校验契约 1.1、decision 与运行资源，并读取返回的实际来源及 skill_file。下载版不兼容时保留兼容快照；均不可用时说明未调用 planner 并继续主技能可完成的工作，不声称已完成专家委派。' };
 }
 
 function parseArgs(argv, switches, flags = []) {
