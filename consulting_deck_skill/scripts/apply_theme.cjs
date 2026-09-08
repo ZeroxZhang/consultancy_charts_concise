@@ -7,5 +7,5 @@ for(const name of ['echarts-recipes.js','chart-runtime.js']){
   const source=fs.readFileSync(path.resolve(__dirname,'../assets',name),'utf8');
   html=html.replace('<script src="./'+name+'"></script>',()=>`<script>\n${source}\n</script>`);
 }
-html=require('./pack_fonts.cjs').pack(require('./apply_frame.cjs').apply(html),{profile});
+html=require('./pack_fonts.cjs').pack(require('./bookends.cjs').applyStyles(require('./apply_frame.cjs').apply(html)),{profile});
 fs.writeFileSync(output,html);

@@ -103,13 +103,14 @@ slide_anatomy.md、exhibit_system.md；按需要读chart_cards与analysis_exhibi
 输入：{brief、分析底稿/审查、findings、content_map、evidence、visual_spec、
 page_plan、page_specs、HTML、逐页截图与PDF}。
 先读{skill}/references/workflow_qa.md、page_frame.md、analysis_review.md、color_and_type.md，
-按需读取图表/组件契约。editorial以原文定位和必要核对记录替代完整分析台账，不为验收反向补建编号体系。未看到的输入与未执行的检查如实写明。
+完整报告另读report_bookends.md，检查首尾页职责、元信息、单页书目及节选规则；按需读取图表/组件契约。editorial以原文定位和必要核对记录替代完整分析台账，不为验收反向补建编号体系。未看到的输入与未执行的检查如实写明。
 
 分别报告分析、证据、视觉、工程状态：
 分析/证据：从最终标题回溯F/T/E及原文，复算关键派生数；检查重要反证、
 目标与预测、时期/单位/范围、建议条件是否保留；查content_map中的重要材料去向。
 视觉：实际读取每页原尺寸图、总览与打印，判断读者能否理解关键证据与具体缺陷，评分可选。
 母版与组件合规必查（workflow_qa.md 的 E-V01…04）：每页 boundary 显式声明、标题灰线与正文首排顶线不并存、注释/判断条与左边界条之间的内边距（文字不贴边条）、页边识别不被遮挡；先按 page_frame.md「检查与交付」逐项核对。
+完整报告首尾：封面/封底成对检查，参考资料紧邻封底且仅一页；核对真实来源、语义去重、摘选优先级与完整出处去向，逐项PDF书目和链接实际复核，不用动作标题或图表密度评价功能页。
 工程：按workflow_qa执行实际浏览器/打印/离线检查；使用qa_deck输出作证据，
 自动PASS与文字存在不等于视觉或PDF图形完整。没有看图就写视觉未验收。
 

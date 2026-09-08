@@ -1,6 +1,6 @@
 > 语言：[简体中文](README.md) · [English](README_EN.md)
 
-# Consulting Deck Skill · v9.3.1
+# Consulting Deck Skill · V10
 
 把简报和丰富的原始材料转成有依据、有判断、可阅读的咨询deck，交付自包含HTML与同版分页PDF。
 
@@ -10,9 +10,11 @@ v9.3.1将McKinsey标题与主强调统一为`#000080`，辅助底色采用`#D9D9
 
 v9.2在S4–S5按需调用独立的`echarts-viz-planner`选型模块；主技能仍统筹分析、数据和成稿。只安装主技能也能按需加载随包依赖快照，支持离线。见 [协作与加载](consulting_deck_skill/references/viz_planner_integration.md) 和 [实施验证](iteration_v9_2_viz_planner/validation.md)。沿用v9.1的低对比中性母版。
 
+V10补齐完整报告的封面、单页参考资料与封底；首尾标题采用深墨色，正文沿用既有角色。来源超量时显式节选，保留完整追溯；新检查按页面职责启用，旧稿与组件集合保持兼容。见 [首尾页规则](consulting_deck_skill/references/report_bookends.md)、[完整五页样稿](consulting_deck_skill/assets/bookends_example.html) 和 [V10验证](iteration_v10_bookends/validation.md)。
+
 ## 样稿速览
 
-以下截图即当前样稿（v9.1 母版），浏览器直接打开，支持翻页、缩放、全屏与深链；点图直达对应页面。
+以下为保留的正文与组件样稿（v9.1 母版），浏览器直接打开，支持翻页、缩放、全屏与深链；点图直达对应页面。
 
 [![贡献分解：商超减少1.1亿元，电商增长仅抵消其约36%](docs/showcase/demo-waterfall.png)](consulting_deck_skill/assets/reference_deck.html#6)
 

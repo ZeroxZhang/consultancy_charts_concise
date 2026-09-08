@@ -4,17 +4,17 @@
 ════════════════════════════════════════════════════════════════════════════
  用法（构建 agent 必读）：
  1. 复制本文件为 deck.html；
- 2. 用 deck-themes.js 将所选主题 CSS 注入 deck-theme 样式区；字体/字号仍由 visual_spec.md 定义；
- 3. 按 page_specs.md 逐页替换 <main> 中的示例页（保留页面结构模式与 class 约定）；
+ 2. 用 apply_theme.cjs 注入主题、字体、母版及首尾样式；字体角色来自 deck-typography.js；
+ 3. 按实际页面规格逐页替换 #stage 中的示例页（保留页面结构模式与 class 约定）；
  4. 图表：优先用 <div class="chart" data-recipe="rankedBar" data-spec='...JSON...'></div>；
     原生表达更适合时可直接用 data-opt 写ECharts option，也可嵌入自定义SVG；
     颜色用 "@accent" / "@cat-1" 等语义引用，未知 token 报错；数据先写好再填（每个数字挂 Source）；
- 5. 图标：icon('Trend') —— IconPark 在线加载，离线自动降级到内置迷你集；
+ 5. 图标：icon('Trend') 默认内置迷你集；明确需要在线 IconPark 时声明 html data-icon-library="online"；
  6. 引擎功能（全部已实现，勿重写）：
     - 分页呈现，每页 PPT 尺寸（16:9 = 1280×720；4:3 = 1024×768 逻辑像素）
     - 视口缩放适配（任意窗口大小居中显示，图表按逻辑像素渲染保持清晰）
     - 演示模式：F 全屏；←/→/空格/PageUp/Down 翻页；Home/End；G 总览网格；Esc 返回
-    - 进度条 + 页码计数；点击翻页（左 40% 上一页 / 右 60% 下一页）；触摸滑动
+    - 进度条 + 页码计数；点击翻页（左 60% 上一页 / 右 40% 下一页）；触摸滑动
     - URL 深链：#3 直达第 3 页；交付版可一键下载已验收 PDF，也可浏览器打印（每页一张）
     - 图表懒加载 + 断网降级提示
  7. 尺寸切换：把 <body> 的 data-ratio 改为 "4x3" 即 4:3（默认 16:9 无需写）。
@@ -22,10 +22,12 @@
  9. 标题与副题置于 slide__header，页边识别使用 slide__frame；quiet 默认中性低对比，
     首排正文有顶线时可用 data-frame-boundary="integrated"，特殊页可 data-frame="off"。
  10. 示例页数据全部为 Illustrative（虚构），且已通过 E-08 复核（瀑布贡献和 = 起止差）。
+ 11. 本文件是组件集合，不是完整报告。完整稿声明 data-deck-kind="report"，按
+     references/report_bookends.md 制作封面、单页参考资料与封底；bookends.cjs 提供构建入口。
 ════════════════════════════════════════════════════════════════════════════
 -->
 <!DOCTYPE html>
-<html lang="zh-CN" data-typography="serif-report-bold" data-typography-version="1.1.0" data-theme="mckinsey" data-frame="quiet" data-frame-version="1.0.0">
+<html lang="zh-CN" data-typography="serif-report-bold" data-typography-version="1.1.0" data-theme="mckinsey" data-frame="quiet" data-frame-version="1.0.0" data-bookends-version="1.0.0" data-deck-kind="collection">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -237,6 +239,54 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
 .slide svg{font-synthesis:none;text-rendering:geometricPrecision}.slide svg text{font-variant-numeric:lining-nums tabular-nums}.slide svg text[font-weight="700"]{font-weight:600}
 .type-note{font-size:14px;line-height:1.5}.source{font-size:12px}
 </style>
+<style id="deck-bookends">
+/* 首尾页 1.0.0：只作用于显式页面角色，不改变历史封面或正文。 */
+.slide[data-page-role="cover"],.slide[data-page-role="back-cover"]{
+  padding:32px 40px 26px;box-shadow:none;--bookend-gap:72px;
+}
+.bookend-top,.bookend-footer{flex:0 0 auto;color:var(--gray-2)}
+.bookend-top{display:flex;align-items:baseline;justify-content:space-between;gap:24px;
+  padding-bottom:14px;border-bottom:1px solid var(--gray-3);min-height:34px}
+.bookend-producer{font-size:16px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.bookend-access{font-size:12px;line-height:1.5;text-align:right;max-width:40%;overflow-wrap:anywhere}
+.bookend-main{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;
+  padding:32px 0 var(--bookend-gap)}
+.bookend-kicker{display:flex;align-items:center;gap:12px;font-size:15px;line-height:1.5;font-weight:600;color:var(--brand)}
+.bookend-kicker::before{content:"";width:3px;height:16px;flex:0 0 3px;background:var(--accent)}
+.bookend-client{margin-top:20px;font-size:17px;line-height:1.5;color:var(--gray-2)}
+.bookend-client strong{color:var(--ink);font-weight:600}
+.slide[data-page-role="cover"] .cover-title,.slide[data-page-role="back-cover"] .cover-title{
+  color:var(--ink);font-size:46px;line-height:1.28;margin:14px 0 0;max-width:1040px;text-wrap:pretty;overflow-wrap:break-word;
+}
+.bookend-subtitle{margin:18px 0 0;font-size:15px;line-height:1.5;color:var(--gray-2);max-width:760px}
+.bookend-footer{border-top:1px solid var(--gray-3);padding-top:12px}
+.bookend-meta{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:12px;line-height:1.5}
+.bookend-meta [data-report-field="date"]{font-size:14px;color:var(--gray-1)}
+.bookend-statement{font-size:12px;line-height:1.5;margin-top:8px;overflow-wrap:anywhere}
+.slide[data-page-role="back-cover"] .cover-title{font-size:38px;max-width:960px}
+.slide[data-page-role="back-cover"] .bookend-main{--bookend-gap:96px}
+body[data-ratio="4x3"] .bookend-subtitle{max-width:640px}
+
+/* 文后书目是本页正文，不继承 12px Source。分栏由作者明确分配，DOM 与打印阅读顺序一致。 */
+.slide[data-page-role="references"]{padding:32px 40px 26px}
+.slide[data-page-role="references"] .slide__body{display:flex;flex-direction:column;gap:0;margin-top:24px;--frame-rule-offset:-8px}
+.reference-columns{display:grid;grid-template-columns:minmax(0,1fr);gap:32px;align-content:start;flex:1;min-height:0}
+.reference-columns[data-columns="2"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+.reference-list{list-style:none;margin:0;padding:0;min-width:0}
+.reference-item{display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px;margin-bottom:16px;
+  font-size:15px;line-height:1.55;color:var(--ink);break-inside:avoid;overflow-wrap:anywhere}
+.reference-number{color:var(--gray-2);font-size:14px;font-variant-numeric:lining-nums tabular-nums}
+.reference-title{font-weight:600;color:var(--ink)}
+.reference-item a{color:inherit;text-decoration:underline;text-decoration-color:var(--gray-3);text-underline-offset:3px}
+.reference-item a:hover,.reference-item a:focus-visible{color:var(--brand);text-decoration-color:currentColor}
+.reference-item a:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
+.reference-detail{color:var(--gray-2)}
+.reference-selection{flex:0 0 auto;font-size:14px;line-height:1.5;color:var(--gray-2);margin-top:16px}
+@media print{
+  .bookend-top,.bookend-footer,.bookend-kicker::before{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .reference-item a{color:var(--ink)}
+}
+</style>
 </head>
 <body data-ratio="16x9"><!-- 4:3 时改为 data-ratio="4x3" -->
 <div id="progress" style="width:0%"></div>
@@ -252,19 +302,16 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
 <!-- ════════════════════════════════════════════════════════════════════ -->
 <!-- P1 封面（cover）                                                     -->
 <!-- ════════════════════════════════════════════════════════════════════ -->
-<section class="slide cover active" data-frame="off">
+<section class="slide cover active" data-page-role="cover" data-frame="off">
   <div class="slide__frame" aria-hidden="true"></div>
-  <div class="slide__tracker">Confidential</div>
-  <div class="slide__body">
-    <div class="cover-title">收入下滑的诊断与渠道重构建议</div>
-    <div class="cover-sub">北辰食品 · 2026 年 9 月 · 董事会材料</div>
-    <div class="cover-meta">
-      汇报人：战略咨询项目组<br>
-      日期：2026-09-05 ｜ 状态：Draft for discussion<br>
-      本文件为工作文件，请勿外传
-    </div>
+
+  <div class="bookend-main">
+    <p class="bookend-kicker">董事会材料 · 版式示例</p>
+    <p class="bookend-client">致：<strong>北辰食品（虚构案例）</strong></p>
+    <h1 class="cover-title">收入下滑的诊断<br>与渠道重构建议</h1>
+    <p class="bookend-subtitle">合成数据仅用于展示分析与页面结构</p>
   </div>
-  <div class="cover-band"></div>
+  <footer class="bookend-footer"><div class="bookend-meta"><span data-report-field="date">2026-09-05</span></div></footer>
 </section>
 
 <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -435,10 +482,11 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
       window.addEventListener('hashchange',function(){var n=Number(location.hash.slice(1));if(Number.isInteger(n)&&n>=1&&n<=self.slides.length)self.go(n-1);});
       document.addEventListener('keydown', function(e){ self.key(e); });
       document.getElementById('stage').addEventListener('click', function(e){
-        if(document.body.classList.contains('overview')) return;
+        if(e.defaultPrevented||document.body.classList.contains('overview')||self.interactive(e.target)) return;
+        if(window.getSelection()&&!window.getSelection().isCollapsed) return;
         if(e.clientX / window.innerWidth > 0.6) self.next(); else self.prev();
       });
-      var sx=null; document.addEventListener('touchstart',function(e){sx=e.touches[0].clientX},{passive:true});
+      var sx=null; document.addEventListener('touchstart',function(e){sx=self.interactive(e.target)?null:e.touches[0].clientX},{passive:true});
       document.addEventListener('touchend',function(e){ if(sx===null) return;
         var dx=e.changedTouches[0].clientX-sx; sx=null;
         if(Math.abs(dx)>50){ dx<0?self.next():self.prev(); } },{passive:true});
@@ -454,8 +502,12 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
       document.getElementById('stage').style.setProperty('--scale', Math.max(0.05,s));
       document.querySelectorAll('.chart').forEach(function(el){ if(el._chart && el.clientWidth && el.clientHeight && el.getClientRects().length) el._chart.resize(); });
     },
+    interactive: function(target){
+      return !!(target&&target.closest&&target.closest('a,button,input,textarea,select,summary,audio,video,[contenteditable]:not([contenteditable="false"]),[role="button"],[role="link"],[data-deck-interactive]'));
+    },
     key: function(e){
       var k=e.key; var overview=document.body.classList.contains('overview');
+      if(e.defaultPrevented||e.isComposing||(k!=='Escape'&&this.interactive(e.target))) return;
       if(k==='f'||k==='F'){ this.fullscreen(); return; }
       if(k==='g'||k==='G'){ this.overview(!overview); return; }
       if(k==='Escape'){ if(document.fullscreenElement){document.exitFullscreen();} this.overview(false); return; }
@@ -485,7 +537,7 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
         this.slides.forEach(function(s){ s.querySelectorAll('.chart').forEach(function(c){ initChartFromEl(c); }); });
       } else { this.go(this.cur); }
       var self=this;
-      if(on) this.slides.forEach(function(s,idx){ s.onclick=function(ev){ ev.stopPropagation(); self.overview(false); self.go(idx); }; });
+      if(on) this.slides.forEach(function(s,idx){ s.onclick=function(ev){ ev.preventDefault(); ev.stopPropagation(); self.overview(false); self.go(idx); }; });
       else this.slides.forEach(function(s){ s.onclick=null; });
       this.resize();
     },
@@ -763,8 +815,8 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
 })();
 </script>
 <script type="module">
-/* IconPark 在线加载（离线时 icon() 自动降级到内置迷你集）*/
-try{
+/* 在线图标是显式依赖；默认不发起未使用的动态网络请求，内置 icon() 始终可用。 */
+if(document.documentElement.dataset.iconLibrary==='online')try{
   const m = await import('https://cdn.jsdelivr.net/npm/@icon-park/svg/+esm');
   if(m && m.setConfig){ m.setConfig({theme:'outline',size:20,fill:['currentColor'],strokeWidth:4}); }
   window.__icons = m;

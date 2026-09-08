@@ -23,6 +23,10 @@ verified 必须打开原始来源且找到对应数字；摘要命中只能是un
 derived 保留输入定位和公式；estimate 说明假设与不确定性，有根据时给区间；synthetic明确虚构。
 没有可靠来源时保留null与缺口，禁止填“合理数值”。
 
+## 报告级参考资料
+
+完整报告按 [首尾页规则](report_bookends.md) 在封底前安排一页书目。逐页 Source 保留具体证据定位；末页优先展示全部采用的去重来源，超量明确节选，完整出处保留在必要底稿。书目展示不改变 verified/user-provided/derived 等状态，也不替代重要口径、反证与限制。
+
 ## 与分析底稿的连接
 
 S1原始证据用于S2分析；不能从证据条数直接跳到建议。按 [analysis_planning.md](analysis_planning.md) 连接问题、实际分析与发现；Q/T/F和content_map适合大型项目索引。

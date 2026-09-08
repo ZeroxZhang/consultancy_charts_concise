@@ -1,8 +1,10 @@
-# consulting_deck_skill · v9.3.2
+# consulting_deck_skill · V10
 
 以业务问题组织原始数据、研究和访谈，通过分析、叙事与视觉设计交付自包含HTML和同版分页PDF。入口是 [SKILL.md](SKILL.md)。v9让优秀模型自由选择方法、图型、布局和实现方式，同时保留事实、计算、可读性与版本一致性。
 
 ## 这轮改变什么
+
+V10新增完整报告的封面、单页参考资料与封底规则，首尾采用深墨色主标题并共用真实元信息；参考来源先完整收录，超量显式节选。新增局部样式、构建函数和按页面职责执行的QA，保留旧稿/组件集合及原字体、画布、导航与同版PDF底座。见 [首尾页规则](references/report_bookends.md)、[五页完整样稿](assets/bookends_example.html) 和 [验证记录](../iteration_v10_bookends/validation.md)。
 
 S4–S5按需派子代理执行独立维护的 `echarts-viz-planner`，主会话负责分析、数据与成稿。选型返回决策规格，表格/机制图也有可制作语义；已有清晰选择保持轻量路径。见 [可视化专家协作](references/viz_planner_integration.md)。
 
@@ -31,6 +33,7 @@ v9.3.2收紧母版与组件视觉合规：`.annotation`注释/判断条解除展
 | 专家选型与动态加载 | [planner协作](references/viz_planner_integration.md) |
 | 证据与实现路线 | [deck适配](references/chart_matching.md)、[现有展品](references/exhibit_system.md)、[自定义图示](references/custom_exhibits.md) |
 | 字体、主题、布局 | [字体](references/typography_system.md)、[主题依据](references/theme_research.md)、[布局](references/layout_templates.md) |
+| 封面、单页参考资料、封底 | [首尾规则与制作入口](references/report_bookends.md) |
 | 成稿检查与打包 | [QA](references/workflow_qa.md)、[交付契约](references/delivery_system.md) |
 
 ## 构建与交付
@@ -45,6 +48,7 @@ export FONT_PYTHON="$PWD/.font-venv/bin/python"
 # 若Playwright未在Node默认路径，设置PLAYWRIGHT_MODULE为其绝对模块目录
 node scripts/apply_theme.cjs assets/deck_engine.html draft.html mckinsey serif-report-bold
 # 编辑页面；按需内联静态SVG与consulting-layouts.css
+# 完整稿声明 data-deck-kind="report"，按 report_bookends.md 安排首尾页
 # 新页保留 slide__header 标题组与 slide__frame 空节点；按正文选择边界
 node scripts/pack_fonts.cjs draft.html deck.html serif-report-bold
 node scripts/qa_deck.cjs deck.html renders
@@ -62,10 +66,10 @@ HTML含同版PDF的离线下载入口，保留打印、导航、缩放、深链�
 
 构建示例：`build_reference_deck.cjs`、`build_analysis_reference.cjs`、`build_dense_reference.cjs`。单图渲染：`render_echarts_svg.cjs`、`render_diagram.cjs`。
 
-开发回归按变更选择：引擎用`test_engine.cjs`；母版用`test_frame.cjs`；交付用`test_delivery.cjs`；本轮QA策略用`test_qa_policy.cjs`；图示用`test_diagram.cjs`。字体、主题、原配方修改时使用其对应测试。自动检查提供工程证据，不能替代实际看图和商业判断。
+开发回归按变更选择：引擎用`test_engine.cjs`；母版用`test_frame.cjs`；交付用`test_delivery.cjs`；QA策略用`test_qa_policy.cjs`；首尾页用`test_bookends.cjs`；图示用`test_diagram.cjs`。字体、主题、原配方修改时使用其对应测试。自动检查提供工程证据，不能替代实际看图和商业判断。
 
 选型接入与仅安装主技能的实际验证见项目 [v9.2验证记录](../iteration_v9_2_viz_planner/validation.md)。此前丰富材料案例见 [v9验证记录](../iteration_v9_open/validation.md)。新框架检索及自定义实现路线不等于每个框架／图型都有独立完整验证；一个案例通过也不足以证明普遍达到顶级咨询交付水平。
 
 母版实施与成稿见 [v9.1验证记录](../iteration_v9_1_frame/validation.md)。
 
-流程9.3.1；运行包仍为9.1.0，母版1.0.0；ECharts6.1.0、ChartRuntime2.0.0不变。McKinsey主题3.2.0，其他主题3.0.0；字体配置/资源清单1.1.0。历史v1–v8记录保留在项目归档。
+流程V10；首尾页资源1.0.0；运行包仍为9.1.0，母版1.0.0；ECharts6.1.0、ChartRuntime2.0.0不变。McKinsey主题3.2.0，其他主题3.0.0；字体配置/资源清单1.1.0。历史v1–v8记录保留在项目归档。

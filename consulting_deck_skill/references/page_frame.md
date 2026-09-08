@@ -6,7 +6,7 @@
 
 | 页面情况 | 建议属性 | 处理 |
 |---|---|---|
-| 标题之后需要清楚的分区 | `data-frame-boundary="line"`，也可省略 | 在标题组与正文留白中放 1px 淡线 |
+| 标题之后需要清楚的分区 | `data-frame-boundary="line"` | 在标题组与正文留白中放 1px 淡线 |
 | 正文首排模块已有承担分区的顶线 | `data-frame-boundary="integrated"` | 省去额外标题线，保留正文顶线 |
 | 全幅图、密集页或留白已足够 | `data-frame-boundary="space"` | 仅保留页边识别 |
 | 封面有独立视觉、全出血或其他不适合母版的页面 | `data-frame="off"` | 关闭本页母版装饰 |

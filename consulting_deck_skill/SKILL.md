@@ -6,7 +6,7 @@ description: >-
   SVG及文字组织论证，交付自包含HTML与同版分页PDF。
 ---
 
-# 咨询分析与 deck 制作 · v9.3.2
+# 咨询分析与 deck 制作 · V10
 
 目标：让读者理解重要判断、核对依据，并完成本次需要的选择或研究。给模型充分的分析和设计空间；方法库、图型库与模板是工具箱，不是能力上限。交付合同为HTML＋PDF。
 
@@ -41,11 +41,14 @@ work_mode按任务选：analytical处理原始材料；exploratory允许先探�
 - 深度研究／预读默认reading，明确现场讲述用presentation；默认中文随用户、16:9 1280×720，4:3需重排。页数由论证和使用时间决定。
 - 主题沿用用户或项目已有选择；无选择时可在简报中一次询问McKinsey／BCG／Accenture；用户授权自主决定或跳过可选问询则使用mckinsey并记录默认。不要按行业猜品牌，也不要反复问。色值读取assets/deck-themes.js；自定义品牌可以覆盖并实际验证。
 - 字体独立于配色：新reading默认serif-report-bold，标题中西文均真实700；presentation默认sans-presentation。旧稿继承既有选择，serif-report与serif-playfair保留原含义，不随换色自动迁移。正文仍为Noto Sans SC／Inter。assets/deck-typography.js是角色与真实字重来源；正式稿默认嵌入字体子集。细节见 [字体系统](references/typography_system.md)。
-- offline-self-contained是默认交付；online-single-file需要网络时明确记录。不得把CDN入口称为离线完整。
+- offline-self-contained是默认交付；online-single-file需要网络时明确记录。不得把CDN入口称为离线完整。图标默认使用内置集；明确需要在线IconPark时才声明html data-icon-library="online"，离线稿不保留在线依赖。
+- 新完整报告按 [首尾页规则](references/report_bookends.md) 收集真实标题、日期及已知出品方等元信息；可选信息缺失不编造。完整稿声明 `data-deck-kind="report"`；片段/组件集合与旧稿不自动补页。
 
 ## S1–S2：丰富材料先变成可分析的结构
 
 先围绕核心问题辨认明细表、时间序列、分布、层级、节点边、案例对照、任务责任和文本论证。大型输入保存来源清单和处理去向，关键数能定位到行、表、页或段；无需给每一句普通文字建台账。[证据与数据结构](references/evidence_design.md)用于复杂抽取与追溯。
+
+实际采用来源保留足以生成书目的机构/作者、标题、日期/版本、真实链接或材料定位，复用已有清单。末尾参考资料不替代逐页 Source 和关键数据追溯。
 
 按 [方法路由](references/framework_router.md) 找相关方法，按需读卡。额外经典方法和组合入口见 [扩展框架](references/framework_extensions.md)。允许超出目录的成熟方法或透明自定义分析；不需要先新增方法ID。选择依据是它能否回答问题、数据与假设是否支持、成本是否值得。
 
@@ -58,6 +61,8 @@ work_mode按任务选：analytical处理原始材料；exploratory允许先探�
 ## S3：综合、取舍与全篇论证
 
 [叙事方法](references/storyline_method.md)包含金字塔、SCQA、诊断、决策、研究与进展等入口，按需要组合。先读已完成的发现，再写dot-dash或标题骨架；编号可选，关键标题仍需能追溯依据。
+
+完整报告默认“封面 → 正文 → 必要附录 → 参考资料一页 → 封底”。参考资料优先完整收录实际使用的去重来源；超量时按关键证据、方法和反证节选，明确题为“主要参考资料（节选）”，不靠缩字或隐藏内容塞满。首尾和书目是功能页，不强加结论标题或正文证明责任。
 
 检验：本次回答推进了什么理解或选择？最强反对意见是什么？是否遗漏可行选项？什么证据会改变判断？决策任务还要说明现在建议做什么、投入与约束、验证/扩大/停止条件；不要给研究稿硬塞投资建议。
 
@@ -81,9 +86,11 @@ work_mode按任务选：analytical处理原始材料；exploratory允许先探�
 
 标题区和正文用留白或低对比中性细线区隔，页边轻量标记建立全篇识别。正文首排已有分区顶线时合并边界，特殊页可省略；装饰不借用数据强调色、不争夺注意力。默认 quiet 母版的容器、可调参数与页级选择见 [页面母版](references/page_frame.md)，不要求每页相同线条数量。
 
-主题语义和实体身份保持一致；McKinsey的主标题与主强调统一为#000080，辅助强调#D9D9EC用于底纹/色块，搭配深色文字，不用于白底小字或单独承担关键细线。正文与次级说明使用中性色；多类别、正负偏差与风险状态按语义保留区分，不将所有数据染成藏青。关键内容不依赖hover。定性关系可由作者布局；长度、位置、面积用于定量时必须遵循数据映射。箭头说明关系，假设不能画成已证实因果。
+主题语义和实体身份保持一致；McKinsey的正文页主标题与主强调统一为#000080，V10封面/封底标题采用主题深墨色ink；辅助强调#D9D9EC用于底纹/色块，搭配深色文字，不用于白底小字或单独承担关键细线。正文与次级说明使用中性色；多类别、正负偏差与风险状态按语义保留区分，不将所有数据染成藏青。关键内容不依赖hover。定性关系可由作者布局；长度、位置、面积用于定量时必须遵循数据映射。箭头说明关系，假设不能画成已证实因果。
 
 ## S6：制作入口
+
+制作完整稿先读 [首尾页规则](references/report_bookends.md)。`apply_theme.cjs`已内联首尾样式；`scripts/bookends.cjs`可生成共用元信息的封面/封底与书目片段，标题角色和全册画布保持兼容。来源选择由作者完成，最终按实际字体与PDF验收容量。
 
 1. 用 `node scripts/apply_theme.cjs assets/deck_engine.html draft.html <theme> <typography>` 初始化，替换示例页并内联assets/consulting-layouts.css；已接入quiet母版，新增页显式保留slide__header标题组和slide__frame空装饰节点。**每页必须显式声明 `data-frame-boundary`**：line（需要标题线）/ integrated（正文首排模块已有顶线，省去标题线）/ space（留白已足够），封面/全出血用 `data-frame="off"`；不留静默默认值。不得单独压缩 `.slide__body` 的 margin-top 而不调整母版 `--frame-rule-offset`（配对关系见 [页面母版](references/page_frame.md)）。保留导航、缩放、打印、深链与下载底座。
 2. 消费已采纳的视觉规格；核对模块数据绑定、来源与主会话落实的变换，采用同一数据版本。适配的高频图可用ChartRuntime的prepare/render/check路径；需要更好表达时直接用原生option、自定义series或SVG。planner的decision规格由作者实现，不假定已生成可运行option。配方内部容量阈值保护该实现，不是全局创作限制；超限可聚合、分面、总览＋局部、分页或换实现，完整记录有去向。
@@ -94,6 +101,8 @@ work_mode按任务选：analytical处理原始材料；exploratory允许先探�
 具体代码改动的回归选择见 [开放创作与质量判断](references/open_authoring.md)。常规制稿只检查成稿及自定义计算，不重跑整个运行库。
 
 ## S7–S8：简洁而真实的质量判断
+
+完整报告还需按 [首尾页规则](references/report_bookends.md) 检查首尾一致、页序、单页参考资料、节选/出处、链接及PDF完整条目；功能页不套用分析页密度与动作标题要求。
 
 复杂新deck或重大结论安排未参与制作的独立QA，输入成稿、关键底稿、截图/PDF、[验收参考](references/workflow_qa.md) 和 [页面母版](references/page_frame.md)；母版与组件合规（E-V01…04）属于视觉检查的一部分，不能只查图表编码。简单编辑可作者复核，准确记录独立性；没有实际看图不能写视觉通过。
 

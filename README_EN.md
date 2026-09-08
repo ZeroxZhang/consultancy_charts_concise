@@ -1,6 +1,6 @@
 > Language: [English](README_EN.md) · [简体中文](README.md)
 
-# Consulting Deck Skill · v9.3.1
+# Consulting Deck Skill · V10
 
 Turn a brief and rich source material into an evidence-based consulting deck, delivered as self-contained HTML and a matching paginated PDF.
 
@@ -10,9 +10,11 @@ v9.3.1 unifies McKinsey headings and primary emphasis in `#000080`, with `#D9D9E
 
 v9.2 delegates substantive visual selection at S4–S5 to the independently maintained `echarts-viz-planner`. The main skill owns analysis, data, page design and delivery. A verified dependency snapshot supports on-demand loading even when only the main skill is installed, including offline use. See [integration and loading](consulting_deck_skill/references/viz_planner_integration.md) and [validation](iteration_v9_2_viz_planner/validation.md). The v9.1 quiet page frame is retained.
 
+V10 adds coordinated covers, a single-page bibliography and a closing cover. Explicit selection preserves traceability when sources exceed one page. Page-role checks apply to new reports while legacy decks and component collections remain compatible. See [bookend rules](consulting_deck_skill/references/report_bookends.md), the [complete sample](consulting_deck_skill/assets/bookends_example.html), and [V10 validation](iteration_v10_bookends/validation.md).
+
 ## Live samples
 
-The screenshots below are the current samples (v9.1 frame). Open them in a browser — navigation, zoom, fullscreen and deep links included; click an image to jump to that slide.
+The screenshots below are retained body/component samples (v9.1 frame). Open them in a browser — navigation, zoom, fullscreen and deep links included; click an image to jump to that slide.
 
 [![Contribution breakdown: supermarkets down ¥110M, e-commerce growth offsetting only ~36%](docs/showcase/demo-waterfall.png)](consulting_deck_skill/assets/reference_deck.html#6)
 
