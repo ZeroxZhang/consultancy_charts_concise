@@ -1,12 +1,14 @@
-# consulting_deck_skill · V11.1
+# consulting_deck_skill · V11.2
 
 以业务问题组织原始数据、研究和访谈，通过分析、叙事与视觉设计交付自包含HTML和同版分页PDF。入口是 [SKILL.md](SKILL.md)。作者负责分析与整页创作，工具负责准确实现与导出。
 
 ## 当前重点
 
+V11.2统一任务选择、风险复核、真实双媒介证据与有限继承；禁止装饰侧边条、顶部色条卡片，逐页视觉均衡和有效内容对齐是交付要求。关键限定以少量显式声明核对最终PDF。当前实现与验收状态见[V11.2记录](../iteration_v11_2_contracts/validation.md)。
+
 V11.1以材料分析、视觉论证和整页创作为主线：先构思读者要看懂的关系，再组合图表、图示、信息图和文字；局部收束后重新分配整页空间，必要时调整页序或合并。用户明确的风格和密度要求进入成品验收，工程通过不能代替整页质量。入口与各阶段只加载实际需要的细节，不增加固定模板、图型配额或过程台账。
 
-V11已有的共享几何、六类标注、图示布局、planner版本绑定及同版交付继续保留，运行库和依赖未随本次流程重构改变。支持范围见[视觉可靠性](references/visual_reliability.md)、[专业标注](references/precision_exhibits.md)。V11.0.1旧11页报告的整页构图通过结论已撤回，不再作为成功基线；历史证据见[V11记录](../iteration_v11_reliability/validation.md)，本轮实际结果见[V11.1记录](../iteration_v11_1_authoring/validation.md)。
+V11已有的共享几何、六类标注、图示布局、planner版本绑定及同版交付继续保留，运行库和依赖未随本次流程重构改变。支持范围见[视觉可靠性](references/visual_reliability.md)、[专业标注](references/precision_exhibits.md)。V11.0.1旧11页报告的整页构图通过结论已撤回，不再作为成功基线；历史证据见[V11记录](../iteration_v11_reliability/validation.md)，此前实际结果见[V11.1记录](../iteration_v11_1_authoring/validation.md)。
 
 独立planner负责局部选型，主会话负责全篇与整页；有实质取舍时读取实际加载资源，简单清晰的选择直接制作。加载器可使用兼容本地安装、缓存或随包快照，无须预装第二个技能；获取、绑定与维护按需见[planner接入](references/viz_planner_integration.md)。独立源及dependencies快照机制不变。
 
@@ -27,7 +29,7 @@ V11已有的共享几何、六类标注、图示布局、planner版本绑定及�
 
 ## 构建与交付
 
-构建需要Node、Chrome、Playwright、PDF工具（pdfinfo/pdffonts/pdftotext）及Python字体依赖。成稿在浏览器打开无需安装这些工具。
+构建需要Node、Chrome、Playwright、PDF工具（pdfinfo/pdffonts/pdftotext）及Python字体依赖；实际PDF栅格和文字坐标还需pdfjs-dist与@napi-rs/canvas，可用PDFJS_MODULE/PDF_CANVAS_MODULE指向已有模块。成稿在浏览器打开无需安装这些工具。
 
 ```bash
 npm ci
@@ -35,16 +37,16 @@ python3 -m venv .font-venv
 .font-venv/bin/pip install -r scripts/requirements-fonts.txt
 export FONT_PYTHON="$PWD/.font-venv/bin/python"
 # 若Playwright未在Node默认路径，设置PLAYWRIGHT_MODULE为其绝对模块目录
-# 先编写自由页面片段pages.html及page.css；静态HTML/SVG稿自动装配并打包字体
-node scripts/assemble_deck.cjs pages.html deck.html --css page.css --title "报告标题" --kind report
+# 按references/delivery_system.md保存task.json，再编写pages.html及page.css
+node scripts/assemble_deck.cjs pages.html deck.html --css page.css --title "报告标题" --contract task.json
 # 完整稿声明 data-deck-kind="report"，按 report_bookends.md 安排首尾页
 # 新页保留 slide__header 标题组与 slide__frame 空节点；按正文选择边界
 node scripts/qa_deck.cjs deck.html renders
-# 实际复核分析、证据、逐页截图及PDF；据此写renders/review.json
+# 实际复核分析、证据、逐页截图及PDF；据此写schemaVersion 3作者与独立结果，并aggregate_reviews.cjs合并renders/review.json
 node scripts/package_delivery.cjs deck.html renders/deck.pdf delivery 报告名
 ```
 
-动态稿仍用`apply_theme.cjs assets/deck_engine.html draft.html mckinsey serif-report-bold`初始化，在编辑、SSR或资源内联后用`pack_fonts.cjs draft.html deck.html serif-report-bold`定稿，再执行QA与交付。静态装配的参数和边界见[页面装配](references/deck_assembly.md)，它不替代分析、构图或视觉审查。
+动态稿仍用`apply_theme.cjs assets/deck_engine.html draft.html --contract task.json`初始化，在编辑、SSR或资源内联后用`pack_fonts.cjs draft.html deck.html serif-report-bold`定稿，再执行QA与交付。静态装配的参数和边界见[页面装配](references/deck_assembly.md)，它不替代分析、构图或视觉审查。
 
 主题默认mckinsey，可选bcg/accenture；字体与配色独立，reading默认serif-report-bold（中文Noto Serif SC700＋西文Playfair700），现场演示默认sans-presentation，旧serif-report与serif-playfair保留原含义。正文仍为Noto Sans SC／Inter，已有选择继承。三个品牌风格来自公开资料的独立适配，并非官方内部模板。
 
@@ -62,8 +64,10 @@ HTML含同版PDF的离线下载入口，保留打印、导航、缩放、深链�
 
 母版实施与成稿见 [v9.1验证记录](../iteration_v9_1_frame/validation.md)。
 
-流程V11.1；首尾页资源1.0.0；运行包11.1.0，母版1.0.0；ECharts6.1.0、ChartRuntime2.0.0不变。McKinsey主题3.2.0，其他主题3.0.0；字体配置/资源清单1.1.0。历史v1–v8记录保留在项目归档。
+流程V11.2；首尾页资源1.0.0；运行包11.2.0，母版1.0.0；ECharts6.1.0、ChartRuntime2.0.0不变。McKinsey主题3.2.0，其他主题3.0.0；字体配置/资源清单1.1.0。历史v1–v8记录保留在项目归档。
 
 V11定向回归：`test_reliability.cjs`（HTML基线/反例/初始化）、`test_execution_contracts.cjs`（真实执行结果与版本）、`test_precision_exhibit.cjs`＋`test_precision_browser.cjs`（六类专业标注）、`test_diagram_layout.cjs`（图示轨道/端点）。最终PDF文字对象可用`audit_pdf_geometry.cjs`，需Node可解析pdfjs-dist与@napi-rs/canvas；它与实际PDF逐页看图互补。
 
 打包复制时排除node_modules、.font-venv及目录软链，保留assets/fonts和dependencies；安装入口可能是软链，先readlink确认，避免自递归复制。
+
+V11.2定向回归：`test_task_contract.cjs`、`test_visual_policy.cjs`、`test_qa_v12.cjs`、`test_review_delivery_v3.cjs`、`test_review_inheritance.cjs`。新report/fragment正文媒介须与任务一致，首尾特殊页及collection演示除外；历史已生成稿保持legacy检查路径，不能删版本降级规避验收。

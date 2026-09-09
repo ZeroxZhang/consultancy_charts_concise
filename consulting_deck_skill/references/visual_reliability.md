@@ -56,15 +56,23 @@ page_spec接入例（路径相对此JSON；sha256取实际文件，不复制占�
 
 一层的通过不能抵消另一层错误。page层先对照原始目标与用户明确要求判断，具体方法见[成品验收](workflow_qa.md)；无碰撞、证据哈希齐全不等于整页成立。字体自然字形差异与合理中文换行可接受；错误数据、明显错位、错误指认、不可读必须返工。完整报告实际查看每页HTML截图及最终PDF，关键标注/排印放大检查；打印DOM不是最终PDF。
 
-继续保留一份`review.json`和`audit.json`。V11初始化稿的review使用schemaVersion:2；在已有checks之外添加coverage（审查者、独立性、layers、htmlPages、pdfPages、evidence路径/哈希）。复杂完整报告分别保留作者和独立审查范围；分工审查可按同一独立性合并页集合。`aggregate_reviews.cjs audit.json review.json author.json independent.json`汇总真实结果，缺页、无结果、自然语言未解析、范围收窄、旧证据或错误格式均输出incomplete，不能静默跳过。自然语言需人工解析核对后重交，或补查缺项。
+继续保留`review.json`和`audit.json`；新稿data-reliability-version="2"使用schemaVersion 3，完整字段和主命令见[交付契约](delivery_system.md)。独立要求由task的complexity/majorConclusion派生，与kind无关。作者及必要独立审查分别覆盖四层、每页HTML和真实PDF；coverage.evidence只引用本次audit.evidenceManifest中的id，如html:page-1和pdf:page-1，不能自行登记任意图片路径代替。
 
-coverage示例：
+QA清单绑定媒介、页号、稳定pageId、页面内容摘要、共享依赖摘要、源HTML/PDF摘要及真实渲染图字节。需要局部继承时主动提供稳定且全篇唯一的`data-page-id`；默认page-N会随页序变化，不是持久语义身份。清单绑定文件归属，不证明实际看过。
 
-```json
-{"reviewer":"实际审查者","independence":"author","layers":["page","exhibit","annotation","typography"],"htmlPages":[1,2,3],"pdfPages":[1,2,3],"evidence":[{"path":"p01.png","sha256":"实际哈希"}]}
-```
+每份返回实际完成后才声明complete，并提供analysis/evidence/visual合法status与非空basis；聚合不能把作者结果升级为独立复核。最终PDF审计无可测锚点仍为NOT_DECLARED/PARTIAL，不可称完整精度通过。
 
-每份返回必须声明status:"complete"，并单独提供analysis/evidence/visual的合法status和非空basis；作者结果不能填补独立审查缺失的结果。最终PDF审计缺页/缺来源页为FAIL，无可测水平文字锚点的页为NOT_DECLARED，汇总为PARTIAL（CLI退出码2），不能写成完整精度通过。
+### 关键内容不可被总覆盖率替代
+
+把会改变判断的少量关键否定、口径、单位或前提放进task.critical，例如`{"id":"share-boundary","text":"不是市场收入份额","target":"visibility-chart"}`；正文对应`<span data-critical-id="share-boundary" data-critical-for="visibility-chart">不是市场收入份额</span>`，关联对象同页`id="visibility-chart"`。id唯一，声明text须与可见正文一致（允许空白差异）；target可省略，存在时须关联真实可见对象。
+
+QA核对声明、屏幕/打印DOM完整性，以及实际PDF对应位置内的关键文字与关联对象文字。PDF采用可提取文字对象，不能把Canvas或图片里的字当已自动验证。此机制只覆盖显式声明，不会自动找齐所有业务限制；作者仍须核对重要语义和视觉归属，不能因为整体文字覆盖率较高忽略一句否定丢失。
+
+### 有限继承：只保留未变且已真实复核的范围
+
+coverage项可加`inheritedFrom`：`{"audit":{"path":"旧audit.json","sha256":"旧文件字节SHA256"},"review":{"path":"旧review.json","sha256":"旧文件字节SHA256"},"basis":"实际变更及未受影响依据"}`，路径相对当前review文件。旧audit/review、旧HTML/PDF及旧证据必须仍在，旧工程和完整审查必须有效；不能从incomplete或legacy记录直接继承。
+
+继承范围必须保持同一审查者与独立性、页身份、页号、页面内容摘要、共享依赖摘要及当前双媒介截图字节；页序、字体样式、任务/环境依赖或图像变化均要求重审，不能仅凭正文文本未变继承。目前task整体参与共享依赖摘要，包括critical清单：即使只改一页关键限定的声明，也会保守要求全篇重审；普通非关键文字的局部改动可在其余条件不变时继承。旧未决问题须保留，循环/过深继承被拒绝。条件不满足时实际重看受影响页；不要改哈希掩盖变化。机器校验只约束继承边界，不能代替判断。
 
 PDF文字关系与跨媒介位置分别报告：同组基线/右缘spread仍须≤0.35逻辑px；文字须完整对应。Chrome打印可能将整行基线取到最近CSS像素，小数行高实测夹具已验证该签名。仅在整组对齐、每段均符合最近整数（数值残差≤0.02px）、共同量化≤0.5px时标`CALIBRATED_BASELINE_ROUNDING`，保留原始偏移；右缘不套用该模型。任意整组平移、单元素2/4px偏移、缺字与18px片段移位仍失败。其他打印路径若不符合已验证模型需单独适配，不能通过放宽组内容差解决。
 

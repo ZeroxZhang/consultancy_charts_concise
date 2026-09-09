@@ -16,8 +16,15 @@ function sectionContract(source){
   if(!close&&['style','script','textarea','title'].includes(name)){const closeAt=source.toLowerCase().indexOf('</'+name,i);if(closeAt<0)throw Error(name+'未闭合');i=closeAt;}
  }if(depth||!count)throw Error('需要至少一个完整闭合的.slide section');
 }
-async function assemble({pagesFile,outputFile,cssFile,title='报告',kind='fragment',theme='mckinsey',typography='serif-report-bold',ratio='16x9'}={}){
+async function assemble(options={}){
+ let {pagesFile,outputFile,cssFile,title='报告',contractFile}=options;
  if(!pagesFile||!outputFile)throw Error('需要pagesFile与outputFile');
+ const contractApi=require('./report_contract.cjs');
+ const sourceMode=/class=["'][^"']*\breading\b/.test(fs.readFileSync(pagesFile,'utf8'))?'reading':'presentation';
+ const defaults={mode:sourceMode,kind:options.kind||'fragment',theme:options.theme||'mckinsey',typography:options.typography||(sourceMode==='reading'?'serif-report-bold':'sans-presentation'),ratio:options.ratio||'16x9'};
+ const task=contractFile?contractApi.load(contractFile,outputFile,defaults):contractApi.normalize({},defaults);
+ for(const key of ['kind','theme','typography','ratio'])if(options[key]!==undefined&&options[key]!==task[key])throw Error('命令参数与任务合同冲突：'+key);
+ const {kind,theme,typography,ratio}=task;
  const input=path.resolve(pagesFile),output=path.resolve(outputFile),cssPath=cssFile?path.resolve(cssFile):null;
  if([input,cssPath,path.resolve(__dirname,'../assets/deck_engine.html')].includes(output))throw Error('输出不能覆盖正文、CSS或源引擎');
  if(!['fragment','report','collection'].includes(kind))throw Error('kind须为fragment/report/collection');
@@ -32,7 +39,7 @@ async function assemble({pagesFile,outputFile,cssFile,title='报告',kind='fragm
   browser=await playwright().chromium.launch({channel:process.env.CHROME_CHANNEL||'chrome',headless:true});
   const page=await browser.newPage(),issues=[];page.on('pageerror',e=>issues.push(e.message));
   await page.route('**/*',route=>route.abort());
-  const assembled=await page.evaluate(({engine,pages,css,title,kind,ratio})=>{
+  const assembled=await page.evaluate(({engine,pages,css,title,kind,ratio,mode,explicitContract})=>{
    const doc=new DOMParser().parseFromString(engine,'text/html'),stage=doc.querySelector('#stage');
    if(!stage||doc.querySelectorAll('#stage').length!==1||stage.parentElement.id!=='viewport'||![...doc.querySelectorAll('.slide')].every(s=>stage.contains(s)))throw Error('引擎#stage结构已变化，需更新装配适配器');
    const template=document.createElement('template');template.innerHTML=pages;
@@ -69,6 +76,7 @@ async function assemble({pagesFile,outputFile,cssFile,title='报告',kind='fragm
    }
    authorCSS.push(css);for(const text of authorCSS)checkCSS(text);
    for(const slide of slides){
+    if(kind!=='collection'&&!['cover','references','back-cover','divider'].includes(slide.dataset.pageRole)&&slide.classList.contains('reading')!==(mode==='reading'))throw Error('页面reading类与任务mode冲突；请按当前媒介重新排版');
     if(!['line','integrated','space'].includes(slide.getAttribute('data-frame-boundary')))throw Error('每页须由作者显式声明data-frame-boundary="line|integrated|space"；不自动选择标题边界');
     slide.classList.remove('active');
     if(!slide.querySelector(':scope > .slide__frame')){const frame=doc.createElement('div');frame.className='slide__frame';frame.setAttribute('aria-hidden','true');slide.prepend(frame);}
@@ -79,8 +87,8 @@ async function assemble({pagesFile,outputFile,cssFile,title='报告',kind='fragm
    for(const script of doc.querySelectorAll('script[type="module"]')){if(script.textContent.includes('@icon-park/svg'))script.remove();else throw Error('未知引擎模块依赖');}
    const style=doc.createElement('style');style.id='deck-author';style.textContent=authorCSS.join('\n');doc.head.append(style);
    return {html:'<!DOCTYPE html>\n'+doc.documentElement.outerHTML,pages:slides.length};
-  },{engine,pages,css,title,kind,ratio});
-  const base=path.join(tmp,'assembled.html'),themed=path.join(tmp,'themed.html');fs.writeFileSync(base,assembled.html);
+  },{engine,pages,css,title,kind,ratio,mode:task.mode,explicitContract:!!contractFile});
+  const base=path.join(tmp,'assembled.html'),themed=path.join(tmp,'themed.html');fs.writeFileSync(base,contractApi.install(assembled.html,task));
   execFileSync(process.execPath,[path.join(__dirname,'apply_theme.cjs'),base,themed,theme,typography],{stdio:['ignore','pipe','pipe'],maxBuffer:5*1024*1024});
   let html=fs.readFileSync(themed,'utf8');
   // 作者样式排在公共默认样式后；字体子集仍按全部正文与这些样式生成。
@@ -98,6 +106,6 @@ async function assemble({pagesFile,outputFile,cssFile,title='报告',kind='fragm
   return {status:'assembled',output,pages:assembled.pages,theme,typography,kind,ratio,sha256:sha(html),route:'static-html-svg'};
  }finally{try{if(browser)await browser.close();}finally{fs.rmSync(tmp,{recursive:true,force:true});}}
 }
-function args(argv){const [pagesFile,outputFile,...rest]=argv;if(!pagesFile||!outputFile)throw Error('用法: node assemble_deck.cjs pages.html deck.html [--css page.css] [--title 标题] [--kind fragment|report|collection] [--theme mckinsey] [--typography serif-report-bold] [--ratio 16x9|4x3]');const out={pagesFile,outputFile},names={css:'cssFile',title:'title',kind:'kind',theme:'theme',typography:'typography',ratio:'ratio'},seen=new Set();for(let i=0;i<rest.length;i+=2){const key=rest[i].replace(/^--/,'');if(!rest[i].startsWith('--')||!names[key]||rest[i+1]===undefined||seen.has(key))throw Error('未知/缺值/重复参数: '+rest[i]);seen.add(key);out[names[key]]=rest[i+1];}return out;}
+function args(argv){const [pagesFile,outputFile,...rest]=argv;if(!pagesFile||!outputFile)throw Error('用法: node assemble_deck.cjs pages.html deck.html [--css page.css] [--title 标题] [--kind fragment|report|collection] [--theme mckinsey] [--typography serif-report-bold] [--ratio 16x9|4x3]');const out={pagesFile,outputFile},names={css:'cssFile',title:'title',kind:'kind',theme:'theme',typography:'typography',ratio:'ratio',contract:'contractFile'},seen=new Set();for(let i=0;i<rest.length;i+=2){const key=rest[i].replace(/^--/,'');if(!rest[i].startsWith('--')||!names[key]||rest[i+1]===undefined||seen.has(key))throw Error('未知/缺值/重复参数: '+rest[i]);seen.add(key);out[names[key]]=rest[i+1];}return out;}
 if(require.main===module)assemble(args(process.argv.slice(2))).then(r=>console.log(JSON.stringify(r))).catch(e=>{console.error(e.message);process.exitCode=1;});
 module.exports={assemble,sectionContract,args};

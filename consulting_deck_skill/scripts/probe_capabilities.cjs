@@ -108,6 +108,11 @@ async function probe(out) {
           if (!fontLines.length || fontLines.some(line => line.trim().split(/\s+/).slice(-5,-2).some(v => v !== 'yes'))) throw Error('PDF 字体嵌入/子集/映射不完整');
           return {pages, textExtracted: true, fontsEmbedded: true, sha256: sha(fs.readFileSync(pdf))};
         });
+        await record('pdfRasterAndTextGeometry', async () => {
+          const rows=await require('./render_pdf_pages.cjs').render(path.join(out,'render-probe.pdf'),out);
+          if(rows.length!==1||!rows[0].words.length||!fs.existsSync(rows[0].path))throw Error('实际PDF栅格或文字坐标缺失');
+          return {pages:rows.length,words:rows[0].words.length,image:rows[0].path};
+        });
         await record('imageChallenge', async () => {
           const alphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
           const code = Array.from({length: 6}, () => alphabet[crypto.randomInt(alphabet.length)]).join('');

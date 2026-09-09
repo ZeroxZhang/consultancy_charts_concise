@@ -1,10 +1,12 @@
 > Language: [English](README_EN.md) · [简体中文](README.md)
 
-# Consulting Deck Skill · V10
+# Consulting Deck Skill · V11.2
 
 Turn a brief and rich source material into an evidence-based consulting deck, delivered as self-contained HTML and a matching paginated PDF.
 
 The skill works with Agent Skills-compatible tools. Analysis, argument and visual design determine the result. Method cards, chart recipes and layouts are reusable starting points; the author can extend them or choose a custom implementation. HTML includes navigation, scaling, fullscreen, deep links and offline download of the same PDF.
+
+V11.2 unifies authoring and delivery through a task contract, prohibits decorative edge-accent modules, and requires page balance and meaningful alignment. Reviews bind to actual HTML/PDF page evidence; critical qualifiers are checked in the final PDF. Unchanged pages may inherit verified review evidence under strict conditions. See [implementation and validation status](iteration_v11_2_contracts/validation.md). Historical samples may contain decoration that is no longer permitted in new reports.
 
 v9.3.1 unifies McKinsey headings and primary emphasis in `#000080`, with `#D9D9EC` for secondary fills, while retaining true bold headings and the established body text hierarchy. See [validation and the revised sample](iteration_v9_3_1_navy/validation.md).
 

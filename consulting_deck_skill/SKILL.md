@@ -6,7 +6,7 @@ description: >-
   交付自包含HTML与同版分页PDF。
 ---
 
-# 咨询分析与视觉论证 · V11.1
+# 咨询分析与视觉论证 · V11.2
 
 交付目标是**有分析分量、有视觉表现力、审美完整且可直接阅读的报告**：读者能看见关键关系，理解依据与取舍，核对重要数据。作者负责全篇叙事和整页设计；工具负责准确实现与可靠导出。工程检查通过只是其中一部分。
 
@@ -18,6 +18,20 @@ description: >-
 
 分析方法、页数、图型、布局和实现路线由问题决定。既有索引、组件和模板提供起点；发现更好的表达可直接自定义。低密度、表格或文字页要适合本页任务，图示和复杂度也要有实际贡献。没有图型配额、固定填充率或逐页审批。
 
+**报告禁止装饰性色条模块**：注释/判断块的侧边条、数字卡片的顶部色条，以及换类名、伪元素、阴影、渐变或SVG绘制的同类外观均禁用。用文字层级、位置、间距和内容关系组织表达；数据条、坐标轴、关系线、必要分隔线及quiet母版不在禁令内。逐页视觉均衡、有效内容对齐和合理留白是硬性交付要求，不能当可选美化。
+
+## 先登记任务合同并触发必要准备
+
+将当前选择写入任务目录的 `task.json`，在已有工作笔记记录依据；字段及可执行示例以[交付契约](references/delivery_system.md)为唯一来源。登记实际 workMode、complexity、majorConclusion、mode、theme、typography、ratio、kind 与 planner 路径。未判断复杂性时按 complex，simple 必须是明确判断。kind 只决定首尾编排，不能用 fragment 绕过风险复核，也不让简单完整稿重做复杂研究。
+
+| 条件 | 此时读取或执行 | 继续条件 |
+|---|---|---|
+| 复杂分析、重大结论/建议，或关键推理争议 | S2形成核心结论前读[分析复核](references/analysis_review.md)，安排必要独立复核 | 错误修正或结论收窄，重要限制进入正文 |
+| 完整报告 | S0确认范围、S3定结构前读[首尾规则](references/report_bookends.md) | 封面、正文/必要附录、单页参考资料与封底有位置，完整出处有去向 |
+| 首次环境或环境改变 | 批量制作前从实际skill根目录执行 `node scripts/probe_capabilities.cjs`，验证最小渲染、字体和实际PDF路径 | 已知可用路线；缺能力如实记录，采用可行替代，不冒认完成 |
+
+简单editorial只做必要核对；以上触发不要求全量读取references或逐阶段用户审批。
+
 ## S0–S3：从材料形成答案与全篇结构
 
 按任务合并、返回或迭代阶段。analytical执行必要分析；exploratory先探索再收敛；editorial保留已确认事实与结论，允许重新组织其表达，不补造数据或把材料观点升级为已核实事实。
@@ -26,7 +40,7 @@ description: >-
 2. **实际执行分析。** 选择能回答问题的方法，完成计算、比较、编码或机制推理，检验替代解释。方法入口见[方法路由](references/framework_router.md)及[扩展框架](references/framework_extensions.md)，不要求套满框架。区分事实、假设、预测、目标和建议；贡献不等于因果，样本不等于市场，口径不同不能强比。重要未知要说明它改变什么判断。
 3. **形成有推进的主线。** 用标题骨架与证明关系组织全篇，每页带来新的理解；总览解释系统，证据页展开差异或机制，综合页呈现取舍。相邻页若重复同一说明，合并或重新分工。重要限制融入论证，避免全篇退化为“尚不能证明”的提示集。叙事入口见[全篇组织](references/storyline_method.md)。
 
-一个工作笔记可承载上述结果。关键推理存在争议时按[分析复核](references/analysis_review.md)补查；已有自主执行授权则继续制作，方向性缺口才向用户提出具体问题。
+一个工作笔记可承载上述结果。复杂分析、重大结论或关键推理争议均按[分析复核](references/analysis_review.md)执行；已有自主执行授权则继续制作，方向性缺口才向用户提出具体问题。
 
 ## S4–S5：先设计视觉论证，再选实现
 
@@ -48,14 +62,14 @@ description: >-
 
 主题沿用已有选择；无选择且用户允许自主决定时使用mckinsey。颜色来自`assets/deck-themes.js`，新reading字体默认serif-report-bold（中西文真实700），正文Noto Sans SC／Inter；presentation默认sans-presentation。旧稿继承原字体预设和角色层级，不因换图重设字号密度。常规数据约15–16px、正文16–17px、模块标题600，角色变量及嵌入方法见[字体系统](references/typography_system.md)。McKinsey正文标题/主强调#000080，辅助底纹#D9D9EC；首尾标题ink，正文和次级说明用中性色。
 
-静态HTML/SVG优先写自由页面片段与CSS，再装配到原引擎：
+静态HTML/SVG优先写自由页面片段与CSS，再装配到原引擎。以下命令在实际skill根目录运行（安装入口为软链时先解析），任务路径替换为实际绝对路径，不假设当前工作目录就是skill目录：
 
 ```sh
-node scripts/assemble_deck.cjs pages.html deck.html --css page.css --title "报告标题" --kind report
-node scripts/qa_deck.cjs deck.html renders
+node scripts/assemble_deck.cjs /任务目录/pages.html /任务目录/deck.html --css /任务目录/page.css --title "报告标题" --contract /任务目录/task.json
+node scripts/qa_deck.cjs /任务目录/deck.html /任务目录/renders
 ```
 
-完整报告先读[首尾页规则](references/report_bookends.md)，由作者提供封面→正文/必要附录→单页参考资料→封底；`--kind report`不会代写内容。片段用fragment，合集用collection。正文保留`.slide__header`及`.slide__frame`，逐页显式选`data-frame-boundary="line|integrated|space"`，首尾可`data-frame="off"`；首排已有顶线用integrated。quiet母版及正文间距配对见[页面母版](references/page_frame.md)。
+完整报告按S0/S3已读取的[首尾页规则](references/report_bookends.md)，由作者提供封面→正文/必要附录→单页参考资料→封底；合同的kind=report不会代写内容。片段用fragment，合集用collection。正文保留`.slide__header`及`.slide__frame`，逐页显式选`data-frame-boundary="line|integrated|space"`，首尾可`data-frame="off"`；首排已有必要结构顶线用integrated。quiet母版及正文间距配对见[页面母版](references/page_frame.md)。
 
 装配器已接入主题、布局和字体，参数/动态路线见[装配说明](references/deck_assembly.md)。动态稿用`apply_theme.cjs`初始化，静态化或内联资源后用`pack_fonts.cjs`定稿；新增文字重新打包字体。沿用原导航、缩放、深链、打印与下载，不另写引擎。默认离线自包含，核心证据静态可读；不将CDN入口当作离线完整。
 
@@ -65,14 +79,14 @@ node scripts/qa_deck.cjs deck.html renders
 
 实际查看总览、每页HTML和最终PDF。**先以读者身份判断整份报告是否实现简报目标，再检查展品、标注、排印和工程。** 看原尺寸与关键局部；打印DOM不能替代最终PDF。详细检查按需读[验收](references/workflow_qa.md)，精度关系及支持范围见[视觉可靠性](references/visual_reliability.md)。
 
-整页检查必须能回答：主证据是否先被看见；标题中的关系是否真的展开；说明是否贴近对象；最大空白是否有用途；全篇是否重复同一弱结构；既有风格、信息密度和用户明确要求是否落实。判断要落到具体页和可见结果。“清晰、无溢出、数据正确”不足以单独支持视觉通过。
+整页检查必须能回答：主证据是否先被看见；标题中的关系是否真的展开；说明是否贴近对象；全页及模块内部空白是否有用途；同层文字基线、比较轨道及实际绘图区是否对齐；来源空间是否安全；是否出现禁用色条模块；全篇是否重复同一弱结构；既有风格、信息密度和用户明确要求是否落实。判断要落到具体页和可见结果。“清晰、无溢出、数据正确”不足以单独支持视觉通过。
 
 明确要求未兑现、关键关系未表达或页面重心失衡需要返工，即使文件可用、字都能读。返工先回到分析取舍和整页构思，再处理局部排印。纯粹风格差异可以保留，不能用这一豁免掩盖任务合同落空。图型多、文件多、QA记录齐全也不能替代成品质量。
 
-复杂新稿或重大结论安排未参与制作的独立复核，输入必须包含原始目标、用户明确偏好与实际成稿；记录实际独立性。按[交付契约](references/delivery_system.md)把真实检查及未决问题写入review.json，绑定当前HTML/PDF和audit；V11覆盖四层、每页和实际证据。未完成就保持未完成，不能脚本生成通过话术。使用planner时复用`deck.html.page-spec.json`核对实际数据、plan和关系版本。
+按task合同的复杂性或重大结论风险安排未参与制作的独立复核，输入必须包含原始目标、用户明确偏好与实际成稿；记录实际独立性。按[交付契约](references/delivery_system.md)把真实检查及未决问题写入review.json，绑定当前HTML/PDF和audit；现行schemaVersion 3覆盖四层、每页及与产物绑定的实际证据，独立审查直接返回同结构JSON。未完成就保持未完成，不能脚本生成通过话术。使用planner时复用`deck.html.page-spec.json`核对实际数据、plan和关系版本。
 
 ```sh
-node scripts/package_delivery.cjs deck.html renders/deck.pdf delivery 报告名
+node scripts/package_delivery.cjs /任务目录/deck.html /任务目录/renders/deck.pdf /任务目录/delivery 报告名
 ```
 
 交付同名HTML与同版分页PDF，给可打开文件及简短结果。必要底稿保留供复查；不把内部台账堆成用户成果。常规制稿只检查成稿与受影响机制，回归选择见[开放创作](references/open_authoring.md)。技能维护直接更新用户指定或当前实际源目录；ZIP、额外安装副本、发布和对外分发仅在用户要求时做，HTML/PDF同版装配仍属报告交付本身。

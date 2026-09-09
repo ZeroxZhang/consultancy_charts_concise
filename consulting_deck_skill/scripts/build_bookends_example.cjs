@@ -41,7 +41,7 @@ function build({ratio='16x9',profile='serif-report-bold',theme='mckinsey'}={}){
   html=html.replace('</head>',`<style>
 .slide.reading{padding:32px 40px 26px}.slide.reading .slide__lead{font-size:15px;line-height:1.5;color:var(--gray-2)}
 .slide.reading .slide__body{margin-top:24px}.role-comparison{grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;align-items:start}
-.role-block{border-top:2px solid var(--brand);padding-top:16px}.role-label{font-size:14px;color:var(--gray-2);margin-bottom:16px}
+.role-block{border:0;padding-top:0}.role-label{font-size:14px;color:var(--gray-2);margin-bottom:16px}
 .role-block h2,.source-workflow h2{font-size:20px;margin-bottom:20px}.role-block p{font-size:17px;line-height:1.65}
 .role-block .role-note,.role-note{font-size:15px;color:var(--gray-2);line-height:1.6;margin-top:24px}
 .source-workflow{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:48px;align-items:start}

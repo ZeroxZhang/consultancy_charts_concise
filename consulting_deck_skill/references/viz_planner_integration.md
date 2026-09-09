@@ -136,3 +136,9 @@ planner的`capabilities.json.required_files`声明完整运行资源；增删运
 ## V11成稿接回
 
 在既有page_spec记录同一数据/plan版本及实际图元关系，保存为deck.html.page-spec.json可被QA自动核对；接口见 [visual_reliability.md](visual_reliability.md)。load/plan/implement分别记录，加载成功不能算已选型，计划schema与图元存在不能算关系已经视觉验收。无子代理时主会话读取同一资源、实际规划、校验并落实。流程、机制、责任/旅程与条件的检索卡维护在独立源，主技能自动布局见 [diagram_layouts.md](diagram_layouts.md)。
+
+## V11.2显式任务绑定
+
+使用planner时task.json写`planner:{"mode":"used","record":"deck.html.page-spec.json","sha256":"实际记录文件SHA256"}`；record相对task.json，装配器转换为相对输出HTML并校验实际摘要。记录结构沿用[视觉可靠性](visual_reliability.md)的data/planner/plans/pages；plan.data.ref与record.data指向同一冻结数据、三方摘要一致。不能只保存加载路径，也不能漏交record后让QA误当未使用。
+
+直接制作写mode=direct；资源确实不可用写mode=unavailable并给reason与实际替代路径。加载成功但未规划不算used，实际采用过planner也不能填direct规避版本链。数据或plan变化后先重核对应关系，再更新record/task并重装配、QA及审查；新audit不自动继承旧审查。审查采用schemaVersion 3真实双媒介证据，风险要求由task决定，详见[交付契约](delivery_system.md)。

@@ -117,8 +117,8 @@ body.no-charts #nocharts{display:block}
 .source{font-size:var(--fs-note);color:var(--gray-2);line-height:1.5}
 .source b{color:var(--gray-1);font-weight:600}
 .takeaway{
-  border-left:4px solid var(--brand); background:var(--gray-4);
-  padding:10px 14px; font-size:14px; line-height:1.5; color:var(--ink);
+  background:transparent; align-self:start; flex:0 0 auto;
+  padding:10px 0; font-size:14px; line-height:1.5; color:var(--ink);
   margin-top:12px;
 }
 .takeaway b{color:var(--brand)}
@@ -131,9 +131,9 @@ body.no-charts #nocharts{display:block}
 /* 图表容器 */
 .chart{width:100%;height:100%;min-height:0}
 
-/* KPI 卡片 */
-.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;height:100%}
-.kpi-card{border:1px solid var(--gray-3);border-top:3px solid var(--brand);padding:16px 18px;
+/* 数字组使用自然高度；整页空间仍由证明任务分配。 */
+.kpi-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-self:start}
+.kpi-card{padding:12px 0;
   display:flex;flex-direction:column;gap:8px;background:var(--page-bg)}
 .kpi-card .kpi-name{font-size:13px;color:var(--gray-1)}
 .kpi-card .kpi-val{font:700 40px/1 var(--font-num);color:var(--ink)}
@@ -252,7 +252,7 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
 .bookend-main{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;
   padding:32px 0 var(--bookend-gap)}
 .bookend-kicker{display:flex;align-items:center;gap:12px;font-size:15px;line-height:1.5;font-weight:600;color:var(--brand)}
-.bookend-kicker::before{content:"";width:3px;height:16px;flex:0 0 3px;background:var(--accent)}
+.bookend-kicker::before{content:none}
 .bookend-client{margin-top:20px;font-size:17px;line-height:1.5;color:var(--gray-2)}
 .bookend-client strong{color:var(--ink);font-weight:600}
 .slide[data-page-role="cover"] .cover-title,.slide[data-page-role="back-cover"] .cover-title{
@@ -283,7 +283,7 @@ body[data-ratio="4x3"] .bookend-subtitle{max-width:640px}
 .reference-detail{color:var(--gray-2)}
 .reference-selection{flex:0 0 auto;font-size:14px;line-height:1.5;color:var(--gray-2);margin-top:16px}
 @media print{
-  .bookend-top,.bookend-footer,.bookend-kicker::before{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .bookend-top,.bookend-footer{print-color-adjust:exact;-webkit-print-color-adjust:exact}
   .reference-item a{color:var(--ink)}
 }
 </style>

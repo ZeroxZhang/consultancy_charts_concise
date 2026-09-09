@@ -1,10 +1,12 @@
 > 语言：[简体中文](README.md) · [English](README_EN.md)
 
-# Consulting Deck Skill · V10
+# Consulting Deck Skill · V11.2
 
 把简报和丰富的原始材料转成有依据、有判断、可阅读的咨询deck，交付自包含HTML与同版分页PDF。
 
 `consulting_deck_skill`适用于支持Agent Skills的工具。以分析质量、论证和视觉设计共同决定成果；方法、图型与模板供模型选用，允许扩展和自定义。HTML支持翻页、缩放、全屏、深链和离线下载同版PDF。
+
+V11.2将制作与验收统一到任务合同：提前触发分析复核与环境检查，禁止装饰边条模块，逐页检查视觉均衡与有效对齐；审查绑定实际HTML/PDF页面证据，关键限定核对最终PDF，符合条件的未变页可继承旧审查。实现与本轮验收状态见[V11.2记录](iteration_v11_2_contracts/validation.md)。
 
 v9.3.1将McKinsey标题与主强调统一为`#000080`，辅助底色采用`#D9D9EC`，延续真实粗标题和按角色继承的正文层级。见[本轮验证与样稿](iteration_v9_3_1_navy/validation.md)。
 
@@ -14,7 +16,7 @@ V10补齐完整报告的封面、单页参考资料与封底；首尾标题采�
 
 ## 样稿速览
 
-以下为保留的正文与组件样稿（v9.1 母版），浏览器直接打开，支持翻页、缩放、全屏与深链；点图直达对应页面。
+以下为保留的历史正文与组件样稿（v9.1 母版；其中旧装饰边条不再是新稿允许样式），浏览器直接打开，支持翻页、缩放、全屏与深链；点图直达对应页面。
 
 [![贡献分解：商超减少1.1亿元，电商增长仅抵消其约36%](docs/showcase/demo-waterfall.png)](consulting_deck_skill/assets/reference_deck.html#6)
 
@@ -54,7 +56,7 @@ ln -s "$(pwd)/consulting_deck_skill" ~/.codex/skills/consulting_deck_skill
 | 开放规则与检查范围 | [open_authoring.md](consulting_deck_skill/references/open_authoring.md) |
 | 经典分析扩展 | [framework_extensions.md](consulting_deck_skill/references/framework_extensions.md) |
 | 图示与自定义图表 | [custom_exhibits.md](consulting_deck_skill/references/custom_exhibits.md) |
-| 本轮实施与实际验证 | [v9.2验证记录](iteration_v9_2_viz_planner/validation.md) |
+| 本轮实施与实际验证 | [V11.2验证记录](iteration_v11_2_contracts/validation.md) |
 | 上轮对抗式审查 | [审查报告](review_partner_2026-09-06/review_report.md) |
 | 当前项目规则 | [AGENTS.md](AGENTS.md) |
 
