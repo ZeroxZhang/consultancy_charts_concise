@@ -2,14 +2,14 @@
 const fs=require('node:fs'),path=require('node:path'),bookends=require('./bookends.cjs'),frame=require('./apply_frame.cjs'),fonts=require('./pack_fonts.cjs'),themes=require('../assets/deck-themes.js');
 const root=path.resolve(__dirname,'..');
 const sources=[
-  {id:'S1',author:'Consulting Deck Skill',title:'完整报告的封面、参考资料与封底',version:'V10',kind:'项目规范',locator:'references/report_bookends.md'},
-  {id:'S2',author:'Consulting Deck Skill',title:'字体系统',version:'v1.1',kind:'项目规范',locator:'references/typography_system.md，角色与基线'},
-  {id:'S3',author:'Consulting Deck Skill',title:'证据架构与信息密度',kind:'项目规范',locator:'references/evidence_design.md，证据契约与报告级参考资料'},
-  {id:'S4',author:'Consulting Deck Skill',title:'标题分区与轻量页边识别',kind:'项目规范',locator:'references/page_frame.md，随正文选择边界'},
-  {id:'S5',author:'Consulting Deck Skill',title:'咨询 deck 验收',version:'V10',kind:'项目规范',locator:'references/workflow_qa.md，完整报告首尾'},
-  {id:'S6',author:'Consulting Deck Skill',title:'HTML＋PDF交付',version:'v9',kind:'项目规范',locator:'references/delivery_system.md，一致性与限制'}
+  {id:'S1',author:'Consulting Deck Skill',title:'完整报告的封面、参考资料与封底',kind:'项目规范',locator:'references/bookends.md'},
+  {id:'S2',author:'Consulting Deck Skill',title:'字体与角色基线',kind:'项目规范',locator:'references/type_frame.md，字体与角色'},
+  {id:'S3',author:'Consulting Deck Skill',title:'证据契约与数据几何',kind:'项目规范',locator:'references/analysis.md，证据契约'},
+  {id:'S4',author:'Consulting Deck Skill',title:'母版：页面边界与页边识别',kind:'项目规范',locator:'references/type_frame.md，母版'},
+  {id:'S5',author:'Consulting Deck Skill',title:'咨询 deck 验收',kind:'项目规范',locator:'references/qa.md，完整报告首尾'},
+  {id:'S6',author:'Consulting Deck Skill',title:'HTML＋PDF交付',kind:'项目规范',locator:'references/delivery.md，一致性与限制'}
 ];
-const meta={title:'报告的开篇与收束\n建立统一的信息秩序',shortTitle:'清楚识别 · 有据可查 · 完整收束',type:'报告设计规范 · READING REPORT',date:'2026年9月8日',producer:'Consulting Deck Skill',subtitle:'V10 首尾页与参考资料呈现说明',version:'报告版本 1.0'};
+const meta={title:'报告的开篇与收束\n建立统一的信息秩序',shortTitle:'清楚识别 · 有据可查 · 完整收束',type:'报告设计规范 · READING REPORT',date:'2026年9月8日',producer:'Consulting Deck Skill',subtitle:'封面、单页参考资料与封底呈现说明',version:'报告版本 1.0'};
 function build({ratio='16x9',profile='serif-report-bold',theme='mckinsey'}={}){
   if(!['16x9','4x3'].includes(ratio))throw Error('不支持的画布比例');
   const page2=`<section class="slide reading" data-page-role="content" data-frame-boundary="integrated">

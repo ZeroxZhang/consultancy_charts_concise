@@ -1,4 +1,4 @@
-/* 三套独立语义色预设；来源与适配边界见 references/theme_research.md。 */
+/* 三套独立语义色预设；角色语义与适配边界见 references/type_frame.md 的语义色小节。 */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.DeckThemes=api;})(typeof window!=='undefined'?window:null,function(){'use strict';
 const presets={
   "mckinsey": {

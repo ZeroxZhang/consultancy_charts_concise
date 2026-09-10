@@ -21,9 +21,9 @@
  8. CDN：ECharts 6.1.0用jsDelivr；offline-self-contained应通过Node SSR写入静态SVG。
  9. 标题与副题置于 slide__header，页边识别使用 slide__frame；quiet 默认中性低对比，
     首排正文有顶线时可用 data-frame-boundary="integrated"，特殊页可 data-frame="off"。
- 10. 示例页数据全部为 Illustrative（虚构），且已通过 E-08 复核（瀑布贡献和 = 起止差）。
+ 10. 示例页数据全部为 Illustrative（虚构），且已通过数字一致性复核（瀑布贡献和 = 起止差）。
  11. 本文件是组件集合，不是完整报告。完整稿声明 data-deck-kind="report"，按
-     references/report_bookends.md 制作封面、单页参考资料与封底；bookends.cjs 提供构建入口。
+     references/bookends.md 制作封面、单页参考资料与封底；bookends.cjs 提供构建入口。
 ════════════════════════════════════════════════════════════════════════════
 -->
 <!DOCTYPE html>
@@ -648,7 +648,7 @@ body[data-ratio="4x3"] .bookend-subtitle{max-width:640px}
   function initWaterfall(el){
     if(!window.echarts||el._chart) return;
     var c=echarts.init(el, THEME_NAME, {renderer:'svg'});
-    /* 示例数据经 E-08 复核：贡献和 0.4−1.1−0.1 = −0.8 = 起止差 10.4−11.2（Illustrative）*/
+    /* 示例数据经数字一致性复核：贡献和 0.4−1.1−0.1 = −0.8 = 起止差 10.4−11.2（Illustrative）*/
     c.setOption(buildWaterfall([
       {name:'2024 收入',type:'abs',value:11.2},
       {name:'电商',type:'delta',value:0.4},
@@ -658,9 +658,9 @@ body[data-ratio="4x3"] .bookend-subtitle{max-width:640px}
     ]));
     el._chart=c;
   }
-  /* Mekko 配方（B-11）：custom series —— 柱宽∝类别总量 × 段高=构成%
+  /* Mekko 配方：custom series —— 柱宽∝类别总量 × 段高=构成%
      输入 rows = [{name, total, segs:[{name, value}]}]
-     输出：面积 ∝ 绝对值（E-R20）；x 轴刻度 = 类别名 + 总量（宽轴标类别总量）*/
+     输出：面积 ∝ 绝对值；x 轴刻度 = 类别名 + 总量（宽轴标类别总量）*/
   function buildMekko(rows){
     var totalAll = rows.reduce(function(s,r){return s+r.total;},0);
     var segNames = rows[0].segs.map(function(sg){return sg.name;});

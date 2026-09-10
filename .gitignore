@@ -9,6 +9,9 @@ __pycache__/
 # Logs
 *.log
 
+# V12 精简：V11.2 references 的本地归档。内容与 commit 28e9740 重复，仅作本地回查，不随仓库分发
+/iteration_v12_concise/archive/
+
 # V11 本地历史备份与已取消实验的原始会话；摘要和成稿证据仍入库
 /iteration_v11_reliability/baseline/
 /iteration_v11_reliability/new/
