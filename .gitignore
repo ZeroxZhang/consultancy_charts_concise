@@ -1,7 +1,7 @@
 # macOS
 .DS_Store
 
-# Node
+# Node / Python
 node_modules/
 .font-venv/
 __pycache__/
@@ -9,14 +9,18 @@ __pycache__/
 # Logs
 *.log
 
-# V12 精简：V11.2 references 的本地归档。内容与 commit 28e9740 重复，仅作本地回查，不随仓库分发
-/iteration_v12_concise/archive/
+# ---------------------------------------------------------------------------
+# 仅本地保留，不对外呈现。
+# 这些内容是开发过程记录与历史研究，在本地完整保留，只是不进公开仓库。
+# ---------------------------------------------------------------------------
+/iteration_v*/
+/review_*/
+/design_frame_*/
+/report/
+/research_notes/
+/task_bak/
+/skill_install_backups/
 
-# V11 本地历史备份与已取消实验的原始会话；摘要和成稿证据仍入库
-/iteration_v11_reliability/baseline/
-/iteration_v11_reliability/new/
-/iteration_v11_reliability/release/*.zip
-/iteration_v11_reliability/experiments/runs/
-/iteration_v11_reliability/experiments/pilots/
-/iteration_v11_reliability/experiments/blind/
-/iteration_v11_reliability/experiments/probes/
+# 个人 Agent 配置（含本机路径与个人工作约定）
+/AGENTS.md
+/CLAUDE.md

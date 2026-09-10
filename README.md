@@ -49,10 +49,8 @@ ln -s "$(pwd)/consulting_deck_skill" ~/.codex/skills/consulting_deck_skill
 | 引擎、主题、字体、展品运行库 | [assets/](consulting_deck_skill/assets/) |
 | 制稿与维护脚本 | [scripts/](consulting_deck_skill/scripts/) |
 | 独立选型模块 | [echarts-viz-planner](https://github.com/ZeroxZhang/echarts-viz-planner) |
-| 本轮精简的实施与验证 | [validation.md](iteration_v12_concise/validation.md) |
-| 项目规则 | [AGENTS.md](AGENTS.md) |
 
-`iteration_*/` 与 `review_*/` 是历代迭代与审查记录，保留供追溯；执行以当前技能为准。
+本仓库只呈现技能本身。开发过程记录、历代迭代与审查留档在本地维护，不随仓库分发。
 
 ## 边界
 

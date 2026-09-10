@@ -49,10 +49,8 @@ Full product description, deliverable contract and build instructions: [skill RE
 | Engine, themes, fonts, exhibit runtime | [assets/](consulting_deck_skill/assets/) |
 | Authoring and maintenance scripts | [scripts/](consulting_deck_skill/scripts/) |
 | Independent chart-selection module | [echarts-viz-planner](https://github.com/ZeroxZhang/echarts-viz-planner) |
-| This round's slimming work and verification | [validation.md](iteration_v12_concise/validation.md) |
-| Project rules | [AGENTS.md](AGENTS.md) |
 
-`iteration_*/` and `review_*/` hold iteration and review records kept for traceability; the current skill is authoritative.
+This repository presents the skill itself. Development records, past iterations and reviews are kept locally and are not distributed with the repository.
 
 ## Boundaries
 
