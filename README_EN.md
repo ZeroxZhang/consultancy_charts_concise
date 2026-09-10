@@ -1,6 +1,6 @@
 > Language: [简体中文](README.md) · [English](README_EN.md)
 
-# Consulting Deck Skill
+# Consulting Deck Skill · Concise
 
 **Turn a pile of raw material into a consulting report you can hand to a client.**
 
@@ -30,24 +30,24 @@ Three input states are supported: **raw material** (full analysis), **open resea
 
 ## Getting started
 
-Copy or symlink `consulting_deck_skill` into your tool's skills directory:
+Copy or symlink `consulting_deck_skill_concise` into your tool's skills directory:
 
 ```bash
-ln -s "$(pwd)/consulting_deck_skill" ~/.codex/skills/consulting_deck_skill
+ln -s "$(pwd)/consulting_deck_skill_concise" ~/.codex/skills/consulting_deck_skill_concise
 ```
 
-Then invoke `consulting-deck-skill` and state **the audience and the question, the material you have, and any hard constraints**. No need to specify page count, chart types or frameworks up front.
+Then invoke `consulting-deck-skill-concise` and state **the audience and the question, the material you have, and any hard constraints**. No need to specify page count, chart types or frameworks up front.
 
-Full product description, deliverable contract and build instructions: [skill README](consulting_deck_skill/README.md).
+Full product description, deliverable contract and build instructions: [skill README](consulting_deck_skill_concise/README.md).
 
 ## Repository layout
 
 | Content | Location |
 |---|---|
-| Skill entry (completion criteria, six-step spine, hard contract, commands) | [SKILL.md](consulting_deck_skill/SKILL.md) |
-| On-demand references (11 files) | [references/](consulting_deck_skill/references/) |
-| Engine, themes, fonts, exhibit runtime | [assets/](consulting_deck_skill/assets/) |
-| Authoring and maintenance scripts | [scripts/](consulting_deck_skill/scripts/) |
+| Skill entry (completion criteria, six-step spine, hard contract, commands) | [SKILL.md](consulting_deck_skill_concise/SKILL.md) |
+| On-demand references (11 files) | [references/](consulting_deck_skill_concise/references/) |
+| Engine, themes, fonts, exhibit runtime | [assets/](consulting_deck_skill_concise/assets/) |
+| Authoring and maintenance scripts | [scripts/](consulting_deck_skill_concise/scripts/) |
 | Independent chart-selection module | [echarts-viz-planner](https://github.com/ZeroxZhang/echarts-viz-planner) |
 
 This repository presents the skill itself. Development records, past iterations and reviews are kept locally and are not distributed with the repository.

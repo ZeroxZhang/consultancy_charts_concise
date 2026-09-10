@@ -1,4 +1,4 @@
-# Consulting Deck Skill
+# Consulting Deck Skill · Concise
 
 **把一堆原始材料，变成一份能直接拿去见客户的咨询报告。**
 

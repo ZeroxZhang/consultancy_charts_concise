@@ -1,6 +1,6 @@
 > 语言：[简体中文](README.md) · [English](README_EN.md)
 
-# Consulting Deck Skill
+# Consulting Deck Skill · Concise
 
 **把一堆原始材料，变成一份能直接拿去见客户的咨询报告。**
 
@@ -30,24 +30,24 @@
 
 ## 使用
 
-把 `consulting_deck_skill` 复制或软链到所用工具的技能目录，例如：
+把 `consulting_deck_skill_concise` 复制或软链到所用工具的技能目录，例如：
 
 ```bash
-ln -s "$(pwd)/consulting_deck_skill" ~/.codex/skills/consulting_deck_skill
+ln -s "$(pwd)/consulting_deck_skill_concise" ~/.codex/skills/consulting_deck_skill_concise
 ```
 
-然后调用 `consulting-deck-skill`，说清**受众与要回答的问题、手上的材料、硬性要求**即可。不需要预先指定页数、图型数量或要套哪个框架。
+然后调用 `consulting-deck-skill-concise`，说清**受众与要回答的问题、手上的材料、硬性要求**即可。不需要预先指定页数、图型数量或要套哪个框架。
 
-完整的产品说明、交付形态与安装构建见 [技能说明](consulting_deck_skill/README.md)。
+完整的产品说明、交付形态与安装构建见 [技能说明](consulting_deck_skill_concise/README.md)。
 
 ## 仓库结构
 
 | 内容 | 位置 |
 |---|---|
-| 技能入口（完成判据、六步主线、硬契约、命令） | [SKILL.md](consulting_deck_skill/SKILL.md) |
-| 按需说明（11 份） | [references/](consulting_deck_skill/references/) |
-| 引擎、主题、字体、展品运行库 | [assets/](consulting_deck_skill/assets/) |
-| 制稿与维护脚本 | [scripts/](consulting_deck_skill/scripts/) |
+| 技能入口（完成判据、六步主线、硬契约、命令） | [SKILL.md](consulting_deck_skill_concise/SKILL.md) |
+| 按需说明（11 份） | [references/](consulting_deck_skill_concise/references/) |
+| 引擎、主题、字体、展品运行库 | [assets/](consulting_deck_skill_concise/assets/) |
+| 制稿与维护脚本 | [scripts/](consulting_deck_skill_concise/scripts/) |
 | 独立选型模块 | [echarts-viz-planner](https://github.com/ZeroxZhang/echarts-viz-planner) |
 
 本仓库只呈现技能本身。开发过程记录、历代迭代与审查留档在本地维护，不随仓库分发。
