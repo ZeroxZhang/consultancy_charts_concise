@@ -64,10 +64,18 @@
 构建需要 Node、Chrome、Playwright、Poppler（pdfinfo/pdffonts/pdftotext）与 Python 字体依赖；**成稿在浏览器打开不需要这些**。
 
 ```bash
-npm ci
-python3 -m venv .font-venv
-.font-venv/bin/pip install -r scripts/requirements-fonts.txt
-export FONT_PYTHON="$PWD/.font-venv/bin/python"
+npm ci            # 装配、QA、PDF 导出、几何审计所需的 Node 依赖
+npm run setup-fonts   # 建 .font-venv 并装 fontTools（仅构建字体子集需要）
+```
+
+`scripts/setup_font_venv.sh` 只往技能的 `.font-venv` 里装依赖，不写系统 Python（PEP 668 环境也适用）。装好后 `pack_fonts.cjs` 与 `probe_capabilities.cjs` 会自动找到它，**不需要再导出 `FONT_PYTHON`**；要从别处指定解释器时该变量仍然优先。不想建 venv 也可以自行准备 fontTools，再用 `FONT_PYTHON` 指向它。
+
+Chrome 走 Playwright 的 `channel: 'chrome'`，需要本机已装 Chrome；用别的浏览器或既有 Playwright 模块时按 [交付契约](references/delivery.md)设 `CHROME_CHANNEL` / `PLAYWRIGHT_MODULE`。
+
+装完先跑一次能力自检，确认最小渲染、字体与真实 PDF 路径都可用：
+
+```bash
+node scripts/probe_capabilities.cjs /tmp/deck-probe
 ```
 
 制稿流程由 Agent 按 [SKILL.md](SKILL.md) 执行；任务合同字段、交付门禁与审查契约见[交付契约](references/delivery.md)。技能内部按需加载 11 份说明文件，入口见 [SKILL.md](SKILL.md)。
