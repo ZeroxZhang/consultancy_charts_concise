@@ -141,4 +141,4 @@ Chrome 打印可能把整行基线取到最近的 CSS 像素，小数行高实�
 
 ### 修改后重跑什么
 
-改数据、字体、尺寸或画布后重新运行 `render` 并重看受影响成稿。`node scripts/test_precision_exhibit.cjs` 校验数值、闭合、格式与改数／换尺寸／长中文／混排／负值／小数等目标反例；`node scripts/test_precision_browser.cjs [样例目录]` 对已嵌入字体的 gallery 独立读取实际 SVG，按原 spec 重新累计并核对真实矩形、端点、引线端点和实际文字 bbox。故意移动柱、比较路径或引线 4px、制造文字碰撞、把层比较接回错误的累计边界、反转层 Δ 箭头，都必须失败。常规制稿只测受影响成稿与新计算，**不为复用这些入口重跑全库**。
+改数据、字体、尺寸或画布后重新运行 `render` 并重看受影响成稿。`node scripts/test_precision_exhibit.cjs` 校验数值、闭合、格式与改数／换尺寸／长中文／混排／负值／小数等目标反例；`node scripts/test_precision_browser.cjs [样例目录]` **自带夹具**——目录里没有 gallery 时用 `scripts/build_precision_gallery.cjs` 从同一批 samples 现场生成（含字体子集内嵌），不需要任何历史目录；随后独立读取实际 SVG，按原 spec 重新累计并核对真实矩形、端点、引线端点和实际文字 bbox。故意移动柱、比较路径或引线 4px、制造文字碰撞、把层比较接回错误的累计边界、反转层 Δ 箭头，都必须失败。常规制稿只测受影响成稿与新计算，**不为复用这些入口重跑全库**。

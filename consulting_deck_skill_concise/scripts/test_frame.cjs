@@ -19,7 +19,7 @@ assert.equal((frame.apply(unquoted).match(/<html\b[^>]*>/i)[0].match(/data-frame
 assert.match(frame.apply(frame.apply(source,{style:'off'})),/data-frame="off"/);
 assert.match(frame.apply(frame.apply(source,{style:'off'}),{style:'quiet'}),/data-frame="quiet"/);
 assert.throws(()=>frame.apply(source,{style:'bright'}),/quiet \/ off/);
-assert.equal(frame.apply(fs.readFileSync(path.join(__dirname,'../assets/deck_engine.html'),'utf8')),fs.readFileSync(path.join(__dirname,'../assets/deck_engine.html'),'utf8'),'引擎母版副本须同步');
+assert.equal(frame.apply(fs.readFileSync(path.join(__dirname,'../assets/deck_engine.html'),'utf8')),fs.readFileSync(path.join(__dirname,'../assets/deck_engine.html'),'utf8'),'引擎母版副本须同步：引擎是 apply_frame 的构建产物，运行 node scripts/sync_frame.cjs 重新同步后再提交');
 (async()=>{
  const browser=await pw.chromium.launch({channel:'chrome',headless:true});
  try{

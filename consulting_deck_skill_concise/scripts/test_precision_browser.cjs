@@ -1,5 +1,5 @@
 /* 独立读取浏览器实际图元与字体 bbox；4px 图元/标注/标签突变必须失败。 */
-const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{pathToFileURL}=require('node:url');
+const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),assert=require('node:assert/strict'),{pathToFileURL}=require('node:url');
 const pw=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const {samples}=require('./test_precision_exhibit.cjs');
 async function browserAudit(page){return page.evaluate(specs=>{
@@ -67,8 +67,10 @@ async function browserAudit(page){return page.evaluate(specs=>{
   return {ok:findings.every(v=>v.ok),findings};
 },samples);}
 (async()=>{
-  const dir=path.resolve(process.argv[2]||path.join(__dirname,'../../iteration_v11_reliability/annotations')),html=path.join(dir,'gallery.html');
-  if(!fs.existsSync(html))throw Error('先运行 annotations/build_fixtures.cjs 生成嵌入字体的 gallery');
+  // 夹具自带：旧版依赖一个已不随仓库发布的历史目录，测试只会抛出指向不存在脚本的错误。
+  const dir=path.resolve(process.argv[2]||path.join(os.tmpdir(),'deck-precision-gallery')),html=path.join(dir,'gallery.html');
+  if(!fs.existsSync(html)){const built=require('./build_precision_gallery.cjs').build(dir);console.log('已生成夹具：'+built.file+'（samples: '+built.samples.length+'）');}
+  if(!fs.existsSync(html))throw Error('无法生成精度样张夹具：'+html);
   const browser=await pw.chromium.launch({channel:'chrome',headless:true}),page=await browser.newPage({viewport:{width:1280,height:760},deviceScaleFactor:1});
   try{
     await page.goto(pathToFileURL(html).href);await page.evaluate(()=>window.deckReady);await page.evaluate(()=>document.fonts.ready);
