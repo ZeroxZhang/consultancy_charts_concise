@@ -38,6 +38,8 @@ ln -s "$(pwd)/consulting_deck_skill_concise" ~/.codex/skills/consulting_deck_ski
 
 然后调用 `consulting-deck-skill-concise`，说清**受众与要回答的问题、手上的材料、硬性要求**即可。不需要预先指定页数、图型数量或要套哪个框架。
 
+开始之前需要知道：**一次完整制稿预计用时 1–2 小时**（随任务量浮动），**token 消耗明显大于普通问答**——调研、逐页制作、逐页看图验收和独立复核都是真跑；技能会先说明代价并等你确认再开工。建议使用**能读图的多模态模型**和**当前最强的 SOTA 模型**。用法举例与输入建议见[技能说明](consulting_deck_skill_concise/README.md#怎么用)。
+
 完整的产品说明、交付形态与安装构建见 [技能说明](consulting_deck_skill_concise/README.md)。
 
 ## 仓库结构

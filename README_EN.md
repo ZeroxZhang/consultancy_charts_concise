@@ -38,6 +38,8 @@ ln -s "$(pwd)/consulting_deck_skill_concise" ~/.codex/skills/consulting_deck_ski
 
 Then invoke `consulting-deck-skill-concise` and state **the audience and the question, the material you have, and any hard constraints**. No need to specify page count, chart types or frameworks up front.
 
+Before you start: a full deck takes **roughly 1–2 hours** (it varies with task size) and **consumes noticeably more tokens than ordinary Q&A** — research, page-by-page authoring, screenshot review and independent review all really run. The skill states this cost up front and waits for your confirmation. A **multimodal model that can read images** and a **current SOTA model** are recommended. Prompt examples and input guidance: [skill README](consulting_deck_skill_concise/README.md#怎么用).
+
 Full product description, deliverable contract and build instructions: [skill README](consulting_deck_skill_concise/README.md).
 
 ## Repository layout
