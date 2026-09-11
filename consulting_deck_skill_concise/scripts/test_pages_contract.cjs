@@ -158,7 +158,24 @@ results.annotation_entries_work = annotated.length;
   results.roundtrip = true;
 }
 
-// 10. 遍历入口：目录解析、覆盖统计与能力漂移都必须可核对。
+// 10. 随包样稿必须示范当前契约，不能停留在旧做法上。
+{
+  for (const name of ['reference_deck', 'analysis_reference_deck']) {
+    const html = path.join(__dirname, '..', 'assets', name + '.html');
+    const record = path.join(__dirname, '..', 'assets', name + '.pages.json');
+    if (!fs.existsSync(html)) continue;
+    assert.ok(fs.existsSync(record), name + ' 缺少随附的 pages.json：样稿必须示范当前契约');
+    const doc = JSON.parse(fs.readFileSync(record, 'utf8'));
+    const checked = C.check(doc);
+    assert.equal(checked.status, 'PASS', name + ' 的 pages.json 不合法：' + JSON.stringify(checked.errors));
+    const declared = [...fs.readFileSync(html, 'utf8').matchAll(/data-form="([^"]+)"/g)].map(m => m[1]);
+    assert.deepEqual(declared, doc.pages.map(p => p.form), name + ' 的 data-form 与 pages.json 顺序不一致');
+    for (const form of declared) assert.doesNotThrow(() => forms.get(form), name + ' 声明了未知形式 ' + form);
+  }
+  results.samples_follow_contract = true;
+}
+
+// 11. 遍历入口：目录解析、覆盖统计与能力漂移都必须可核对。
 {
   const sweep = require('./sweep_forms.cjs').sweep();
   assert.ok(sweep.families.length >= 10, '遍历必须覆盖全部已登记的分析族');
