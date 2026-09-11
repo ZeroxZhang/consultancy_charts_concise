@@ -144,11 +144,43 @@ function materialize(files, target, lock) {
   } finally { fs.rmSync(temporary, { recursive: true, force: true }); }
 }
 
+/* 缓存目录可能落在沙箱或容器不可写的位置（$HOME 常被限制）；显式指定时只用它，
+   默认则按可写性逐个回退，避免"默认命令必然失败"把选型整段跳过。 */
+function cacheBases({ cacheDir, env, home, skillRoot }) {
+  const explicit = cacheDir || env.CONSULTING_DECK_CACHE_DIR;
+  const bases = [], add = value => { if (!value) return; const resolved = path.resolve(value); if (!bases.includes(resolved)) bases.push(resolved); };
+  if (explicit) { add(explicit); return bases; }
+  add(path.join(home, '.cache', 'consulting-deck-skill-concise'));
+  add(path.join(skillRoot, '.cache'));
+  add(path.join(os.tmpdir(), 'consulting-deck-skill-concise-cache'));
+  return bases;
+}
+
+function findCached(lock, bases, attempts) {
+  for (const base of bases) {
+    const target = path.join(base, NAME, lock.source_sha256);
+    if (!fs.existsSync(target)) continue;
+    try { verify(collect(target), lock); return fs.realpathSync(target); }
+    catch (error) { attempts.push({ origin: 'cache', path: base, status: 'invalid', reason: error.message }); }
+  }
+  return null;
+}
+
+function materializeInto(files, lock, bases, attempts, origin) {
+  let lastError = null;
+  for (const base of bases) {
+    const target = path.join(base, NAME, lock.source_sha256);
+    try { return materialize(files, target, lock); }
+    catch (error) { lastError = error; attempts.push({ origin: path.basename(origin), path: base, status: 'unwritable', reason: error.message }); }
+  }
+  throw lastError || new Error('没有可写的缓存目录');
+}
+
 function loadPlanner(options = {}) {
   const home = options.home || os.homedir();
   const env = options.env || process.env;
   const skillRoot = options.skillRoot || path.resolve(__dirname, '..');
-  const cacheBase = options.cacheDir || env.CONSULTING_DECK_CACHE_DIR || path.join(home, '.cache', 'consulting-deck-skill-concise');
+  const bases = cacheBases({ cacheDir: options.cacheDir, env, home, skillRoot });
   const attempts = [];
   let hadIncompatible = false;
   const seen = new Set();
@@ -182,17 +214,14 @@ function loadPlanner(options = {}) {
   try { lock = readLock(path.join(deps, `${NAME}.lock.json`)); }
   catch (error) { attempts.push({ origin: 'lock', status: 'unavailable', reason: error.message }); }
   if (lock) {
-    const target = path.join(path.resolve(cacheBase), NAME, lock.source_sha256);
-    if (fs.existsSync(target)) {
-      try { verify(collect(target), lock); return success(fs.realpathSync(target), 'cache', lock.source_sha256); }
-      catch (error) { attempts.push({ origin: 'cache', status: 'invalid', reason: error.message }); }
-    }
+    const cached = findCached(lock, bases, attempts);
+    if (cached) return success(cached, 'cache', lock.source_sha256);
     const bundlePath = path.join(deps, `${NAME}.bundle.json.gz`);
     const bundleExists = fs.existsSync(bundlePath);
     if (bundleExists) {
       try {
         const files = readBundle(bundlePath, lock);
-        const root = materialize(files, target, lock);
+        const root = materializeInto(files, lock, bases, attempts, 'bundled-snapshot');
         return success(root, 'bundled-snapshot', lock.source_sha256);
       } catch (error) { attempts.push({ origin: 'bundled-snapshot', status: 'invalid', reason: error.message }); }
     }
@@ -209,7 +238,7 @@ function loadPlanner(options = {}) {
         if (git(['rev-parse', 'HEAD'], temporary) !== lock.fetch_revision) throw new Error('获取的 revision 不匹配');
         const files = collect(temporary);
         verify(files, lock);
-        const root = materialize(files, target, lock);
+        const root = materializeInto(files, lock, bases, attempts, 'pinned-source');
         return success(root, 'pinned-source', lock.source_sha256);
       } catch (error) { attempts.push({ origin: 'pinned-source', status: 'unavailable', reason: error.message }); }
       finally { if (temporary) fs.rmSync(temporary, { recursive: true, force: true }); }
@@ -243,4 +272,4 @@ if (require.main === module) {
   } catch (error) { console.log(JSON.stringify({ status: 'unavailable', reasons: [error.message], action: '检查命令参数与路径。' })); process.exitCode = 1; }
 }
 
-module.exports = { loadPlanner, collect, describe, compatible, readLock, readBundle, safePath, sha, git, parseArgs };
+module.exports = { loadPlanner, cacheBases, findCached, materializeInto, collect, describe, compatible, verify, readLock, readBundle, safePath, sha, git, parseArgs };

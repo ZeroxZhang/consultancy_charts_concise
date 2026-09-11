@@ -25,6 +25,7 @@ const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
     const htmlBuffer=fs.readFileSync(source),pdfBuffer=fs.readFileSync(pdf);
     const audit={
       input:source,pages:9,pdfPages:9,geometryStatus:'PASS',errors:[],
+      pagesCheck:{status:'PASS',inventory:{pages:9,forms:{},families:{},distinctForms:0,annotations:0,regions:0,longestRun:0,runs:[]}},
       htmlArtifact:{path:source,bytes:htmlBuffer.length,sha256:digest(htmlBuffer)},
       pdfArtifact:{path:pdf,bytes:pdfBuffer.length,sha256:digest(pdfBuffer),pages:9}
     };
@@ -33,6 +34,12 @@ const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
     assert.throws(()=>packageDelivery({htmlFile:source,pdfFile:pdf,auditFile:path.join(dir,'missing-audit.json'),outputDir:path.join(dir,'bad')}),/缺少 S7 audit/);
     const failedAudit=path.join(dir,'failed-audit.json');fs.writeFileSync(failedAudit,JSON.stringify({...audit,geometryStatus:'FAIL'}));
     assert.throws(()=>packageDelivery({htmlFile:source,pdfFile:pdf,auditFile:failedAudit,outputDir:path.join(dir,'bad')}),/验收未通过/);
+    // 逐页形式声明缺失时不能正式交付，只能用预览。
+    const noPagesAudit=path.join(dir,'no-pages-audit.json');fs.writeFileSync(noPagesAudit,JSON.stringify({...audit,pagesCheck:{status:'NOT_PROVIDED',reason:'夹具'}}));
+    assert.throws(()=>packageDelivery({htmlFile:source,pdfFile:pdf,auditFile:noPagesAudit,outputDir:path.join(dir,'bad')}),/逐页形式声明/);
+    const failedPagesAudit=path.join(dir,'failed-pages-audit.json');fs.writeFileSync(failedPagesAudit,JSON.stringify({...audit,pagesCheck:{status:'FAIL',errors:['第3页 data-form 与 pages.json 不一致']}}));
+    assert.throws(()=>packageDelivery({htmlFile:source,pdfFile:pdf,auditFile:failedPagesAudit,outputDir:path.join(dir,'bad')}),/逐页形式声明/);
+    assert.equal(packageDelivery({htmlFile:source,pdfFile:pdf,auditFile:noPagesAudit,outputDir:path.join(dir,'no-pages-preview'),preview:true,baseName:'no-pages'}).status,'preview');
     const changedHtml=path.join(dir,'changed.html');fs.writeFileSync(changedHtml,fs.readFileSync(source,'utf8').replace('<title>','<title>已修改'));
     const changedHtmlAudit=path.join(dir,'changed-html-audit.json');fs.writeFileSync(changedHtmlAudit,JSON.stringify({...audit,input:changedHtml,htmlArtifact:{...audit.htmlArtifact,path:changedHtml}}));
     assert.throws(()=>packageDelivery({htmlFile:changedHtml,pdfFile:pdf,auditFile:changedHtmlAudit,outputDir:path.join(dir,'bad')}),/HTML 在 S7 验收后已修改/);

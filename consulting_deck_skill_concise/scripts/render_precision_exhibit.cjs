@@ -234,13 +234,38 @@ function build(spec){
     fixedText(id,text,chosen.box.x,chosen.box.y+ascent,{weight:mark.weight,color:chosen.placement==='inside'?textColor(mark.fill):palette.ink,role:request.total?'total-label':'value',placement:chosen.placement,markId:mark.id,item:mark.item,series:mark.series,value:mark.value,axisValue:mark.to,reference:references.get(mark.id)});
   });
   splitRoutes();
+  // 通用旁解读：只在声明 annotations 时启用，复用与 ExhibitKit 同一个标注层；不声明时输出与旧版逐字节一致。
+  let annotationSvg='';
+  if(Array.isArray(spec.annotations)&&spec.annotations.length){
+    const AL=require('../assets/annotation-layer.js');
+    const layerScene=AL.createScene({width,height,fontSize,canvas:{x:8,y:4,width:width-16,height:height-8},plot:{top:plotTop,bottom:plotBottom},
+      measure:(text,options)=>({width:measure(text,font(options.weight||400,options.size||fontSize)).width})});
+    marks.forEach(mark=>mark.pieces.forEach((piece,index)=>AL.addObstacle(layerScene,{id:mark.pieces.length>1?mark.id+'#'+index:mark.id,box:{x:piece.x,y:piece.y,width:piece.width,height:Math.max(piece.height,1)}})));
+    labels.forEach(label=>AL.addLabel(layerScene,{id:label.id,box:label.box,text:label.text,role:'text'}));
+    routes.forEach(route=>AL.addRoute(layerScene,{id:route.id,points:route.points}));
+    Object.entries(anchors).forEach(([id,anchor])=>{
+      const mark=markOwner(anchor.markId);if(!mark)return;
+      const xs=mark.pieces.map(p=>p.x),ys=mark.pieces.map(p=>p.y);
+      AL.addAnchor(layerScene,{id,x:anchor.x,y:anchor.y,side:anchor.y<=plotTop+(plotBottom-plotTop)/2?'top':'bottom',value:anchor.value,label:id,markId:mark.id,
+        box:{x:Math.min(...xs),y:Math.min(...ys),width:Math.max(...mark.pieces.map(p=>p.x+p.width))-Math.min(...xs),height:Math.max(...mark.pieces.map(p=>p.y+p.height))-Math.min(...ys)}});
+    });
+    const result=AL.annotate(layerScene,spec.annotations,{format:spec.format||{}});
+    annotationSvg=AL.serialize(layerScene,result.items,{color:palette.ink,leaderColor:palette.muted});
+  }
+  function markOwner(id){return id===null||id===undefined?null:marks.find(mark=>mark.id===id)||null;}
   const model={version:'1.1.0',type:spec.type,width,height,fontSize,typography:profile.id,theme:spec.theme||'mckinsey',domain,plot:{x:plotLeft,y:plotTop,width:plotRight-plotLeft,height:plotBottom-plotTop},breaks:scale.breaks,marks,labels,routes,anchors,layerTracks};
   const audit=auditLayout(model);if(!audit.ok)throw Error('内部布局检查失败: '+JSON.stringify(audit.issues));
   const out=[],line=(a,b,color,extra={})=>`<line ${attrs({x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:color,...extra})}/>`;
   const commonData=mark=>({'data-item':mark.item,'data-series':mark.series,'data-value':mark.value,'data-from':mark.from,'data-to':mark.to,'data-mark-id':mark.id});
+  // 统一锚点契约：与 ExhibitKit 同一组 data-anchor-*，供 AnnotationLayer.collect 与跨图型旁解读复用。
+  const anchorData=(mark,piece,i)=>({'data-anchor-id':mark.pieces.length>1?mark.id+'#'+i:mark.id,
+    'data-anchor-x':piece.x+piece.width/2,'data-anchor-y':piece.height===0?piece.y:mark.to>=mark.from?piece.y:piece.y+piece.height,
+    'data-anchor-side':mark.to>=mark.from?'top':'bottom',
+    'data-anchor-box':[piece.x,piece.y,piece.width,piece.height].join(','),
+    'data-anchor-label':mark.item+(mark.series?'|'+mark.series:'')});
   for(const tick of ticks)out.push(line(point(plotLeft,scale.map(tick)),point(plotRight,scale.map(tick)),tick===0?palette.ink:palette.grid,{'stroke-width':tick===0?1.2:.6,'data-role':tick===0?'zero-axis':'axis-grid','data-axis-value':tick}));
   marks.forEach(mark=>{
-    mark.pieces.forEach((piece,i)=>out.push(piece.height===0?line(point(piece.x,piece.y),point(piece.x+piece.width,piece.y),mark.fill,{'stroke-width':2,'data-role':'bar',...commonData(mark)}):`<rect ${attrs({x:piece.x,y:piece.y,width:piece.width,height:piece.height,fill:mark.fill,stroke:mark.weight===600?palette.ink:'white','stroke-width':mark.weight===600?1.6:.8,'data-role':'bar','data-semantic':mark.type,'data-piece':i,...commonData(mark)})}/>`));
+    mark.pieces.forEach((piece,i)=>out.push(piece.height===0?line(point(piece.x,piece.y),point(piece.x+piece.width,piece.y),mark.fill,{'stroke-width':2,'data-role':'bar',...commonData(mark),...anchorData(mark,piece,i)}):`<rect ${attrs({x:piece.x,y:piece.y,width:piece.width,height:piece.height,fill:mark.fill,stroke:mark.weight===600?palette.ink:'white','stroke-width':mark.weight===600?1.6:.8,'data-role':'bar','data-semantic':mark.type,'data-piece':i,...commonData(mark),...anchorData(mark,piece,i)})}/>`));
     for(const band of scale.breaks)if(Math.min(mark.from,mark.to)<band.from&&Math.max(mark.from,mark.to)>band.to){const y=band.center;out.push(`<path d="M ${mark.x-barWidth/2} ${y+3} l ${barWidth*.33} -6 l ${barWidth*.34} 6 l ${barWidth*.33} -6" fill="none" stroke="${esc(palette.ink)}" stroke-width="1.3" data-role="mark-break" ${attrs(commonData(mark))}/>`);}
   });
   for(const band of scale.breaks){out.push(`<path d="M ${plotLeft-5} ${band.center+3} l 5 -6 l 5 6 l 5 -6" fill="none" stroke="${esc(palette.ink)}" stroke-width="1.3" data-role="axis-break" data-break-from="${band.from}" data-break-to="${band.to}"/>`);}
@@ -258,7 +283,7 @@ function build(spec){
   });
   labels.forEach(label=>out.push(`<text ${attrs({x:label.x,y:label.baseline,'text-anchor':label.anchor,fill:label.color,'font-size':label.fontSize,'font-weight':label.weight,'data-role':label.role,'data-label-id':label.id,'data-placement':label.placement,'data-mark-id':label.markId,'data-item':label.item,'data-series':label.series,'data-value':label.value,'data-axis-value':label.axisValue,'data-reference':label.reference,'data-baseline':label.baseline,'data-from-key':label.fromKey,'data-to-key':label.toKey,'data-delta':label.delta,'data-rate':label.rate,'data-rate-status':label.rateStatus})}>${esc(label.text)}</text>`));
   const metadata={version:model.version,type:spec.type,domain,breaks:scale.breaks,anchors,layerTracks,layoutAudit:audit,measurement:'fontkit-tnum',font:profile.id};
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(spec.title||'数值分析展品')}" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" data-exhibit="precision" data-exhibit-type="${spec.type}" data-typography="${profile.id}" style="font-family:${esc(profile.body)};font-variant-numeric:lining-nums tabular-nums;font-synthesis:none;text-rendering:geometricPrecision"><title>${esc(spec.title||'数值分析展品')}</title><metadata>${esc(JSON.stringify(metadata))}</metadata><rect width="${width}" height="${height}" fill="white"/>${out.join('')}</svg>`;
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(spec.title||'数值分析展品')}" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" data-exhibit="precision" data-exhibit-type="${spec.type}" data-typography="${profile.id}" style="font-family:${esc(profile.body)};font-variant-numeric:lining-nums tabular-nums;font-synthesis:none;text-rendering:geometricPrecision"><title>${esc(spec.title||'数值分析展品')}</title><metadata>${esc(JSON.stringify(metadata))}</metadata><rect width="${width}" height="${height}" fill="white"/>${out.join('')}${annotationSvg}</svg>`;
   return {svg,geometry:model,audit};
 }
 function render(spec){return build(spec).svg;}

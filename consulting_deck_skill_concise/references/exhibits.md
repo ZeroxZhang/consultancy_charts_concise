@@ -97,6 +97,8 @@
 
 **ECharts 能画不等于必须使用。** 表格、流程和文本型关系图如果转成 ECharts 后会降低文字控制或增加运行时依赖，应保留 HTML／SVG。
 
+上面这些路径的**具体取值**集中在 `assets/deck-forms.js` 的封闭枚举里（每条形式登记自己的分析族、可执行入口、旁解读入口与容量边界）。`pages.json` 的 `form` 只能取那里的值；枚举与真实实现的一致性由 `scripts/test_pages_contract.cjs` 核对——**登记了却渲染不出来的名字会让测试直接失败**，不会留到成稿阶段才发现。
+
 ## 五、已有 API
 
 ### EChartsRecipes 与 ChartRuntime
@@ -162,6 +164,60 @@ const svg = kit.waterfall({width:740,height:330,items:[
 | swimlane | lanes:[标签], stages:[标签], items:[{id,label,lane,stage}], edges:[{from,to}] |
 
 另有 `formatNumber(value,{decimals,grouping,signed,suffix})` 与 `difference(start,end,{mode,decimals,suffix,basis,periods})`：`mode` 为 absolute（默认）／relative／pp／cagr，pp 必填 `basis`（fraction 或 percent），cagr 必填实际年数 `periods`，常规 relative 不接受零或负起点，cagr 不接受非正起止值。**这两个函数只格式化显示，不修改几何源值。**
+
+### 旁解读：锚点契约与标注层
+
+图上的"旁解读"（差额、增长率、份额、极值、缺口）由 `assets/annotation-layer.js` 统一完成，**不区分图型**。哑铃、Mekko、子弹、瀑布、热力与 `precision.*` 走同一套候选、碰撞避让与引线路由，**不要为某一类图另写一套标签摆位**。
+
+**锚点契约。** 每个数据图元在生成时就带上可核对的锚点，只读显式声明，不从几何反推：
+
+```html
+<rect data-anchor-id="seg:南区|新业务" data-anchor-x="412" data-anchor-y="188"
+      data-anchor-side="right" data-anchor-box="380,150,64,38" data-value="70"/>
+```
+
+- `data-anchor-x/y` 是图元**参考点**（通常是中心），`data-anchor-box` 必须等于图元**真实几何包围盒**（不含描边），`data-anchor-side` 是首选出引线方向。
+- 引线接在 `box` 的边界上，**不从中心穿出来**；标注框贴在边界外侧，装不下就沿候选环后退。
+- 各函数的锚点 id：`dumbbell`/`slope` 用 `start:类别`／`end:类别`；`bullet` 用 `value:类别`／`target:类别`；`waterfall` 用 `bar:类别`；`mekko`/`stacked` 用 `seg:列|系列`；`heatmap` 用 `cell:行|列`。`AnnotationLayer.collect(svg)` 可从任意已生成 SVG（含自绘或 ECharts 产物）取回锚点。
+
+**已经踩过的坑（改这条链路前先读）。** 下面四个缺陷**都通过了生成期的自查**，只有"独立读取真实渲染结果"才暴露出来；它们的共同点是**声明与真实对象用了两套约定**。
+
+| 症状 | 为什么当时看不见 | 规则 |
+|---|---|---|
+| 标注整段压在别的文字上，引线接到空处 | 内部 audit 用的是引擎自己算的框，而绘制原点用了另一套约定，两边都"自洽" | 框一律以**左缘**起算；`text-anchor` 只是绘制原点——`start` 用左缘、`middle` 用中心、`end` 用右缘——**只在序列化那一处换算**，其他代码不许再算一遍 |
+| 锚点声明框与图元真实包围盒对不上 | 生成期只看自己的 `box` 字段，从不与真实对象对照 | `data-anchor-box` 必须**等于图元真实几何包围盒**：不含描边、阴影和渐变。为"视觉厚度"把描边算进声明，就是让声明开始说谎 |
+| 从成稿 SVG 读回锚点时拿不到原值，自动旁注一条也提不出来 | 写入端只序列化了一部分字段，读取端却假设值在 `data-value` 上 | 锚点契约必须**自足**：`collect()` 只能依赖 `data-anchor-*`，不许假设图元上恰好还有别的属性；**写什么读什么要能往返**，并为往返写测试 |
+| 某个语义分支不做模板替换，`{delta}` 原样印在图上 | 产生文字的地方各写了一遍解析 | 产生文字**只有一个入口**；新增 kind 走同一个解析器，不另开分支 |
+
+**独立核对是这四条唯一的共同防线**：`test_annotation_browser.cjs` 不消费渲染器的 geometry/audit，而是从真实 DOM 重新推导——声明框必须等于真实 `getBBox()`，引线两端必须落在真实边界上。**改动这条链路后，只跑生成期自检不算验证。**
+
+**标注 spec。** 把 `annotations` 交给同一个 spec，标注由原值派生，位置由引擎决定：
+
+```js
+kit.dumbbell({width:620,height:330,items:[{label:'商超',start:6.4,end:5.3},{label:'电商',start:1.6,end:2.0}],
+  annotations:[
+    {on:'end:商超',kind:'delta',from:'start:商超',text:'{label} {delta}（{rate}）',weight:600},
+    {on:'end:电商',kind:'rate', from:'start:电商'},
+    {on:'seg:南区|新业务',kind:'share',text:'{label} 占该区 {value}'},
+    {on:'bar:商超',kind:'delta',text:'主要拖累 {value}'},
+    {on:'value:交付达成率%',kind:'delta',from:'target:交付达成率%',text:'缺口 {delta}'},
+    {on:'cell:北区|Q4',kind:'note',text:'最高 {value}，需核实口径'}
+  ]});
+```
+
+| 字段 | 取值 | 说明 |
+|---|---|---|
+| `kind` | value／delta／rate／pp／multiple／share／rank／note | 决定数值语义与格式；`delta` 等**不写 `from` 时按本锚点原值**格式化（瀑布 delta 柱即此用法） |
+| `from`／`to` | 锚点 id | 差额、增长率、倍数、区间标注的两个真实端点 |
+| `of` | 锚点 id | 份额分母；省略时按同 `group` 锚点求和，**分母不明就不给份额** |
+| `text` | 模板 | `{label} {value} {delta} {rate} {start} {end}`；不写则只输出数值 |
+| `side`／`weight`／`color`／`place` | — | 覆盖默认朝向、字重、颜色与候选参数 |
+
+**容量与失败。** 标注装不下时组件**自动向右／向下扩容**（图元坐标不动，与原引擎 `fit:'grow'` 同一约定），SVG 上的 `data-requested-size`／`data-actual-size` 回传真实尺寸，宿主必须按实际尺寸排版。扩容仍装不下就**报错并列出候选被拒的原因计数**——那是改规格的信号：加空间、减标注、换分面，不是删掉关键解读，也不是缩小 viewBox。
+
+**自动旁注候选。** 拿不准该标什么时先跑 `node scripts/propose_annotations.cjs spec.json`：它渲染一次展品、读回锚点，按**配对变化量、实际与目标的缺口、同组极值、领先差距、份额、离群**给出候选，每条都附写法（怎么算的）和引用（用了哪些锚点）。**候选只是建议**——采纳哪些写进 `pages.json` 的 `annotations`，口径与可比性仍由作者核对；标注层只负责放得下、不压图、不丢标签。
+
+**验收。** `node scripts/test_annotation_layer.cjs` 校验锚点契约、语义、碰撞回退与候选规则；`node scripts/test_annotation_browser.cjs` 在真实浏览器里独立核对**声明框是否等于真实 bbox、引线两端是否绑在真实边界上**，并用 4px 突变反例证明检查器有效；`node scripts/build_annotation_example.cjs [输出目录]` 生成可目视的样张。**自动几何通过不代替实际看图。**
 
 ### 参数边界
 

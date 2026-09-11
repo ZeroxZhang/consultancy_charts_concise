@@ -1,6 +1,6 @@
 {
   "name": "consulting-deck-skill-concise-runtime",
-  "version": "12.0.0",
+  "version": "13.0.0",
   "private": true,
   "description": "Pinned build/runtime dependencies for deck assembly, ECharts SVG rendering, PDF export and PDF geometry audits.",
   "scripts": {

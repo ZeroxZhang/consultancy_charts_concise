@@ -24,7 +24,8 @@ function lum(rgb){return rgb.map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1
 function channels(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));}
 for(const accent of ['#176B91','#AED6EE','#FFE000','#111111']){
  const svg=kit.heatmap({rows:['a'],columns:['a','b','c','d','e'],values:[[1,2,3,4,5]],domain:[0,5],palette:{accent}});
- const cells=[...svg.matchAll(/fill="(#[0-9A-Fa-f]+)" fill-opacity="([^"]+)" data-value="[^"]+"\/><text[^>]+fill="(#[0-9A-Fa-f]+)"/g)];
+ // 单元格矩形允许夹带锚点属性（data-anchor-*）；对比度不变式不受属性顺序影响。
+ const cells=[...svg.matchAll(/fill="(#[0-9A-Fa-f]+)"[^>]*? fill-opacity="([^"]+)" data-value="[^"]+"\/><text[^>]+fill="(#[0-9A-Fa-f]+)"/g)];
  assert.equal(cells.length,5);
  cells.forEach(m=>{const alpha=+m[2],bg=lum(channels(m[1]).map(v=>alpha*v+(1-alpha)*255)),fg=lum(channels(m[3]));assert.ok((Math.max(bg,fg)+.05)/(Math.min(bg,fg)+.05)>=4.5,'热力标签对比度不足');});
 }

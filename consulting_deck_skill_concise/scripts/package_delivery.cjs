@@ -102,6 +102,8 @@ function packageDelivery({htmlFile,pdfFile,outputDir,baseName,auditFile,reviewFi
   if(!force&&(fs.existsSync(outputHtml)||fs.existsSync(outputPdf)))fail('交付文件已存在；确认替换时使用 --force');
   const pdfSha256=sha256(pdf),auditPath=path.resolve(auditFile||path.join(path.dirname(inputPdf),'audit.json'));
   const audit=validateAudit(auditPath,{inputHtml,inputPdf,html,pdf,htmlPages,pdfPages,pdfSha256});
+  // 逐页形式声明是正式交付的一部分：没有它，全篇用了什么图、重复了几次都无从核对。
+  if(!preview&&(!audit.pagesCheck||audit.pagesCheck.status!=='PASS'))fail('缺少可核对的逐页形式声明（audit.pagesCheck='+(audit.pagesCheck?.status||'缺失')+'）：S3 须产出 pages.json 并在装配时通过校验；未完成时只能用 --preview 导出预览');
   const reviewPath=path.resolve(reviewFile||path.join(path.dirname(inputPdf),'review.json'));
   if(!preview)validateReview(reviewPath,{htmlSha256:sha256(html),pdfSha256,pages:htmlPages,audit,auditDir:path.dirname(auditPath),requireCoverage:!!audit.documentContract?.reliability,requireIndependent:!!audit.documentContract?.reliability&&require('./report_contract.cjs').requiresIndependent(audit)});
   let deliveredHtml=injectPdf(html,pdf,path.basename(outputPdf),pdfSha256);

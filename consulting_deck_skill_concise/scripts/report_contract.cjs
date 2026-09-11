@@ -20,6 +20,10 @@ function normalize(value = {}, defaults = {}) {
   if (!c.planner || !['direct', 'used', 'unavailable'].includes(c.planner.mode)) throw Error('planner.mode 无效');
   if (c.planner.mode === 'used' && (!c.planner.record || !/^[a-f0-9]{64}$/.test(c.planner.sha256 || ''))) throw Error('采用planner须绑定record路径和sha256');
   if (c.planner.mode === 'unavailable' && !c.planner.reason?.trim()) throw Error('planner不可用须说明实际限制');
+  if (c.pages !== undefined) {
+    if (!c.pages || typeof c.pages !== 'object' || typeof c.pages.record !== 'string' || !c.pages.record.trim()) throw Error('pages 须绑定 record 路径（S3 的 pages.json）');
+    if (c.pages.sha256 !== undefined && !/^[a-f0-9]{64}$/.test(c.pages.sha256)) throw Error('pages.sha256 须为 64 位十六进制');
+  }
   if (!Array.isArray(c.critical)) throw Error('critical 须为数组');
   const ids = new Set();
   for (const item of c.critical) {
@@ -51,6 +55,14 @@ function load(file, output, defaults = {}) {
     if (raw.planner.sha256 && raw.planner.sha256 !== actual) throw Error('planner记录版本已变化');
     raw.planner = {...raw.planner, record: path.relative(path.dirname(path.resolve(output)), record), sha256: actual};
   }
+  // pages.json 与 planner 记录同一条版本链：装配前核对摘要，成稿内改写为相对输出的路径。
+  if (raw.pages?.record) {
+    const record = path.resolve(path.dirname(path.resolve(file)), raw.pages.record);
+    if (!fs.existsSync(record)) throw Error('pages 记录缺失: ' + raw.pages.record);
+    const actual = fileHash(record);
+    if (raw.pages.sha256 && raw.pages.sha256 !== actual) throw Error('pages记录版本已变化，请重跑 S3 并更新 task.json');
+    raw.pages = {...raw.pages, record: path.relative(path.dirname(path.resolve(output)), record), sha256: actual};
+  }
   return normalize(raw, defaults);
 }
 function requiresIndependent(audit) {
@@ -60,4 +72,10 @@ function requiresIndependent(audit) {
   }
   return audit.documentContract?.kind === 'report';
 }
-module.exports = {hash, fileHash, stable, normalize, read, install, load, requiresIndependent};
+/* 装配期需要按作者书写的相对路径取原始记录；load() 之后该路径已改写为相对输出。 */
+function authoredPageRecord(file) {
+  const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
+  if (!raw.pages?.record) return null;
+  return path.resolve(path.dirname(path.resolve(file)), raw.pages.record);
+}
+module.exports = {hash, fileHash, stable, normalize, read, install, load, requiresIndependent, authoredPageRecord};

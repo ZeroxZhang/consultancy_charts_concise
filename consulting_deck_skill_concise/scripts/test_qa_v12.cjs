@@ -5,9 +5,11 @@ const {assemble}=require('./assemble_deck.cjs');
 const contracts=require('./report_contract.cjs');
 (async()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'qa-v12-'));try{
  const pages=path.join(dir,'pages.html'),deck=path.join(dir,'deck.html'),taskFile=path.join(dir,'task.json');
- const task={workMode:'editorial',complexity:'simple',critical:[{id:'limit',text:'不是最终收入比',target:'value'}]};
+ const pagesContract=path.join(dir,'pages.json');
+ fs.writeFileSync(pagesContract,JSON.stringify({version:1,pages:[{page:1,proves:'样本比例不能被读成最终收入比',form:'html.text'}]}));
+ const task={workMode:'editorial',complexity:'simple',critical:[{id:'limit',text:'不是最终收入比',target:'value'}],pages:{record:'pages.json'}};
  fs.writeFileSync(taskFile,JSON.stringify(task));
- fs.writeFileSync(pages,'<section class="slide reading" data-page-id="evidence" data-frame-boundary="space"><header class="slide__header"><h1 class="slide__title">关键限定完整性</h1></header><div class="slide__body" style="align-content:start"><div id="value">样本比例 38%</div><p data-critical-id="limit" data-critical-for="value">不是最终收入比</p></div><div class="source">合成验证材料</div><div class="slide__page">1</div></section>');
+ fs.writeFileSync(pages,'<section class="slide reading" data-page-id="evidence" data-frame-boundary="space" data-form="html.text" data-proves="样本比例不能被读成最终收入比"><header class="slide__header"><h1 class="slide__title">关键限定完整性</h1></header><div class="slide__body" style="align-content:start"><div id="value">样本比例 38%</div><p data-critical-id="limit" data-critical-for="value">不是最终收入比</p></div><div class="source">合成验证材料</div><div class="slide__page">1</div></section>');
  await assemble({pagesFile:pages,outputFile:deck,contractFile:taskFile});const source=fs.readFileSync(deck,'utf8');
  const cases=[
   ['baseline',source,true,null],

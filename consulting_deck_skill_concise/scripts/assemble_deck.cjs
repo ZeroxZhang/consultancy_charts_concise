@@ -75,9 +75,13 @@ async function assemble(options={}){
     }
    }
    authorCSS.push(css);for(const text of authorCSS)checkCSS(text);
-   for(const slide of slides){
+   const slideForms=[];
+  for(const slide of slides){
     if(kind!=='collection'&&!['cover','references','back-cover','divider'].includes(slide.dataset.pageRole)&&slide.classList.contains('reading')!==(mode==='reading'))throw Error('页面reading类与任务mode冲突；请按当前媒介重新排版');
     if(!['line','integrated','space'].includes(slide.getAttribute('data-frame-boundary')))throw Error('每页须由作者显式声明data-frame-boundary="line|integrated|space"；不自动选择标题边界');
+    const role=slide.dataset.pageRole||null,isBookend=['cover','references','back-cover','divider'].includes(role);
+    if(!isBookend&&!slide.dataset.form)throw Error('第'+(slideForms.length+1)+'页缺少data-form：每页须显式声明本页主形式（取值见assets/deck-forms.js，字段见references/delivery.md的pages合同）；没有静默默认值');
+    slideForms.push({page:slideForms.length+1,form:slide.dataset.form||null,proves:slide.dataset.proves||'',role});
     slide.classList.remove('active');
     if(!slide.querySelector(':scope > .slide__frame')){const frame=doc.createElement('div');frame.className='slide__frame';frame.setAttribute('aria-hidden','true');slide.prepend(frame);}
    }
@@ -86,8 +90,19 @@ async function assemble(options={}){
    for(const script of doc.querySelectorAll('script[src]')){const src=script.getAttribute('src');if(src==='./deck-typography.js')continue;if(['./echarts-recipes.js','./chart-runtime.js'].includes(src)||/^https:\/\/cdn\.jsdelivr\.net\/npm\/echarts@[^/]+\/dist\/echarts\.min\.js$/.test(src))script.remove();else throw Error('未知引擎依赖，不能静默丢弃: '+src);}
    for(const script of doc.querySelectorAll('script[type="module"]')){if(script.textContent.includes('@icon-park/svg'))script.remove();else throw Error('未知引擎模块依赖');}
    const style=doc.createElement('style');style.id='deck-author';style.textContent=authorCSS.join('\n');doc.head.append(style);
-   return {html:'<!DOCTYPE html>\n'+doc.documentElement.outerHTML,pages:slides.length};
+   return {html:'<!DOCTYPE html>\n'+doc.documentElement.outerHTML,pages:slides.length,slideForms};
   },{engine,pages,css,title,kind,ratio,mode:task.mode,explicitContract:!!contractFile});
+  // 形式取值走封闭枚举：写了就必须是真能渲染出来的入口，不是自造名字。
+  const deckForms=require('../assets/deck-forms.js');
+  for(const item of assembled.slideForms)if(item.form){try{deckForms.get(item.form);}catch(error){throw Error('第'+item.page+'页 data-form="'+item.form+'"：'+error.message);}}
+  // pages.json 是 S3 的机器可读产物：逐页形式必须与成稿一一对应。
+  const pagesRecord=contractFile?contractApi.authoredPageRecord(contractFile):null;
+  if(contractFile&&!pagesRecord)throw Error('任务合同缺少 pages：S3 须产出 pages.json，并在 task.json 用 {"pages":{"record":"pages.json","sha256":"..."}} 绑定（字段见 references/delivery.md）');
+  if(pagesRecord){
+   const pagesApi=require('./check_pages.cjs'),pagesContract=pagesApi.load(pagesRecord);
+   const pagesErrors=pagesApi.verifyDeck(pagesContract.doc,assembled.slideForms);
+   if(pagesErrors.length)throw Error('pages 合同与成稿不一致：'+pagesErrors.join('；'));
+  }
   const base=path.join(tmp,'assembled.html'),themed=path.join(tmp,'themed.html');fs.writeFileSync(base,contractApi.install(assembled.html,task));
   execFileSync(process.execPath,[path.join(__dirname,'apply_theme.cjs'),base,themed,theme,typography],{stdio:['ignore','pipe','pipe'],maxBuffer:5*1024*1024});
   let html=fs.readFileSync(themed,'utf8');

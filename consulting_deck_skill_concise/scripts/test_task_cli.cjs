@@ -12,8 +12,9 @@ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'deck-task-cli-'));
   for(const folder of [source,output,moved])fs.mkdirSync(folder,{recursive:true});
   const pages=path.join(source,'pages.html'),task=path.join(source,'task.json'),record=path.join(source,'planner-record.json'),deck=path.join(output,'deck.html'),copy=path.join(moved,'deck.html');
   fs.writeFileSync(record,JSON.stringify({synthetic:true,purpose:'Only test planner record path and digest preservation'}));
-  fs.writeFileSync(pages,'<section class="slide" data-page-id="one" data-frame-boundary="space"><header class="slide__header"><h1 class="slide__title">Contract inheritance</h1></header><div class="slide__body"><p>Presentation at 4:3</p></div><div class="slide__page">1</div></section>');
-  fs.writeFileSync(task,JSON.stringify({version:1,workMode:'editorial',complexity:'simple',majorConclusion:false,mode:'presentation',theme:'bcg',typography:'sans-presentation',ratio:'4x3',kind:'fragment',planner:{mode:'used',record:'planner-record.json'}}));
+  fs.writeFileSync(path.join(source,'pages.json'),JSON.stringify({version:1,pages:[{page:1,proves:'合同继承与 4:3 模式切换',form:'html.text'}]}));
+  fs.writeFileSync(pages,'<section class="slide" data-page-id="one" data-frame-boundary="space" data-form="html.text" data-proves="合同继承与 4:3 模式切换"><header class="slide__header"><h1 class="slide__title">Contract inheritance</h1></header><div class="slide__body"><p>Presentation at 4:3</p></div><div class="slide__page">1</div></section>');
+  fs.writeFileSync(task,JSON.stringify({version:1,workMode:'editorial',complexity:'simple',majorConclusion:false,mode:'presentation',theme:'bcg',typography:'sans-presentation',ratio:'4x3',kind:'fragment',planner:{mode:'used',record:'planner-record.json'},pages:{record:'pages.json'}}));
   // 从与skill无关的工作目录调用真实CLI，仅合同提供风格与比例。
   const call=(script,args)=>execFileSync(process.execPath,[path.join(__dirname,script),...args],{cwd:dir,encoding:'utf8',env:process.env,maxBuffer:10*1024*1024});
   call('assemble_deck.cjs',[pages,deck,'--contract',task]);

@@ -40,6 +40,7 @@
 | `ratio` | `16x9` / `4x3` | 4:3 需要重新布局，不是等比缩放 |
 | `kind` | `report` / `fragment` / `collection` | **只控制首尾编排，不决定风险。** 不能用 fragment 绕过风险复核，也不让简单的完整稿重做复杂研究 |
 | `planner` | `{mode, record?, sha256?, reason?}` | 见下 |
+| `pages` | `{record, sha256?}` | S3 的逐页形式声明（pages.json）。`record` 相对 `task.json` 解析；给了 `sha256` 就要与文件实际摘要一致。**传了合同的装配缺这一项直接失败**，见下 |
 | `critical` | 数组，可为空 | 少量会改变判断的关键语义声明，见下 |
 
 **派生规则**：`complexity === "complex"` 或 `majorConclusion === true` 时，复核要求派生为 independent，否则为 author。不要手填与风险冲突的 `reviewPolicy`——填了且冲突会被直接拒绝。
@@ -55,6 +56,43 @@
 | `unavailable` | planner 在当前环境确实不可用 | `reason` 说明实际限制 |
 
 **不能把"已经采用但记录缺失"改写成 `direct`。** 只做到 S3 是阶段范围，不是环境不可用；续作时重新决定并更新。
+
+### pages：逐页形式声明
+
+`pages.json` 是 S3 的机器可读产物：**内容和它的组织形式一起定下来**，而不是先写标题、实现阶段再临场找图。装配器用它和成稿逐页对账，QA 用它出全篇形式清单，交付门禁要求它 `PASS`。
+
+```json
+{
+  "version": 1,
+  "pages": [
+    {
+      "page": 3,
+      "proves": "商超是净下滑的主要来源，电商只抵消约三分之一",
+      "form": "kit.waterfall",
+      "regions": [
+        {"slot": "main", "span": 7, "form": "kit.waterfall", "role": "primary"},
+        {"slot": "aside", "span": 5, "form": "kit.dumbbell", "role": "support"}
+      ],
+      "annotations": [{"on": "bar:商超", "kind": "delta", "text": "主要拖累 {value}"}],
+      "fallback": {"if": "容量不足", "then": "kit.stacked + 完整数据表"}
+    }
+  ]
+}
+```
+
+| 字段 | 必填 | 含义 |
+|---|---|---|
+| `page` | 是 | 正文页序，从 1 连续；封面/参考资料/封底不登记 |
+| `proves` | 是 | 这一页要让读者看出的**一个**关系；与 `data-proves` 一致时会被核对 |
+| `form` | 是 | 本页主形式，取值来自 `assets/deck-forms.js` 的封闭枚举——每个值都对应一个真实可执行入口，不登记渲染不出来的名字 |
+| `regions` | 否 | 一页多展品时写明分区；必须恰好一个 `role:"primary"` 且与 `form` 一致 |
+| `annotations` | 否 | 图上的旁解读，见[证据与表达](exhibits.md)的"旁解读"一节；**只有 `annotation:'layer'` 的形式能声明**，其余会被明确拒绝而不是静默忽略 |
+| `repetitionReason` | 视情况 | 同一形式第 3 次起、或连续 3 页同形式时必须写 |
+| `fallback` | 否 | 容量不足时改用什么 |
+
+成稿每页必须显式声明 `data-form`（封面、参考资料、封底、分隔页除外），取值与 `pages.json` 一致；**没有静默默认值**，缺了或写了枚举以外的名字装配直接失败。`data-proves` 可选，写了就必须与 `pages.json` 的 `proves` 一致。
+
+**反单调不是图型配额。** 规则只有一条：**重复必须是被解释的决定，不能是默认**。同一形式第 3 次出现、或连续三页同形式，作者必须写一句 `repetitionReason` 说明为什么这里还是它。它不规定用几种图、不因数量给页面定级，也不替代"这条形式是否真的适合本页证明责任"的判断——那是 S3 的取舍和 S5 的目视验收。
 
 ### critical：少量关键语义
 
@@ -103,10 +141,10 @@ API：`await assemble({pagesFile, outputFile, contractFile?, cssFile?, title?, k
 
 链式的，断任何一环都不能正式交付：
 
-1. **装配**——`assemble_deck.cjs` 把任务合同写进 HTML，并声明 `data-reliability-version="2"` 与 `data-deck-kind`。
-2. **工程与证据**——`node scripts/qa_deck.cjs /任务/deck.html /任务/renders` 生成 `audit.json` 与真实的双媒介逐页证据。audit 必须 `geometryStatus === "PASS"` 且 `errors` 为空；缺少任一媒介的任一页证据都会失败。
-3. **审查归属**——`review` 必须 `status: "complete"`，证据 id 取自本次 `audit.evidenceManifest.entries`，并绑定当前 HTML、PDF 与 audit 的摘要。
-4. **打包**——`package_delivery.cjs` 复核页数、SHA-256、任务合同与证据归属；内嵌 PDF 的字节必须等于独立 PDF。
+1. **装配**——`assemble_deck.cjs` 把任务合同写进 HTML，并声明 `data-reliability-version="2"` 与 `data-deck-kind`。传了合同时逐页 `data-form` 必须存在、取值合法，并与 `pages.json` 一一对应；缺 `pages` 或缺声明直接失败。
+2. **工程与证据**——`node scripts/qa_deck.cjs /任务/deck.html /任务/renders` 生成 `audit.json` 与真实的双媒介逐页证据。audit 必须 `geometryStatus === "PASS"` 且 `errors` 为空；缺少任一媒介的任一页证据都会失败。audit 同时给出 `pagesCheck` 与 `pagesInventory`（全篇形式与族的分布、最长连续段）。
+3. **审查归属**——`review` 必须 `status: "complete"`，证据 id 取自本次 `audit.evidenceManifest.entries`，并绑定当前 HTML、PDF 与 audit 的摘要。审查者要读 `pagesInventory`，对"全篇是否重复同一弱结构"给出具体判断。
+4. **打包**——`package_delivery.cjs` 复核页数、SHA-256、任务合同与证据归属；`pagesCheck` 不是 `PASS` 时拒绝正式打包，只能用 `--preview`。内嵌 PDF 的字节必须等于独立 PDF。
 
 **工程通过不代表已经审过内容或视觉。** audit 里的 `visualStatus` 只会是 `NOT_REVIEWED`——它明确说明自动检查没有看图。
 

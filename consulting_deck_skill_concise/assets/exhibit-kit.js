@@ -1,10 +1,12 @@
 /* 原创零依赖、可打印 SVG 分析图组件。所有数值编码由数据计算。 */
 (function (root, factory) {
-  const api = factory(typeof module==='object'&&module.exports?require('./deck-typography.js'):root.DeckTypography);
-  if (typeof module === 'object' && module.exports) module.exports = api;
+  const isNode = typeof module === 'object' && module.exports;
+  const api = factory(isNode ? require('./deck-typography.js') : root.DeckTypography, isNode ? require('./annotation-layer.js') : root.AnnotationLayer);
+  if (isNode) module.exports = api;
   if (root) root.ExhibitKit = api;
-})(typeof window !== 'undefined' ? window : null, function (typography) {
+})(typeof window !== 'undefined' ? window : null, function (typography, AnnotationLayer) {
   'use strict';
+  if (!AnnotationLayer) throw new Error('ExhibitKit 需要 annotation-layer.js（浏览器加载时须先于本文件）');
   const esc = v => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num = (v, name) => { if (typeof v !== 'number' || !Number.isFinite(v)) throw new Error(name + ' 必须为有限数值'); return v; };
   const list = (v, name) => { if (!Array.isArray(v) || !v.length) throw new Error(name + ' 不可为空'); return v; };
@@ -28,6 +30,20 @@
     /* 自定义 ink 太浅时，黑色兜底；黑或白至少有一个满足4.5。 */
     return '#000000';
   }
+  // 标注测量：优先用交付字体的真实字形；取不到时退回保守估宽，不冒认真实测量。
+  function lazyMeasure(spec,profile){
+    let impl=null;
+    return function(text,options){
+      if(!impl){
+        if(typeof spec.measure==='function')impl=spec.measure;
+        else if(typeof module==='object'&&module.exports){
+          try{const Metrics=require('../scripts/font_metrics.cjs'),base=Metrics.measurer(profile),type=typography;impl=(value,opts)=>base(value,(opts.weight||400)+' '+(opts.size||14)+'px '+type.get(profile).body);}
+          catch(error){impl=AnnotationLayer.estimateMeasure;}
+        }else impl=AnnotationLayer.estimateMeasure;
+      }
+      return impl(text,options);
+    };
+  }
   function canvas(s) {
     if (!s || typeof s !== 'object') throw new Error('需要规格对象');
     const w=num(s.width === undefined ? 960 : s.width,'width'), h=num(s.height === undefined ? 500 : s.height,'height');
@@ -36,12 +52,41 @@
     const p=Object.assign({},p0,s.palette||{}); if(s.palette&&s.palette.accent&&!Object.prototype.hasOwnProperty.call(s.palette,'sequential'))p.sequential=null; list(p.series,'palette.series');
     const fontFamily=typography.get(s.typography_id).body;
     const out=[];
-    const text=(x,y,t,anchor='start',color=p.ink,extra='') => { if(t===undefined||t===null||String(t).trim()==='')throw new Error('文字标签不能为空'); out.push(`<text x="${x}" y="${y}" text-anchor="${anchor}" fill="${esc(color)}" ${extra}>${esc(t)}</text>`); };
-    const rect=(x,y,width,height,color,extra='') => { if (![x,y,width,height].every(Number.isFinite)||width<0||height<0) throw new Error('非法矩形'); out.push(`<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="${esc(color)}" ${extra}/>`); };
-    const line=(x1,y1,x2,y2,color=p.grid,extra='') => out.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${esc(color)}" ${extra}/>`);
+    // 只有声明了 annotations 的图才建立标注场景；无标注时保持原有快速路径与逐像素输出。
+    const scene=s.annotations?AnnotationLayer.createScene({width:w,height:h,fontSize:fs,measure:lazyMeasure(s,typography.get(s.typography_id).id),canvas:{x:4,y:4,width:w-8,height:h-8},plot:s.plot||null}):null;
+    const ascent=fs*1.16,descent=fs*0.288;
+    function boxFor(x,y,t,anchor){const width=scene?AnnotationLayer.sizeOf(scene,t,{size:fs}).width:0;const left=anchor==='middle'?x-width/2:anchor==='end'?x-width:x;return {x:left,y:y-ascent,width,height:ascent+descent};}
+    const text=(x,y,t,anchor='start',color=p.ink,extra='') => { if(t===undefined||t===null||String(t).trim()==='')throw new Error('文字标签不能为空'); if(scene)AnnotationLayer.addLabel(scene,{id:'plain-'+(scene.labels.length),box:boxFor(x,y,t,anchor),text:String(t),role:'text'}); out.push(`<text x="${x}" y="${y}" text-anchor="${anchor}" fill="${esc(color)}" ${extra}>${esc(t)}</text>`); };
+    const rect=(x,y,width,height,color,extra='') => { if (![x,y,width,height].every(Number.isFinite)||width<0||height<0) throw new Error('非法矩形'); if(scene)AnnotationLayer.addObstacle(scene,{id:(/data-anchor-id="([^"]+)"/.exec(extra)||[])[1]||'rect-'+(scene.obstacles.length),box:{x,y,width,height}}); out.push(`<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="${esc(color)}" ${extra}/>`); };
+    const line=(x1,y1,x2,y2,color=p.grid,extra='') => { if(scene)AnnotationLayer.addRoute(scene,{id:'line-'+(scene.routes.length),points:[{x:x1,y:y1},{x:x2,y:y2}],color}); out.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${esc(color)}" ${extra}/>`); };
     const circle=(cx,cy,r,color,extra='') => out.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${esc(color)}" ${extra}/>`);
-    const end=()=>`<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(s.title||'分析图')}" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" data-typography="${typography.get(s.typography_id).id}" style="font-family:${esc(fontFamily)};font-size:${fs}px;font-synthesis:none;text-rendering:geometricPrecision;font-variant-numeric:lining-nums tabular-nums"><title>${esc(s.title||'分析图')}</title><rect width="${w}" height="${h}" fill="white"/>${out.join('').replace(/font-weight="700"/g,'font-weight="600"')}</svg>`;
-    return {w,h,fs,p,out,text,rect,line,circle,end};
+    // 锚点契约：图元中心为参考点，box 为图元矩形；引线接在 box 边界上。
+    const anchor=(spec)=>{if(scene)AnnotationLayer.addAnchor(scene,spec);return AnnotationLayer.anchorAttrs(spec);};
+    // 标注装不下时向右／向下扩容，图元坐标不动，与原引擎 fit:'grow' 同一约定；上报 requested/actual。
+    const growth=Array.isArray(s.annotationGrowth)?s.annotationGrowth:[[0,0],[160,0],[160,72],[300,72],[300,144],[440,200]];
+    const actual={width:w,height:h,requestedWidth:w,requestedHeight:h,resized:false};
+    const end=()=>{
+      let body=out.join(''),leaderSvg='';
+      if(scene&&s.annotations){
+        const options=Object.assign({format:s.format||{}},s.annotationOptions||{});
+        let result=null,failure=null;
+        for(const [growX,growY] of growth){
+          AnnotationLayer.setCanvas(scene,{x:4,y:4,width:w-8+growX,height:h-8+growY});
+          const mark=AnnotationLayer.snapshot(scene);
+          try{result=AnnotationLayer.annotate(scene,s.annotations,options);break;}
+          catch(error){AnnotationLayer.restore(scene,mark);failure=error;}
+        }
+        if(!result)throw failure||new Error('标注无法放置');
+        actual.width=scene.canvas.width+8;actual.height=scene.canvas.height+8;
+        actual.resized=actual.width!==w||actual.height!==h;
+        actual.annotations=result.items.length;
+        // 柱内标注按图元实际填充取反差色，不手写颜色。
+        result.items.forEach(item=>{const owner=scene.anchors[item.anchor];if(!item.color&&item.placement==='inside'&&owner&&owner.fill)item.color=cellText(owner.fill,1,p.ink);});
+        leaderSvg=AnnotationLayer.serialize(scene,result.items,Object.assign({color:p.ink,leaderColor:p.muted,annotationColor:p.ink},s.serializeOptions||{}));
+      }
+      return `<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(s.title||'分析图')}" viewBox="0 0 ${actual.width} ${actual.height}" width="${actual.width}" height="${actual.height}" data-typography="${typography.get(s.typography_id).id}" data-requested-size="${w}×${h}" data-actual-size="${actual.width}×${actual.height}" style="font-family:${esc(fontFamily)};font-size:${fs}px;font-synthesis:none;text-rendering:geometricPrecision;font-variant-numeric:lining-nums tabular-nums"><title>${esc(s.title||'分析图')}</title><rect width="${actual.width}" height="${actual.height}" fill="white"/>${body.replace(/font-weight="700"/g,'font-weight="600"')}${leaderSvg}</svg>`;
+    };
+    return {w,h,fs,p,out,text,rect,line,circle,anchor,scene,end,actual};
   }
   function domain(values, supplied) {
     let lo=Math.min(0,...values),hi=Math.max(0,...values);
@@ -100,7 +145,7 @@
     const d=domain(steps.flatMap(x=>[x.from,x.to]),s.domain),y=scale(d,c.h-65,s.comparison?90:45),dx=(c.w-110)/items.length,bw=Math.min(76,dx*.65);if(dx<45)throw new Error('柱过多');
     if(c.h-65-(s.comparison?90:45)<70)throw new Error('瀑布绘图区不足');
     c.line(60,y(0),c.w-30,y(0));
-    steps.forEach((v,i)=>{const x=65+i*dx;c.rect(x,y(Math.max(v.from,v.to)),bw,Math.abs(y(v.from)-y(v.to)),v.type==='delta'?(v.value>=0?c.p.positive:c.p.negative):c.p.accent,`data-from="${v.from}" data-to="${v.to}"`);
+    steps.forEach((v,i)=>{const x=65+i*dx;const barTop=y(Math.max(v.from,v.to)),barH=Math.abs(y(v.from)-y(v.to));const aw=c.anchor({id:'bar:'+v.label,x:x+bw/2,y:barTop+barH/2,side:'top',value:v.value,label:v.label,box:{x,y:barTop,width:bw,height:barH},group:v.type});c.rect(x,barTop,bw,barH,v.type==='delta'?(v.value>=0?c.p.positive:c.p.negative):c.p.accent,`${aw} data-from="${v.from}" data-to="${v.to}"`);
       if(v.from===v.to)c.line(x,y(v.to),x+bw,y(v.to),c.p.ink);
       fittedText(c,x+bw/2,y(Math.max(v.from,v.to))-8,formatNumber(v.value,{...s.format,signed:v.type==='delta'}),dx-6,'middle');
       fittedText(c,x+bw/2,c.h-30,v.label,dx-6,'middle');
@@ -109,10 +154,10 @@
     return c.end();
   }
   function dumbbell(s){const c=canvas(s),data=list(s.items,'items');data.forEach(d=>{num(d.start,'start');num(d.end,'end');});const d=domain(data.flatMap(v=>[v.start,v.end]),s.domain),x=scale(d,190,c.w-85),r=rows(c,data.length);
-    data.forEach((v,i)=>{const y=r.y0+i*r.dy+r.dy/2;c.text(15,y+5,v.label);c.line(x(v.start),y,x(v.end),y,c.p.grid,'stroke-width="4"');c.circle(x(v.start),y,6,'#FFFFFF',`stroke="${esc(c.p.muted)}" stroke-width="2" data-role="start"`);c.circle(x(v.end),y,7,c.p.accent,'data-role="end"');c.text(x(v.start),y-13,v.start,'middle',c.p.muted);c.text(x(v.end),y+25,v.end,'middle',c.p.accent);});c.circle(190,20,6,'#FFFFFF',`stroke="${esc(c.p.muted)}" stroke-width="2"`);c.text(203,25,s.startLabel||'起始','start',c.p.ink);c.circle(c.w-140,20,7,c.p.accent);c.text(c.w-127,25,s.endLabel||'结束','start',c.p.ink);return c.end();}
-  function slope(s){const c=canvas(s),data=list(s.items,'items');data.forEach(d=>{num(d.start,'start');num(d.end,'end');});const d=domain(data.flatMap(v=>[v.start,v.end]),s.domain),y=scale(d,c.h-65,60);c.text(180,25,s.startLabel||'起始','middle');c.text(c.w-180,25,s.endLabel||'结束','middle');data.forEach((v,i)=>{const col=c.p.series[i%c.p.series.length];c.line(180,y(v.start),c.w-180,y(v.end),col,'stroke-width="2"');c.circle(180,y(v.start),4,col);c.circle(c.w-180,y(v.end),4,col);c.text(168,y(v.start)+5,v.label+' '+v.start,'end');c.text(c.w-168,y(v.end)+5,v.end);});return c.end();}
-  function bullet(s){const c=canvas(s),data=list(s.items,'items'),r=rows(c,data.length);data.forEach((v,i)=>{num(v.value,'value');num(v.target,'target');num(v.max,'max');if(v.max<=0||v.value<0||v.target<0||v.value>v.max||v.target>v.max)throw new Error('bullet 值须位于0至max');const ranges=v.ranges===undefined?[v.max]:v.ranges;list(ranges,'ranges');let prev=0;ranges.forEach(n=>{num(n,'range');if(n<=prev||n>v.max)throw new Error('ranges 须严格递增且不超max');prev=n;});const x=scale([0,v.max],190,c.w-90),y=r.y0+i*r.dy+r.dy/2;c.text(15,y+5,v.label);prev=0;ranges.forEach((n,j)=>{c.rect(x(prev),y-15,x(n)-x(prev),30,(c.p.ranges||[c.p.surface,c.p.grid,c.p.grid])[Math.min(j,2)]);prev=n;});c.rect(x(0),y-6,x(v.value)-x(0),12,c.p.accent,`data-value="${v.value}"`);c.line(x(v.target),y-21,x(v.target),y+21,c.p.ink,'stroke-width="3" data-role="target"');c.text(c.w-75,y+5,v.value+' / '+v.target);});return c.end();}
-  function heatmap(s){const c=canvas(s),rs=list(s.rows,'rows'),cs=list(s.columns,'columns'),vals=list(s.values,'values');if(vals.length!==rs.length||vals.some(r=>!Array.isArray(r)||r.length!==cs.length))throw new Error('矩阵尺寸不一致');vals.flat().forEach(v=>num(v,'cell'));const d=domain(vals.flat(),s.domain),cw=(c.w-200)/cs.length,ch=(c.h-95)/rs.length;if(cw<45||ch<32)throw new Error('热力表过密');cs.forEach((v,j)=>c.text(170+(j+.5)*cw,30,v,'middle'));rs.forEach((v,i)=>{c.text(12,55+(i+.5)*ch+5,v);vals[i].forEach((n,j)=>{const ratio=(n-d[0])/(d[1]-d[0]),a=c.p.sequential?1:.12+.78*ratio;let fill=c.p.accent;if(c.p.sequential){const seq=list(c.p.sequential,'palette.sequential'),pos=ratio*(seq.length-1),lo=Math.floor(pos),hi=Math.min(seq.length-1,lo+1),k=pos-lo;fill='rgb('+rgb(seq[lo]).map((v,i)=>Math.round(v*(1-k)+rgb(seq[hi])[i]*k)).join(',')+')';}c.rect(170+j*cw,55+i*ch,cw-3,ch-3,fill,`fill-opacity="${a}" data-value="${n}"`);c.text(170+(j+.5)*cw,55+(i+.5)*ch+5,n,'middle',cellText(fill,a,c.p.ink));});});return c.end();}
+    data.forEach((v,i)=>{const y=r.y0+i*r.dy+r.dy/2;c.text(15,y+5,v.label);c.line(x(v.start),y,x(v.end),y,c.p.grid,'stroke-width="4"');const a0=c.anchor({id:'start:'+v.label,x:x(v.start),y,side:'top',value:v.start,label:v.label+' '+(s.startLabel||'起始'),box:{x:x(v.start)-6,y:y-6,width:12,height:12},group:'start'});const a1=c.anchor({id:'end:'+v.label,x:x(v.end),y,side:'right',value:v.end,label:v.label,box:{x:x(v.end)-7,y:y-7,width:14,height:14},group:'end',fill:c.p.accent});c.circle(x(v.start),y,6,'#FFFFFF',`${a0} stroke="${esc(c.p.muted)}" stroke-width="2" data-role="start"`);c.circle(x(v.end),y,7,c.p.accent,`${a1} data-role="end"`);c.text(x(v.start),y-13,v.start,'middle',c.p.muted);c.text(x(v.end),y+25,v.end,'middle',c.p.accent);});c.circle(190,20,6,'#FFFFFF',`stroke="${esc(c.p.muted)}" stroke-width="2"`);c.text(203,25,s.startLabel||'起始','start',c.p.ink);c.circle(c.w-140,20,7,c.p.accent);c.text(c.w-127,25,s.endLabel||'结束','start',c.p.ink);return c.end();}
+  function slope(s){const c=canvas(s),data=list(s.items,'items');data.forEach(d=>{num(d.start,'start');num(d.end,'end');});const d=domain(data.flatMap(v=>[v.start,v.end]),s.domain),y=scale(d,c.h-65,60);c.text(180,25,s.startLabel||'起始','middle');c.text(c.w-180,25,s.endLabel||'结束','middle');data.forEach((v,i)=>{const col=c.p.series[i%c.p.series.length];const a0=c.anchor({id:'start:'+v.label,x:180,y:y(v.start),side:'left',value:v.start,label:v.label+' '+(s.startLabel||'起始'),box:{x:176,y:y(v.start)-4,width:8,height:8},group:'start'});const a1=c.anchor({id:'end:'+v.label,x:c.w-180,y:y(v.end),side:'right',value:v.end,label:v.label,box:{x:c.w-184,y:y(v.end)-4,width:8,height:8},group:'end',fill:col});c.line(180,y(v.start),c.w-180,y(v.end),col,'stroke-width="2"');c.circle(180,y(v.start),4,col,`${a0} data-role="start"`);c.circle(c.w-180,y(v.end),4,col,`${a1} data-role="end"`);c.text(168,y(v.start)+5,v.label+' '+v.start,'end');c.text(c.w-168,y(v.end)+5,v.end);});return c.end();}
+  function bullet(s){const c=canvas(s),data=list(s.items,'items'),r=rows(c,data.length);data.forEach((v,i)=>{num(v.value,'value');num(v.target,'target');num(v.max,'max');if(v.max<=0||v.value<0||v.target<0||v.value>v.max||v.target>v.max)throw new Error('bullet 值须位于0至max');const ranges=v.ranges===undefined?[v.max]:v.ranges;list(ranges,'ranges');let prev=0;ranges.forEach(n=>{num(n,'range');if(n<=prev||n>v.max)throw new Error('ranges 须严格递增且不超max');prev=n;});const x=scale([0,v.max],190,c.w-90),y=r.y0+i*r.dy+r.dy/2;c.text(15,y+5,v.label);prev=0;ranges.forEach((n,j)=>{c.rect(x(prev),y-15,x(n)-x(prev),30,(c.p.ranges||[c.p.surface,c.p.grid,c.p.grid])[Math.min(j,2)]);prev=n;});const av=c.anchor({id:'value:'+v.label,x:(x(0)+x(v.value))/2,y,side:'bottom',value:v.value,label:v.label,box:{x:x(0),y:y-6,width:Math.max(x(v.value)-x(0),0),height:12},group:'value',fill:c.p.accent});const at=c.anchor({id:'target:'+v.label,x:x(v.target),y,side:'top',value:v.target,label:v.label+' 目标',box:{x:x(v.target),y:y-21,width:0,height:42},group:'target'});c.rect(x(0),y-6,x(v.value)-x(0),12,c.p.accent,`${av} data-value="${v.value}"`);c.line(x(v.target),y-21,x(v.target),y+21,c.p.ink,`${at} stroke-width="3" data-role="target"`);c.text(c.w-75,y+5,v.value+' / '+v.target);});return c.end();}
+  function heatmap(s){const c=canvas(s),rs=list(s.rows,'rows'),cs=list(s.columns,'columns'),vals=list(s.values,'values');if(vals.length!==rs.length||vals.some(r=>!Array.isArray(r)||r.length!==cs.length))throw new Error('矩阵尺寸不一致');vals.flat().forEach(v=>num(v,'cell'));const d=domain(vals.flat(),s.domain),cw=(c.w-200)/cs.length,ch=(c.h-95)/rs.length;if(cw<45||ch<32)throw new Error('热力表过密');cs.forEach((v,j)=>c.text(170+(j+.5)*cw,30,v,'middle'));rs.forEach((v,i)=>{c.text(12,55+(i+.5)*ch+5,v);vals[i].forEach((n,j)=>{const ratio=(n-d[0])/(d[1]-d[0]),a=c.p.sequential?1:.12+.78*ratio;let fill=c.p.accent;if(c.p.sequential){const seq=list(c.p.sequential,'palette.sequential'),pos=ratio*(seq.length-1),lo=Math.floor(pos),hi=Math.min(seq.length-1,lo+1),k=pos-lo;fill='rgb('+rgb(seq[lo]).map((v,i)=>Math.round(v*(1-k)+rgb(seq[hi])[i]*k)).join(',')+')';}const ah=c.anchor({id:'cell:'+v+'|'+cs[j],x:170+(j+.5)*cw,y:55+(i+.5)*ch,side:'right',value:n,label:cs[j],box:{x:170+j*cw,y:55+i*ch,width:cw-3,height:ch-3},group:'row:'+v,fill});c.rect(170+j*cw,55+i*ch,cw-3,ch-3,fill,`${ah} fill-opacity="${a}" data-value="${n}"`);c.text(170+(j+.5)*cw,55+(i+.5)*ch+5,n,'middle',cellText(fill,a,c.p.ink));});});return c.end();}
   // 构成图共用同一份数据契约：列内完整列出系列，面积/高度按原值计算。
   function composition(s, variableWidth) {
     const c=canvas(s),data=list(s.items,'items'),names=[];
@@ -155,7 +200,8 @@
       names.forEach((name,k)=>{
         const g=v.segments.find(g=>g.label===name),hh=ph*(normalized?g.value/totals[i]:g.value)/max;
         yy-=hh;const fill=c.p.series[k%c.p.series.length];
-        c.rect(xx,yy,width,hh,fill,`stroke="white" stroke-width="1" data-value="${g.value}" data-total="${totals[i]}"`);
+        const as=c.anchor({id:'seg:'+v.label+'|'+name,x:xx+width/2,y:yy+hh/2,side:'right',value:g.value,label:name,box:{x:xx,y:yy,width,height:hh},group:'col:'+v.label,fill});
+        c.rect(xx,yy,width,hh,fill,`${as} stroke="white" stroke-width="1" data-value="${g.value}" data-total="${totals[i]}"`);
         if(!useTable){
           const color=cellText(fill,1,c.p.ink);
           if(variableWidth){c.text(xx+width/2,yy+hh/2-3,name,'middle',color);c.text(xx+width/2,yy+hh/2+c.fs+2,values(g,i),'middle',color);}

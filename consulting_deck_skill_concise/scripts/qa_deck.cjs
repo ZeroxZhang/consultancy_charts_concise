@@ -57,7 +57,7 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
     const cs=getComputedStyle(e);
     if(parseFloat(cs.borderLeftWidth)>=2&&cs.borderLeftStyle!=='none'&&parseFloat(cs.paddingLeft)<6&&e.getBoundingClientRect().height>10){noteSeen.add(e);notePad.push({cls:String(e.className).slice(0,40),pad:cs.paddingLeft,text:(e.textContent||'').trim().slice(0,40)});}
    }
-   return {exhibits,textEvidence,unreadableText:unreadable,title:s.querySelector('.slide__title,.cover-title,.divider-name')?.textContent||'',overflow:bad,tinyText:tiny,smallDataText:smallData,charts:[...s.querySelectorAll('.chart')].map(e=>({width:e.clientWidth,height:e.clientHeight,rendered:!!e.querySelector('svg,canvas'),error:e.dataset.chartError||null})),textLength:s.innerText.length,frame,notePad};
+   return {exhibits,textEvidence,unreadableText:unreadable,form:s.dataset.form||null,proves:s.dataset.proves||'',title:s.querySelector('.slide__title,.cover-title,.divider-name')?.textContent||'',overflow:bad,tinyText:tiny,smallDataText:smallData,charts:[...s.querySelectorAll('.chart')].map(e=>({width:e.clientWidth,height:e.clientHeight,rendered:!!e.querySelector('svg,canvas'),error:e.dataset.chartError||null})),textLength:s.innerText.length,frame,notePad};
   });result.page=i+1;result.screenshot=`p${String(i+1).padStart(2,'0')}.png`;
   result.bookends=await p.locator('.slide.active').evaluate(bookends.inspectPage);
   if(modern){result.critical=await p.locator('.slide.active').evaluate(criticalContent.inspectSlide);result.visualPolicy=await p.locator('.slide.active').evaluate(visualPolicy.inspectSlide);errors.push(...result.visualPolicy.errors.map(e=>'第'+(i+1)+'页视觉禁令：'+JSON.stringify(e)));warnings.push(...result.visualPolicy.warnings.map(e=>'第'+(i+1)+'页视觉诊断：'+JSON.stringify(e)));}
@@ -86,6 +86,20 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
    else plannerExecution={status:declaration.mode==='direct'?'DIRECT':'UNAVAILABLE',mode:declaration.mode,reason:declaration.reason||'作者直接制作，未采用planner；不声称planner验证通过'};
   }
  }else if(fs.existsSync(specFile)){plannerExecution=await require('./check_planner_execution.cjs').check(JSON.parse(fs.readFileSync(specFile,'utf8')),p,{baseDir:path.dirname(specFile)});errors.push(...plannerExecution.errors);}
+ // 逐页形式声明：独立于装配器重新对账一次，并给出全篇形式清单供审查者判断节奏。
+ const pagesApi=require('./check_pages.cjs');
+ let pagesCheck={status:'NOT_PROVIDED',reason:'任务合同未绑定 pages.json；S3 未产出逐页形式声明，不能正式交付'};
+ if(modern&&taskContract?.pages){
+  try{
+   const record=path.resolve(path.dirname(input),taskContract.pages.record);
+   if(!fs.existsSync(record)||taskContracts.fileHash(record)!==taskContract.pages.sha256)throw Error('pages记录缺失或sha256与任务合同不符');
+   const doc=JSON.parse(fs.readFileSync(record,'utf8')),checked=pagesApi.check(doc);
+   const mismatches=pagesApi.verifyDeck(doc,rows.map(r=>({page:r.page,form:r.form,proves:r.proves,role:r.bookends?.role})));
+   const all=[...checked.errors,...mismatches];
+   pagesCheck={status:all.length?'FAIL':'PASS',errors:all,record,sha256:taskContract.pages.sha256,inventory:checked.inventory};
+   all.forEach(e=>errors.push('pages合同：'+e));
+  }catch(error){pagesCheck={status:'FAIL',errors:[error.message]};errors.push('pages合同：'+error.message);}
+ }
  const expected=rows.flatMap(r=>r.exhibits.map(e=>({...e,page:r.page})));
  await p.emulateMedia({media:'print'});await p.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));
  const printMissing=await p.evaluate(expected=>expected.filter(item=>{const e=document.querySelector('[data-deck-exhibit-id="'+item.id+'"]');if(!e)return true;const r=e.getBoundingClientRect();if(!r.width||!r.height)return true;for(let n=e;n&&n.nodeType===1;n=n.parentElement){const s=getComputedStyle(n);if(s.display==='none'||s.visibility==='hidden'||s.visibility==='collapse'||Number(s.opacity)===0)return true;}return false;}),expected);
@@ -137,7 +151,7 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
  const htmlBuffer=fs.readFileSync(input),htmlArtifact={path:input,bytes:htmlBuffer.length,sha256:crypto.createHash('sha256').update(htmlBuffer).digest('hex')};
  if(htmlArtifact.sha256!==initialSha256)errors.push('QA期间HTML文件发生变化，截图/PDF证据不能绑定当前文件');
  if(modern&&pdfArtifact.sha256&&taskContract&&htmlArtifact.sha256===initialSha256){try{evidenceManifest=auditEvidence.manifest(evidenceSnapshot,rows,pdfRows,{html:htmlArtifact,pdf:pdfArtifact},taskContract,out,{browser:browser.version(),viewport:{width:1400,height:820},pdfRasterScale:4/3});}catch(e){errors.push('审查证据关联失败：'+e.message);}}
- const report={taskContract,evidenceManifest,criticalCoverage:modern?'DECLARED_ONLY：只检查声明的关键内容，不证明全部业务语义覆盖':'LEGACY_NOT_CHECKED',plannerExecution,documentContract,warnings,bookendsCheck,printCheck:{expected:expected.length,missing:printMissing},input,pages:n,pdfPages,htmlArtifact,pdfArtifact,pdfFonts,navigation:{fullscreen,deepLink,scales},errors,offline:offlineState,rows,visualStatus:'NOT_REVIEWED：必须实际查看每页图片与PDF',geometryStatus:rows.some(r=>r.overflow.length||r.unreadableText.length||r.charts.some(c=>!c.rendered||c.error))||errors.length?'FAIL':'PASS'};
+ const report={taskContract,pagesCheck,pagesInventory:pagesCheck.inventory||null,evidenceManifest,criticalCoverage:modern?'DECLARED_ONLY：只检查声明的关键内容，不证明全部业务语义覆盖':'LEGACY_NOT_CHECKED',plannerExecution,documentContract,warnings,bookendsCheck,printCheck:{expected:expected.length,missing:printMissing},input,pages:n,pdfPages,htmlArtifact,pdfArtifact,pdfFonts,navigation:{fullscreen,deepLink,scales},errors,offline:offlineState,rows,visualStatus:'NOT_REVIEWED：必须实际查看每页图片与PDF',geometryStatus:rows.some(r=>r.overflow.length||r.unreadableText.length||r.charts.some(c=>!c.rendered||c.error))||errors.length?'FAIL':'PASS'};
  fs.writeFileSync(path.join(out,'audit.json'),JSON.stringify(report,null,2));console.log(JSON.stringify({pages:n,geometry:report.geometryStatus,errors,warnings,overflow:rows.filter(r=>r.overflow.length).map(r=>({page:r.page,items:r.overflow})),tiny:rows.filter(r=>r.tinyText.length).map(r=>r.page),offline:offlineState}));if(report.geometryStatus==='FAIL')process.exitCode=1;
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
