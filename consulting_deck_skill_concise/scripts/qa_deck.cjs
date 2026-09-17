@@ -57,7 +57,7 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
     const cs=getComputedStyle(e);
     if(parseFloat(cs.borderLeftWidth)>=2&&cs.borderLeftStyle!=='none'&&parseFloat(cs.paddingLeft)<6&&e.getBoundingClientRect().height>10){noteSeen.add(e);notePad.push({cls:String(e.className).slice(0,40),pad:cs.paddingLeft,text:(e.textContent||'').trim().slice(0,40)});}
    }
-   return {exhibits,textEvidence,unreadableText:unreadable,form:s.dataset.form||null,proves:s.dataset.proves||'',title:s.querySelector('.slide__title,.cover-title,.divider-name')?.textContent||'',overflow:bad,tinyText:tiny,smallDataText:smallData,charts:[...s.querySelectorAll('.chart')].map(e=>({width:e.clientWidth,height:e.clientHeight,rendered:!!e.querySelector('svg,canvas'),error:e.dataset.chartError||null})),textLength:s.innerText.length,frame,notePad};
+   return {exhibits,textEvidence,unreadableText:unreadable,form:s.dataset.form||null,visual:s.dataset.visual||'',proves:s.dataset.proves||'',title:s.querySelector('.slide__title,.cover-title,.divider-name')?.textContent||'',overflow:bad,tinyText:tiny,smallDataText:smallData,charts:[...s.querySelectorAll('.chart')].map(e=>({width:e.clientWidth,height:e.clientHeight,rendered:!!e.querySelector('svg,canvas'),error:e.dataset.chartError||null})),textLength:s.innerText.length,frame,notePad};
   });result.page=i+1;result.screenshot=`p${String(i+1).padStart(2,'0')}.png`;
   result.bookends=await p.locator('.slide.active').evaluate(bookends.inspectPage);
   if(modern){result.critical=await p.locator('.slide.active').evaluate(criticalContent.inspectSlide);result.visualPolicy=await p.locator('.slide.active').evaluate(visualPolicy.inspectSlide);errors.push(...result.visualPolicy.errors.map(e=>'第'+(i+1)+'页视觉禁令：'+JSON.stringify(e)));warnings.push(...result.visualPolicy.warnings.map(e=>'第'+(i+1)+'页视觉诊断：'+JSON.stringify(e)));}
@@ -95,7 +95,7 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
    const record=path.resolve(path.dirname(input),taskContract.pages.record);
    if(!fs.existsSync(record)||taskContracts.fileHash(record)!==taskContract.pages.sha256)throw Error('pages记录缺失或sha256与任务合同不符');
    const doc=JSON.parse(fs.readFileSync(record,'utf8')),checked=pagesApi.check(doc);
-   const mismatches=pagesApi.verifyDeck(doc,rows.map(r=>({page:r.page,form:r.form,proves:r.proves,role:r.bookends?.role})));
+   const mismatches=pagesApi.verifyDeck(doc,rows.map(r=>({page:r.page,form:r.form,visual:r.visual,proves:r.proves,role:r.bookends?.role})));
    const all=[...checked.errors,...mismatches];
    pagesCheck={status:all.length?'FAIL':'PASS',errors:all,record,sha256:taskContract.pages.sha256,inventory:checked.inventory};
    all.forEach(e=>errors.push('pages合同：'+e));

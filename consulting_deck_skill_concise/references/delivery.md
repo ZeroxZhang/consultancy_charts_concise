@@ -21,7 +21,6 @@
   "typography": "serif-report-bold",
   "ratio": "16x9",
   "kind": "fragment",
-  "planner": {"mode": "direct"},
   "pages": {"record": "pages.json"},
   "critical": []
 }
@@ -42,7 +41,7 @@
 | `typography` | 已注册的字体预设名 | 必须是 `assets/deck-typography.js` 里已注册的名字；不能提供嵌入字体的系统字体预设会被静态装配拒绝 |
 | `ratio` | `16x9` / `4x3` | 4:3 需要重新布局，不是等比缩放 |
 | `kind` | `report` / `fragment` / `collection` | **只控制首尾编排，不决定风险。** 不能用 fragment 绕过风险复核，也不让简单的完整稿重做复杂研究 |
-| `planner` | `{mode, record?, sha256?, reason?}` | 见下 |
+| `planner` | `{mode, record?, sha256?, reason?}` | 不采用外部专家可省略，默认为 direct；使用时见下 |
 | `pages` | `{record, sha256?}` | S3 的逐页形式声明（pages.json）。`record` 相对 `task.json` 解析；给了 `sha256` 就要与文件实际摘要一致。**传了合同的装配缺这一项直接失败**，见下 |
 | `critical` | 数组，可为空 | 少量会改变判断的关键语义声明，见下 |
 
@@ -52,9 +51,11 @@
 
 ### planner
 
+仅采用[可选专家](planner.md)时需要其交接记录；内置选型不生成 plan JSON。
+
 | mode | 什么时候用 | 必须补什么 |
 |---|---|---|
-| `direct` | 本任务确实没有采用 planner，直接制作 | 无 |
+| `direct` | 按内置图表方法选型，未采用外部 planner | 无；默认值，无需显式填写 |
 | `used` | 实际采用了 planner 的选型 | `record`（相对 `task.json` 的路径）与 `sha256`（64 位十六进制）。装配时校验并把路径换算为相对输出 HTML 的路径；未给 sha256 时装配器读取真实文件填入 |
 | `unavailable` | planner 在当前环境确实不可用 | `reason` 说明实际限制 |
 
@@ -87,15 +88,16 @@
 |---|---|---|
 | `page` | 是 | 正文页序，从 1 连续；封面/参考资料/封底不登记 |
 | `proves` | 是 | 这一页要让读者看出的**一个**关系；与 `data-proves` 一致时会被核对 |
-| `form` | 是 | 本页主形式，取值来自 `assets/deck-forms.js` 的封闭枚举——每个值都对应一个真实可执行入口，不登记渲染不出来的名字 |
-| `regions` | 否 | 一页多展品时写明分区；必须恰好一个 `role:"primary"` 且与 `form` 一致 |
+| `form` | 是 | 本页主实现入口，取自 `assets/deck-forms.js`；未封装的 ECharts 或手写 SVG 用 svg.custom，不限制实际图型 |
+| `visual` | 通用 SVG 时填写 | 实际表达名称，如 ecdf、forest、adjacency-matrix；相同图型跨页同名。可用于其他入口，regions 也可填写。成稿对应 data-visual |
+| `regions` | 否 | 一页多展品时写明分区；必须恰好一个 `role:"primary"` 且与 `form` 一致；主区写了 visual 时须与 page.visual 相同 |
 | `annotations` | 否 | 图上的旁解读，见[证据与表达](exhibits.md)的"旁解读"一节；**只有 `annotation:'layer'` 的形式能声明**，其余会被明确拒绝而不是静默忽略 |
-| `repetitionReason` | 视情况 | 同一形式第 3 次起、或连续 3 页同形式时必须写 |
+| `repetitionReason` | 视情况 | 同一表达第 3 次起、或连续 3 页相同表达时写；有 visual 按 visual，否则按 form |
 | `fallback` | 否 | 容量不足时改用什么 |
 
-成稿每页必须显式声明 `data-form`（封面、参考资料、封底、分隔页除外），取值与 `pages.json` 一致；**没有静默默认值**，缺了或写了枚举以外的名字装配直接失败。`data-proves` 可选，写了就必须与 `pages.json` 的 `proves` 一致。
+成稿每页必须显式声明 `data-form`（封面、参考资料、封底、分隔页除外），取值与 `pages.json` 一致；**没有静默默认值**，缺了或写了枚举以外的名字装配直接失败。`pages.json` 声明 `visual` 时，成稿须声明相同 `data-visual`，否则对账失败。`data-proves` 可选，写了就必须与 `pages.json` 的 `proves` 一致。
 
-**反单调不是图型配额。** 规则只有一条：**重复必须是被解释的决定，不能是默认**。同一形式第 3 次出现、或连续三页同形式，作者必须写一句 `repetitionReason` 说明为什么这里还是它。它不规定用几种图、不因数量给页面定级，也不替代"这条形式是否真的适合本页证明责任"的判断——那是 S3 的取舍和 S5 的目视验收。
+**反单调不是图型配额。** 规则只有一条：**重复必须是被解释的决定，不能是默认**。同一表达第 3 次出现、或连续三页相同表达，作者必须写一句 `repetitionReason` 说明为什么这里还是它。它不规定用几种图、不因数量给页面定级，也不替代"这条形式是否真的适合本页证明责任"的判断——那是 S3 的取舍和 S5 的目视验收。
 
 ### critical：少量关键语义
 

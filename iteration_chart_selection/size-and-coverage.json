@@ -1,0 +1,33 @@
+{
+  "candidateCategoriesRetained": 13,
+  "candidateEntriesRetained": 157,
+  "missing": [],
+  "mainGuidanceBytesBefore": 198465,
+  "mainGuidanceBytesAfter": 204942,
+  "removedBundledMarkdownBytes": 87980,
+  "totalGuidanceBytesBefore": 286445,
+  "totalGuidanceBytesAfter": 204942,
+  "totalGuidanceReductionPercent": 28.45,
+  "lineCounts": {
+    "references/planner.md": {
+      "before": 116,
+      "after": 20
+    },
+    "scripts/load_viz_planner.cjs": {
+      "before": 275,
+      "after": 119
+    },
+    "scripts/sweep_forms.cjs": {
+      "before": 108,
+      "after": 38
+    },
+    "scripts/pack_viz_planner.cjs": {
+      "before": 55,
+      "after": 0
+    },
+    "scripts/sync_installed_planner.cjs": {
+      "before": 68,
+      "after": 0
+    }
+  }
+}

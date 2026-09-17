@@ -1,12 +1,10 @@
 /* 读取真实PDF文字；先核页集合/文字归属，再核基线/右缘。未声明路径明确PARTIAL。 */
-const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),{pathToFileURL}=require('node:url');
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const digest=b=>crypto.createHash('sha256').update(b).digest('hex');
 async function inspect(audit,output){
- const canvas=require(process.env.PDF_CANVAS_MODULE||'@napi-rs/canvas');Object.assign(globalThis,{DOMMatrix:canvas.DOMMatrix,ImageData:canvas.ImageData,Path2D:canvas.Path2D});
- const pdfjs=await import(pathToFileURL(require.resolve(process.env.PDFJS_MODULE||'pdfjs-dist/legacy/build/pdf.mjs')).href);
  const bytes=fs.readFileSync(audit.pdfArtifact.path);
  if(digest(bytes)!==audit.pdfArtifact.sha256)throw Error('最终PDF与audit版本不同');
- const doc=await pdfjs.getDocument({data:new Uint8Array(bytes),useSystemFonts:true}).promise,rows=[],errors=[],unmeasured=[];
+ const {doc,canvas}=await require('./render_pdf_pages.cjs').openPdf(bytes),rows=[],errors=[],unmeasured=[];
  fs.mkdirSync(output,{recursive:true});
  const normalize=s=>String(s??'').replace(/\s/g,'');
  try{

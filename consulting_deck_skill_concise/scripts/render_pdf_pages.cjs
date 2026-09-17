@@ -1,10 +1,30 @@
 /* 从实际PDF生成逐页审查图及文字位置；与HTML截屏分开，保留源PDF摘要。 */
 const fs = require('node:fs'), path = require('node:path'), {pathToFileURL} = require('node:url');
-async function render(pdfFile, out) {
+async function openPdf(bytes) {
   const canvas = require(process.env.PDF_CANVAS_MODULE || '@napi-rs/canvas');
   Object.assign(globalThis, {DOMMatrix: canvas.DOMMatrix, ImageData: canvas.ImageData, Path2D: canvas.Path2D});
   const pdfjs = await import(pathToFileURL(require.resolve(process.env.PDFJS_MODULE || 'pdfjs-dist/legacy/build/pdf.mjs')).href);
-  const doc = await pdfjs.getDocument({data: new Uint8Array(fs.readFileSync(pdfFile)), useSystemFonts: true}).promise;
+  // PDF.js 默认工厂可能加载它自己的另一版 Canvas；内部渐变／透明组与主画布必须同源。
+  class CanvasFactory {
+    create(width, height) {
+      if (!(width > 0 && height > 0)) throw Error('无效画布尺寸');
+      const surface = canvas.createCanvas(width, height);
+      return {canvas: surface, context: surface.getContext('2d')};
+    }
+    reset(target, width, height) {
+      if (!target.canvas || !(width > 0 && height > 0)) throw Error('无效画布重置');
+      target.canvas.width = width; target.canvas.height = height;
+    }
+    destroy(target) {
+      if (target.canvas) { target.canvas.width = 0; target.canvas.height = 0; }
+      target.canvas = null; target.context = null;
+    }
+  }
+  const doc = await pdfjs.getDocument({data: new Uint8Array(bytes), useSystemFonts: true, CanvasFactory}).promise;
+  return {doc, pdfjs, canvas};
+}
+async function render(pdfFile, out) {
+  const {doc, pdfjs, canvas} = await openPdf(fs.readFileSync(pdfFile));
   fs.mkdirSync(out, {recursive: true});
   const rows = [];
   try {
@@ -20,4 +40,4 @@ async function render(pdfFile, out) {
     return rows;
   } finally { await doc.destroy(); }
 }
-module.exports = {render};
+module.exports = {render, openPdf};

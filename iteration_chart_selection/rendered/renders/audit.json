@@ -1,0 +1,1697 @@
+{
+  "taskContract": {
+    "version": 1,
+    "workMode": "editorial",
+    "complexity": "simple",
+    "majorConclusion": false,
+    "mode": "reading",
+    "theme": "mckinsey",
+    "typography": "serif-report-bold",
+    "ratio": "16x9",
+    "kind": "fragment",
+    "planner": {
+      "mode": "direct"
+    },
+    "critical": [],
+    "pages": {
+      "record": "pages.json",
+      "sha256": "c423d60471619923ed6cec5a892de5a14ceb7b8e2bf23c7697f57eebcf31dd48"
+    },
+    "reviewPolicy": "author"
+  },
+  "pagesCheck": {
+    "status": "PASS",
+    "errors": [],
+    "record": "/Volumes/Out/Kimi_projects/consultancy_charts_concise/iteration_chart_selection/rendered/pages.json",
+    "sha256": "c423d60471619923ed6cec5a892de5a14ceb7b8e2bf23c7697f57eebcf31dd48",
+    "inventory": {
+      "pages": 3,
+      "forms": {
+        "svg.custom": 3
+      },
+      "families": {
+        "custom": 3
+      },
+      "distinctForms": 1,
+      "visuals": {
+        "ecdf": 1,
+        "forest": 1,
+        "transition-matrix": 1
+      },
+      "distinctVisuals": 3,
+      "annotations": 0,
+      "regions": 0,
+      "longestRun": 1,
+      "runs": []
+    }
+  },
+  "pagesInventory": {
+    "pages": 3,
+    "forms": {
+      "svg.custom": 3
+    },
+    "families": {
+      "custom": 3
+    },
+    "distinctForms": 1,
+    "visuals": {
+      "ecdf": 1,
+      "forest": 1,
+      "transition-matrix": 1
+    },
+    "distinctVisuals": 3,
+    "annotations": 0,
+    "regions": 0,
+    "longestRun": 1,
+    "runs": []
+  },
+  "evidenceManifest": {
+    "version": 1,
+    "entries": [
+      {
+        "page": 1,
+        "pageId": "page-1",
+        "pageSha256": "fe8f5f264dc993fe959c37fb57a982aa9410aba9f1d620e55ccb3ada92828c2e",
+        "dependenciesSha256": "45b2bef664bba9a2ffcefb4f04123d4d32cfc3c35d128cae4bb3ac38ec572581",
+        "id": "html:page-1",
+        "medium": "html",
+        "path": "p01.png",
+        "sha256": "ffd040d5ea4e4c5b5170bda72874d6b78d34f2c191d882ff431d4f10cd194157",
+        "sourceSha256": "e2af28ede782d446f27f26716fbdebf63d45e11c3173fd7d6c3ee633f18572f3"
+      },
+      {
+        "page": 1,
+        "pageId": "page-1",
+        "pageSha256": "fe8f5f264dc993fe959c37fb57a982aa9410aba9f1d620e55ccb3ada92828c2e",
+        "dependenciesSha256": "45b2bef664bba9a2ffcefb4f04123d4d32cfc3c35d128cae4bb3ac38ec572581",
+        "id": "pdf:page-1",
+        "medium": "pdf",
+        "path": "pdf-p01.png",
+        "sha256": "968e0cd05f671c2c8ad2fc2c7dfda59d603b4d5a0768e50abbd35ce3a5510feb",
+        "sourceSha256": "af14d525672127ad5b57b4f8cecec3756ea9f887254c7d9fcd0f444de7e42b8f"
+      },
+      {
+        "page": 2,
+        "pageId": "page-2",
+        "pageSha256": "408b369494a5c207584f1dbc56dba0a11fed594beef8daaae996473251bc1fa8",
+        "dependenciesSha256": "45b2bef664bba9a2ffcefb4f04123d4d32cfc3c35d128cae4bb3ac38ec572581",
+        "id": "html:page-2",
+        "medium": "html",
+        "path": "p02.png",
+        "sha256": "acee2e1c8f977cc81925e543b2a0a60959a59aad15489eda7b732e20c921d581",
+        "sourceSha256": "e2af28ede782d446f27f26716fbdebf63d45e11c3173fd7d6c3ee633f18572f3"
+      },
+      {
+        "page": 2,
+        "pageId": "page-2",
+        "pageSha256": "408b369494a5c207584f1dbc56dba0a11fed594beef8daaae996473251bc1fa8",
+        "dependenciesSha256": "45b2bef664bba9a2ffcefb4f04123d4d32cfc3c35d128cae4bb3ac38ec572581",
+        "id": "pdf:page-2",
+        "medium": "pdf",
+        "path": "pdf-p02.png",
+        "sha256": "00eb864fd68e3baca4fad6cbb8a71c7fa64b3be27607a6d05df45deff3ca647c",
+        "sourceSha256": "af14d525672127ad5b57b4f8cecec3756ea9f887254c7d9fcd0f444de7e42b8f"
+      },
+      {
+        "page": 3,
+        "pageId": "page-3",
+        "pageSha256": "0b4846a3403a0b03ac15cb5b0b535af88180970bd2976e18ac24b39068d87fa9",
+        "dependenciesSha256": "45b2bef664bba9a2ffcefb4f04123d4d32cfc3c35d128cae4bb3ac38ec572581",
+        "id": "html:page-3",
+        "medium": "html",
+        "path": "p03.png",
+        "sha256": "67e7c8b6c21e84cd473f9da1caa57474c965b886ac55fd272da0af2885f07637",
+        "sourceSha256": "e2af28ede782d446f27f26716fbdebf63d45e11c3173fd7d6c3ee633f18572f3"
+      },
+      {
+        "page": 3,
+        "pageId": "page-3",
+        "pageSha256": "0b4846a3403a0b03ac15cb5b0b535af88180970bd2976e18ac24b39068d87fa9",
+        "dependenciesSha256": "45b2bef664bba9a2ffcefb4f04123d4d32cfc3c35d128cae4bb3ac38ec572581",
+        "id": "pdf:page-3",
+        "medium": "pdf",
+        "path": "pdf-p03.png",
+        "sha256": "8a8aa81e2a1d24de7c8c493eb37f3daa2c2b6eff85b4fa61408ed99623d8dd08",
+        "sourceSha256": "af14d525672127ad5b57b4f8cecec3756ea9f887254c7d9fcd0f444de7e42b8f"
+      }
+    ],
+    "dependenciesSha256": "45b2bef664bba9a2ffcefb4f04123d4d32cfc3c35d128cae4bb3ac38ec572581",
+    "scope": "真实HTML截图和实际PDF栅格图；归属与字节可核对，目视审查另记"
+  },
+  "criticalCoverage": "DECLARED_ONLY：只检查声明的关键内容，不证明全部业务语义覆盖",
+  "plannerExecution": {
+    "status": "DIRECT",
+    "mode": "direct",
+    "reason": "作者直接制作，未采用planner；不声称planner验证通过"
+  },
+  "documentContract": {
+    "kind": "fragment",
+    "reliability": "2"
+  },
+  "warnings": [],
+  "bookendsCheck": {
+    "kind": "fragment",
+    "errors": [],
+    "warnings": []
+  },
+  "printCheck": {
+    "expected": 3,
+    "missing": []
+  },
+  "input": "/Volumes/Out/Kimi_projects/consultancy_charts_concise/iteration_chart_selection/rendered/deck.html",
+  "pages": 3,
+  "pdfPages": 3,
+  "htmlArtifact": {
+    "path": "/Volumes/Out/Kimi_projects/consultancy_charts_concise/iteration_chart_selection/rendered/deck.html",
+    "bytes": 483540,
+    "sha256": "e2af28ede782d446f27f26716fbdebf63d45e11c3173fd7d6c3ee633f18572f3"
+  },
+  "pdfArtifact": {
+    "path": "/Volumes/Out/Kimi_projects/consultancy_charts_concise/iteration_chart_selection/rendered/renders/deck.pdf",
+    "bytes": 93710,
+    "sha256": "af14d525672127ad5b57b4f8cecec3756ea9f887254c7d9fcd0f444de7e42b8f",
+    "pages": 3
+  },
+  "pdfFonts": "name                                 type              encoding         emb sub uni object ID\n------------------------------------ ----------------- ---------------- --- --- --- ---------\nAAAAAA+NotoSansSC-Thin               CID TrueType      Identity-H       yes yes yes      5  0\nBAAAAA+Inter-Regular                 CID TrueType      Identity-H       yes yes yes      6  0\nBAAAAA+Inter-Regular                 Type 3            Custom           yes yes yes     11  0\nAAAAAA+NotoSansSC-Thin               Type 3            Custom           yes yes yes     12  0\nCAAAAA+PlayfairDisplay-Regular       CID TrueType      Identity-H       yes yes yes     13  0\nDAAAAA+NotoSerifSC-ExtraLight        CID TrueType      Identity-H       yes yes yes     14  0\n",
+  "navigation": {
+    "fullscreen": true,
+    "deepLink": 3,
+    "scales": [
+      0.58125,
+      1.1166666666666667
+    ]
+  },
+  "errors": [],
+  "offline": {
+    "externalScripts": 0,
+    "warning": false,
+    "staticSVG": 3,
+    "fonts": [
+      {
+        "profile": "serif-report-bold",
+        "status": "ready",
+        "faces": [
+          {
+            "id": "noto-sans-sc-400",
+            "family": "Deck Noto Sans SC",
+            "weight": 400,
+            "status": "loaded"
+          },
+          {
+            "id": "noto-sans-sc-600",
+            "family": "Deck Noto Sans SC",
+            "weight": 600,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-400",
+            "family": "Deck Inter",
+            "weight": 400,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-500",
+            "family": "Deck Inter",
+            "weight": 500,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-600",
+            "family": "Deck Inter",
+            "weight": 600,
+            "status": "loaded"
+          },
+          {
+            "id": "noto-serif-sc-700",
+            "family": "Deck Noto Serif SC",
+            "weight": 700,
+            "status": "loaded"
+          },
+          {
+            "id": "playfair-display-700",
+            "family": "Deck Playfair Display",
+            "weight": 700,
+            "status": "loaded"
+          }
+        ],
+        "identity": "PASS",
+        "families": [
+          "Playfair Display",
+          "Noto Serif SC ExtraLight",
+          "Noto Sans SC Thin",
+          "Inter"
+        ],
+        "unexpected": []
+      },
+      {
+        "profile": "serif-report-bold",
+        "status": "ready",
+        "faces": [
+          {
+            "id": "noto-sans-sc-400",
+            "family": "Deck Noto Sans SC",
+            "weight": 400,
+            "status": "loaded"
+          },
+          {
+            "id": "noto-sans-sc-600",
+            "family": "Deck Noto Sans SC",
+            "weight": 600,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-400",
+            "family": "Deck Inter",
+            "weight": 400,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-500",
+            "family": "Deck Inter",
+            "weight": 500,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-600",
+            "family": "Deck Inter",
+            "weight": 600,
+            "status": "loaded"
+          },
+          {
+            "id": "noto-serif-sc-700",
+            "family": "Deck Noto Serif SC",
+            "weight": 700,
+            "status": "loaded"
+          },
+          {
+            "id": "playfair-display-700",
+            "family": "Deck Playfair Display",
+            "weight": 700,
+            "status": "loaded"
+          }
+        ],
+        "identity": "PASS",
+        "families": [
+          "Playfair Display",
+          "Noto Serif SC ExtraLight",
+          "Noto Sans SC Thin",
+          "Inter"
+        ],
+        "unexpected": []
+      },
+      {
+        "profile": "serif-report-bold",
+        "status": "ready",
+        "faces": [
+          {
+            "id": "noto-sans-sc-400",
+            "family": "Deck Noto Sans SC",
+            "weight": 400,
+            "status": "loaded"
+          },
+          {
+            "id": "noto-sans-sc-600",
+            "family": "Deck Noto Sans SC",
+            "weight": 600,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-400",
+            "family": "Deck Inter",
+            "weight": 400,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-500",
+            "family": "Deck Inter",
+            "weight": 500,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-600",
+            "family": "Deck Inter",
+            "weight": 600,
+            "status": "loaded"
+          },
+          {
+            "id": "noto-serif-sc-700",
+            "family": "Deck Noto Serif SC",
+            "weight": 700,
+            "status": "loaded"
+          },
+          {
+            "id": "playfair-display-700",
+            "family": "Deck Playfair Display",
+            "weight": 700,
+            "status": "loaded"
+          }
+        ],
+        "identity": "PASS",
+        "families": [
+          "Noto Serif SC ExtraLight",
+          "Playfair Display",
+          "Noto Sans SC Thin",
+          "Inter"
+        ],
+        "unexpected": []
+      }
+    ],
+    "layoutParity": true,
+    "contentParity": true
+  },
+  "rows": [
+    {
+      "exhibits": [
+        {
+          "id": "p1-ex0",
+          "tag": "svg",
+          "labels": [
+            "累计完成比例（%）",
+            "分钟",
+            "0",
+            "25",
+            "50",
+            "75",
+            "100",
+            "0",
+            "10",
+            "20",
+            "30",
+            "40",
+            "50",
+            "60",
+            "70",
+            "A组",
+            "B组",
+            "30分钟承诺"
+          ]
+        }
+      ],
+      "textEvidence": [
+        "30",
+        "分钟内完成：",
+        "A",
+        "组为",
+        "95%",
+        "，",
+        "B",
+        "组为",
+        "70%",
+        "每组20条同周期观测；阶梯线保留真实累计比例，显示承诺阈值与超时尾部。",
+        "累计完成比例（%）",
+        "分钟",
+        "0",
+        "25",
+        "50",
+        "75",
+        "100",
+        "0",
+        "10",
+        "20",
+        "30",
+        "40",
+        "50",
+        "60",
+        "70",
+        "A组",
+        "B组",
+        "30分钟承诺",
+        "来源：input.json，合成验证材料；仅验证图表表达与交付路径，非真实业务结论。",
+        "1"
+      ],
+      "unreadableText": [],
+      "form": "svg.custom",
+      "visual": "ecdf",
+      "proves": "30分钟内完成：A组为95%，B组为70%",
+      "title": "30分钟内完成：A组为95%，B组为70%",
+      "overflow": [],
+      "tinyText": [],
+      "smallDataText": [],
+      "charts": [],
+      "textLength": 168,
+      "frame": {
+        "boundary": "space",
+        "ruleVisible": false,
+        "doubleBorder": []
+      },
+      "notePad": [],
+      "page": 1,
+      "screenshot": "p01.png",
+      "bookends": {
+        "role": null,
+        "total": null,
+        "entries": [],
+        "clipped": [],
+        "meta": {},
+        "title": "30分钟内完成：A组为95%，B组为70%",
+        "note": "",
+        "boundary": "space",
+        "links": []
+      },
+      "critical": [],
+      "visualPolicy": {
+        "errors": [],
+        "warnings": [],
+        "findings": [
+          {
+            "code": "V-RASTER-VECTOR-MANUAL",
+            "selector": "div:nth-child(3) > div:nth-child(1) > svg:nth-child(1)",
+            "message": "SVG、位图及嵌入内容的装饰边条与视觉均衡须结合整页和实际 PDF 人工检查；此检查器不证明其合规。",
+            "bounds": {
+              "x": 90.00000189681084,
+              "y": 136.7031265322675,
+              "width": 1099.9999962063785,
+              "height": 409.9999715478375
+            }
+          },
+          {
+            "code": "V-COVERAGE",
+            "message": "自动范围：可见 HTML 模块的典型边框、简单伪元素/窄块、零模糊 inset 阴影，以及局部空置线索。小于70×32px的文字装饰、复杂绘制、未声明对齐关系和整页重心仍须逐页实际审查；无错误不代表视觉通过。"
+          }
+        ]
+      },
+      "relations": {
+        "status": "NOT_DECLARED",
+        "toleranceLogicalPx": 0.35,
+        "slideSize": {
+          "width": 1280,
+          "height": 720
+        },
+        "scale": {
+          "x": 1.0055555343627929,
+          "y": 1.0055555555555555
+        },
+        "groups": {},
+        "measurements": [],
+        "layouts": [],
+        "content": [
+          {
+            "role": "unspecified",
+            "left": 90.00000189681084,
+            "right": 1189.9999981031892,
+            "top": 136.70312365115677,
+            "bottom": 546.7030865579679
+          }
+        ],
+        "errors": [],
+        "canvas": "NONE"
+      },
+      "fonts": {
+        "profile": "serif-report-bold",
+        "status": "ready",
+        "faces": [
+          {
+            "id": "noto-sans-sc-400",
+            "family": "Deck Noto Sans SC",
+            "weight": 400,
+            "status": "loaded"
+          },
+          {
+            "id": "noto-sans-sc-600",
+            "family": "Deck Noto Sans SC",
+            "weight": 600,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-400",
+            "family": "Deck Inter",
+            "weight": 400,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-500",
+            "family": "Deck Inter",
+            "weight": 500,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-600",
+            "family": "Deck Inter",
+            "weight": 600,
+            "status": "loaded"
+          },
+          {
+            "id": "noto-serif-sc-700",
+            "family": "Deck Noto Serif SC",
+            "weight": 700,
+            "status": "loaded"
+          },
+          {
+            "id": "playfair-display-700",
+            "family": "Deck Playfair Display",
+            "weight": 700,
+            "status": "loaded"
+          }
+        ],
+        "identity": "PASS",
+        "families": [
+          "Playfair Display",
+          "Noto Serif SC ExtraLight",
+          "Noto Sans SC Thin",
+          "Inter"
+        ],
+        "unexpected": []
+      },
+      "layoutSignature": [
+        [
+          "30",
+          "\"Deck Playfair Display\", \"Deck Noto Serif SC\", serif",
+          "700",
+          40,
+          30,
+          36.3,
+          43
+        ],
+        [
+          "A",
+          "\"Deck Playfair Display\", \"Deck Noto Serif SC\", serif",
+          "700",
+          268.3,
+          30,
+          21.4,
+          43
+        ],
+        [
+          "95%",
+          "\"Deck Playfair Display\", \"Deck Noto Serif SC\", serif",
+          "700",
+          353.6,
+          30,
+          55.7,
+          43
+        ],
+        [
+          "B",
+          "\"Deck Playfair Display\", \"Deck Noto Serif SC\", serif",
+          "700",
+          441.3,
+          30,
+          21.5,
+          43
+        ],
+        [
+          "70%",
+          "\"Deck Playfair Display\", \"Deck Noto Serif SC\", serif",
+          "700",
+          526.8,
+          30,
+          58.5,
+          43
+        ],
+        [
+          "每组20条同周期观测；阶梯线保留真实累计比例，显示承诺阈值与超时尾部。",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          40,
+          81,
+          1120,
+          21.8
+        ],
+        [
+          "累计完成比例（%）",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          94.2,
+          162.2,
+          161.7,
+          21
+        ],
+        [
+          "分钟",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          1136.3,
+          481.2,
+          36,
+          21
+        ],
+        [
+          "0",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          156.6,
+          481.7,
+          10.4,
+          20
+        ],
+        [
+          "25",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          146.3,
+          408,
+          20.7,
+          20
+        ],
+        [
+          "50",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          146.3,
+          334.2,
+          20.7,
+          20
+        ],
+        [
+          "75",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          146.3,
+          260.5,
+          20.7,
+          20
+        ],
+        [
+          "100",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          135.9,
+          186.7,
+          31.1,
+          20
+        ],
+        [
+          "0",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          169.8,
+          497.7,
+          10.4,
+          20
+        ],
+        [
+          "10",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          299.6,
+          497.7,
+          20.7,
+          20
+        ],
+        [
+          "20",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          434.6,
+          497.7,
+          20.8,
+          20
+        ],
+        [
+          "30",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          569.6,
+          497.7,
+          20.8,
+          20
+        ],
+        [
+          "40",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          704.6,
+          497.7,
+          20.8,
+          20
+        ],
+        [
+          "50",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          839.6,
+          497.7,
+          20.8,
+          20
+        ],
+        [
+          "60",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          974.6,
+          497.7,
+          20.8,
+          20
+        ],
+        [
+          "70",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          1109.6,
+          497.7,
+          20.7,
+          20
+        ],
+        [
+          "A组",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          605.9,
+          140.2,
+          30.4,
+          21
+        ],
+        [
+          "B组",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          675.3,
+          140.2,
+          29.8,
+          21
+        ],
+        [
+          "30分钟承诺",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          537.6,
+          173.7,
+          84.7,
+          20
+        ],
+        [
+          "来源：input.json，合成验证材料；仅验证图表表达与交付路径，非真实业务结论。",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          40,
+          677.8,
+          1200,
+          16.2
+        ],
+        [
+          "1",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          1243.1,
+          698,
+          4.9,
+          12
+        ]
+      ],
+      "printCritical": [],
+      "printVisualPolicy": {
+        "errors": [],
+        "warnings": [],
+        "findings": [
+          {
+            "code": "V-RASTER-VECTOR-MANUAL",
+            "selector": "div:nth-child(3) > div:nth-child(1) > svg:nth-child(1)",
+            "message": "SVG、位图及嵌入内容的装饰边条与视觉均衡须结合整页和实际 PDF 人工检查；此检查器不证明其合规。",
+            "bounds": {
+              "x": 90,
+              "y": 136.703125,
+              "width": 1100,
+              "height": 410
+            }
+          },
+          {
+            "code": "V-COVERAGE",
+            "message": "自动范围：可见 HTML 模块的典型边框、简单伪元素/窄块、零模糊 inset 阴影，以及局部空置线索。小于70×32px的文字装饰、复杂绘制、未声明对齐关系和整页重心仍须逐页实际审查；无错误不代表视觉通过。"
+          }
+        ]
+      },
+      "printText": {
+        "expectedUnits": 99,
+        "missingUnits": 0,
+        "coverage": 1
+      },
+      "criticalPdf": {
+        "status": "CHECKED",
+        "scope": "仅作者显式关键内容及关联对象的真实PDF文字位置",
+        "errors": []
+      }
+    },
+    {
+      "exhibits": [
+        {
+          "id": "p2-ex0",
+          "tag": "svg",
+          "labels": [
+            "实验",
+            "点估计［95% CI］",
+            "A",
+            "4［1, 7］",
+            "B",
+            "6［-2, 14］",
+            "C",
+            "2［1, 3］",
+            "D",
+            "-1［-4, 2］",
+            "E",
+            "3［0, 6］",
+            "-5",
+            "0",
+            "5",
+            "10",
+            "15",
+            "改善幅度（百分点）"
+          ]
+        }
+      ],
+      "textEvidence": [
+        "B",
+        "的点估计最高，但其区间跨过零",
+        "区间来自输入材料；此图不支持直接推断实验间差异具有统计显著性。",
+        "实验",
+        "点估计［95% CI］",
+        "A",
+        "4［1, 7］",
+        "B",
+        "6［-2, 14］",
+        "C",
+        "2［1, 3］",
+        "D",
+        "-1［-4, 2］",
+        "E",
+        "3［0, 6］",
+        "-5",
+        "0",
+        "5",
+        "10",
+        "15",
+        "改善幅度（百分点）",
+        "来源：input.json，合成验证材料；仅验证图表表达与交付路径，非真实业务结论。",
+        "2"
+      ],
+      "unreadableText": [],
+      "form": "svg.custom",
+      "visual": "forest",
+      "proves": "B的点估计最高，但其区间跨过零",
+      "title": "B的点估计最高，但其区间跨过零",
+      "overflow": [],
+      "tinyText": [],
+      "smallDataText": [],
+      "charts": [],
+      "textLength": 186,
+      "frame": {
+        "boundary": "space",
+        "ruleVisible": false,
+        "doubleBorder": []
+      },
+      "notePad": [],
+      "page": 2,
+      "screenshot": "p02.png",
+      "bookends": {
+        "role": null,
+        "total": null,
+        "entries": [],
+        "clipped": [],
+        "meta": {},
+        "title": "B的点估计最高，但其区间跨过零",
+        "note": "",
+        "boundary": "space",
+        "links": []
+      },
+      "critical": [],
+      "visualPolicy": {
+        "errors": [],
+        "warnings": [],
+        "findings": [
+          {
+            "code": "V-RASTER-VECTOR-MANUAL",
+            "selector": "div:nth-child(3) > div:nth-child(1) > svg:nth-child(1)",
+            "message": "SVG、位图及嵌入内容的装饰边条与视觉均衡须结合整页和实际 PDF 人工检查；此检查器不证明其合规。",
+            "bounds": {
+              "x": 90.00000189681084,
+              "y": 136.7031265322675,
+              "width": 1099.9999962063785,
+              "height": 409.9999715478375
+            }
+          },
+          {
+            "code": "V-COVERAGE",
+            "message": "自动范围：可见 HTML 模块的典型边框、简单伪元素/窄块、零模糊 inset 阴影，以及局部空置线索。小于70×32px的文字装饰、复杂绘制、未声明对齐关系和整页重心仍须逐页实际审查；无错误不代表视觉通过。"
+          }
+        ]
+      },
+      "relations": {
+        "status": "NOT_DECLARED",
+        "toleranceLogicalPx": 0.35,
+        "slideSize": {
+          "width": 1280,
+          "height": 720
+        },
+        "scale": {
+          "x": 1.0055555343627929,
+          "y": 1.0055555555555555
+        },
+        "groups": {},
+        "measurements": [],
+        "layouts": [],
+        "content": [
+          {
+            "role": "unspecified",
+            "left": 90.00000189681084,
+            "right": 1189.9999981031892,
+            "top": 136.70312365115677,
+            "bottom": 546.7030865579679
+          }
+        ],
+        "errors": [],
+        "canvas": "NONE"
+      },
+      "fonts": {
+        "profile": "serif-report-bold",
+        "status": "ready",
+        "faces": [
+          {
+            "id": "noto-sans-sc-400",
+            "family": "Deck Noto Sans SC",
+            "weight": 400,
+            "status": "loaded"
+          },
+          {
+            "id": "noto-sans-sc-600",
+            "family": "Deck Noto Sans SC",
+            "weight": 600,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-400",
+            "family": "Deck Inter",
+            "weight": 400,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-500",
+            "family": "Deck Inter",
+            "weight": 500,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-600",
+            "family": "Deck Inter",
+            "weight": 600,
+            "status": "loaded"
+          },
+          {
+            "id": "noto-serif-sc-700",
+            "family": "Deck Noto Serif SC",
+            "weight": 700,
+            "status": "loaded"
+          },
+          {
+            "id": "playfair-display-700",
+            "family": "Deck Playfair Display",
+            "weight": 700,
+            "status": "loaded"
+          }
+        ],
+        "identity": "PASS",
+        "families": [
+          "Playfair Display",
+          "Noto Serif SC ExtraLight",
+          "Noto Sans SC Thin",
+          "Inter"
+        ],
+        "unexpected": []
+      },
+      "layoutSignature": [
+        [
+          "B",
+          "\"Deck Playfair Display\", \"Deck Noto Serif SC\", serif",
+          "700",
+          40,
+          30,
+          21.5,
+          43
+        ],
+        [
+          "区间来自输入材料；此图不支持直接推断实验间差异具有统计显著性。",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          40,
+          81,
+          1120,
+          21.8
+        ],
+        [
+          "实验",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          170,
+          149.7,
+          36,
+          21
+        ],
+        [
+          "点估计［95% CI］",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          958.1,
+          149.7,
+          153.8,
+          21
+        ],
+        [
+          "A",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          180,
+          205.7,
+          12.4,
+          21
+        ],
+        [
+          "4［1, 7］",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          994.7,
+          205.7,
+          80.7,
+          21
+        ],
+        [
+          "B",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          180,
+          260.7,
+          11.8,
+          21
+        ],
+        [
+          "6［-2, 14］",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          983,
+          260.7,
+          104,
+          21
+        ],
+        [
+          "C",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          180,
+          315.7,
+          13.2,
+          21
+        ],
+        [
+          "2［1, 3］",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          994.7,
+          315.7,
+          80.7,
+          21
+        ],
+        [
+          "D",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          180,
+          370.7,
+          13,
+          21
+        ],
+        [
+          "-1［-4, 2］",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          983,
+          370.7,
+          104,
+          21
+        ],
+        [
+          "E",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          180,
+          425.7,
+          10.8,
+          21
+        ],
+        [
+          "3［0, 6］",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          994.7,
+          425.7,
+          80.7,
+          21
+        ],
+        [
+          "-5",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          238.3,
+          496.7,
+          23.3,
+          21
+        ],
+        [
+          "0",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          419.2,
+          496.7,
+          11.7,
+          21
+        ],
+        [
+          "5",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          594.2,
+          496.7,
+          11.7,
+          21
+        ],
+        [
+          "10",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          763.3,
+          496.7,
+          23.3,
+          21
+        ],
+        [
+          "15",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          938.3,
+          496.7,
+          23.3,
+          21
+        ],
+        [
+          "改善幅度（百分点）",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          519,
+          524.7,
+          162,
+          21
+        ],
+        [
+          "来源：input.json，合成验证材料；仅验证图表表达与交付路径，非真实业务结论。",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          40,
+          677.8,
+          1200,
+          16.2
+        ],
+        [
+          "2",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          1240.7,
+          698,
+          7.3,
+          12
+        ]
+      ],
+      "printCritical": [],
+      "printVisualPolicy": {
+        "errors": [],
+        "warnings": [],
+        "findings": [
+          {
+            "code": "V-RASTER-VECTOR-MANUAL",
+            "selector": "div:nth-child(3) > div:nth-child(1) > svg:nth-child(1)",
+            "message": "SVG、位图及嵌入内容的装饰边条与视觉均衡须结合整页和实际 PDF 人工检查；此检查器不证明其合规。",
+            "bounds": {
+              "x": 90,
+              "y": 136.703125,
+              "width": 1100,
+              "height": 410
+            }
+          },
+          {
+            "code": "V-COVERAGE",
+            "message": "自动范围：可见 HTML 模块的典型边框、简单伪元素/窄块、零模糊 inset 阴影，以及局部空置线索。小于70×32px的文字装饰、复杂绘制、未声明对齐关系和整页重心仍须逐页实际审查；无错误不代表视觉通过。"
+          }
+        ]
+      },
+      "printText": {
+        "expectedUnits": 114,
+        "missingUnits": 0,
+        "coverage": 1
+      },
+      "criticalPdf": {
+        "status": "CHECKED",
+        "scope": "仅作者显式关键内容及关联对象的真实PDF文字位置",
+        "errors": []
+      }
+    },
+    {
+      "exhibits": [
+        {
+          "id": "p3-ex0",
+          "tag": "svg",
+          "labels": [
+            "上月高",
+            "上月中",
+            "上月低",
+            "本月高",
+            "本月中",
+            "本月低",
+            "本月流失",
+            "62",
+            "18",
+            "10",
+            "10",
+            "12",
+            "64",
+            "16",
+            "8",
+            "3",
+            "15",
+            "70",
+            "12",
+            "0人",
+            "100人"
+          ]
+        }
+      ],
+      "textEvidence": [
+        "高价值客户中，",
+        "38%",
+        "向下迁移或流失",
+        "同一批300名客户；每行100人，行是上月层级，列是本月去向，单位为人。",
+        "上月高",
+        "上月中",
+        "上月低",
+        "本月高",
+        "本月中",
+        "本月低",
+        "本月流失",
+        "62",
+        "18",
+        "10",
+        "10",
+        "12",
+        "64",
+        "16",
+        "8",
+        "3",
+        "15",
+        "70",
+        "12",
+        "0人",
+        "100人",
+        "来源：input.json，合成验证材料；仅验证图表表达与交付路径，非真实业务结论。",
+        "3"
+      ],
+      "unreadableText": [],
+      "form": "svg.custom",
+      "visual": "transition-matrix",
+      "proves": "高价值客户中，38%向下迁移或流失",
+      "title": "高价值客户中，38%向下迁移或流失",
+      "overflow": [],
+      "tinyText": [],
+      "smallDataText": [],
+      "charts": [],
+      "textLength": 172,
+      "frame": {
+        "boundary": "space",
+        "ruleVisible": false,
+        "doubleBorder": []
+      },
+      "notePad": [],
+      "page": 3,
+      "screenshot": "p03.png",
+      "bookends": {
+        "role": null,
+        "total": null,
+        "entries": [],
+        "clipped": [],
+        "meta": {},
+        "title": "高价值客户中，38%向下迁移或流失",
+        "note": "",
+        "boundary": "space",
+        "links": []
+      },
+      "critical": [],
+      "visualPolicy": {
+        "errors": [],
+        "warnings": [],
+        "findings": [
+          {
+            "code": "V-RASTER-VECTOR-MANUAL",
+            "selector": "div:nth-child(3) > div:nth-child(1) > svg:nth-child(1)",
+            "message": "SVG、位图及嵌入内容的装饰边条与视觉均衡须结合整页和实际 PDF 人工检查；此检查器不证明其合规。",
+            "bounds": {
+              "x": 90.00000189681084,
+              "y": 136.7031265322675,
+              "width": 1099.9999962063785,
+              "height": 409.9999715478375
+            }
+          },
+          {
+            "code": "V-COVERAGE",
+            "message": "自动范围：可见 HTML 模块的典型边框、简单伪元素/窄块、零模糊 inset 阴影，以及局部空置线索。小于70×32px的文字装饰、复杂绘制、未声明对齐关系和整页重心仍须逐页实际审查；无错误不代表视觉通过。"
+          }
+        ]
+      },
+      "relations": {
+        "status": "NOT_DECLARED",
+        "toleranceLogicalPx": 0.35,
+        "slideSize": {
+          "width": 1280,
+          "height": 720
+        },
+        "scale": {
+          "x": 1.0055555343627929,
+          "y": 1.0055555555555555
+        },
+        "groups": {},
+        "measurements": [],
+        "layouts": [],
+        "content": [
+          {
+            "role": "unspecified",
+            "left": 90.00000189681084,
+            "right": 1189.9999981031892,
+            "top": 136.70312365115677,
+            "bottom": 546.7030865579679
+          }
+        ],
+        "errors": [],
+        "canvas": "NONE"
+      },
+      "fonts": {
+        "profile": "serif-report-bold",
+        "status": "ready",
+        "faces": [
+          {
+            "id": "noto-sans-sc-400",
+            "family": "Deck Noto Sans SC",
+            "weight": 400,
+            "status": "loaded"
+          },
+          {
+            "id": "noto-sans-sc-600",
+            "family": "Deck Noto Sans SC",
+            "weight": 600,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-400",
+            "family": "Deck Inter",
+            "weight": 400,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-500",
+            "family": "Deck Inter",
+            "weight": 500,
+            "status": "loaded"
+          },
+          {
+            "id": "inter-600",
+            "family": "Deck Inter",
+            "weight": 600,
+            "status": "loaded"
+          },
+          {
+            "id": "noto-serif-sc-700",
+            "family": "Deck Noto Serif SC",
+            "weight": 700,
+            "status": "loaded"
+          },
+          {
+            "id": "playfair-display-700",
+            "family": "Deck Playfair Display",
+            "weight": 700,
+            "status": "loaded"
+          }
+        ],
+        "identity": "PASS",
+        "families": [
+          "Noto Serif SC ExtraLight",
+          "Playfair Display",
+          "Noto Sans SC Thin",
+          "Inter"
+        ],
+        "unexpected": []
+      },
+      "layoutSignature": [
+        [
+          "38%",
+          "\"Deck Playfair Display\", \"Deck Noto Serif SC\", serif",
+          "700",
+          264,
+          30,
+          56.9,
+          43
+        ],
+        [
+          "同一批300名客户；每行100人，行是上月层级，列是本月去向，单位为人。",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          40,
+          81,
+          1120,
+          21.8
+        ],
+        [
+          "上月高",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          163,
+          197.9,
+          54,
+          21
+        ],
+        [
+          "上月中",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          163,
+          281.2,
+          54,
+          21
+        ],
+        [
+          "上月低",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          163,
+          364.5,
+          54,
+          21
+        ],
+        [
+          "本月高",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          307.4,
+          139.2,
+          54,
+          21
+        ],
+        [
+          "本月中",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          526.1,
+          139.2,
+          54,
+          21
+        ],
+        [
+          "本月低",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          744.9,
+          139.2,
+          54,
+          21
+        ],
+        [
+          "本月流失",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          954.6,
+          139.2,
+          72,
+          21
+        ],
+        [
+          "62",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          321.4,
+          196.4,
+          25.9,
+          24
+        ],
+        [
+          "18",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          540.2,
+          196.4,
+          25.9,
+          24
+        ],
+        [
+          "10",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          758.9,
+          196.4,
+          25.9,
+          24
+        ],
+        [
+          "10",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          977.7,
+          196.4,
+          25.9,
+          24
+        ],
+        [
+          "12",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          321.4,
+          279.7,
+          25.9,
+          24
+        ],
+        [
+          "64",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          540.2,
+          279.7,
+          25.9,
+          24
+        ],
+        [
+          "16",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          758.9,
+          279.7,
+          25.9,
+          24
+        ],
+        [
+          "8",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          984.1,
+          279.7,
+          13,
+          24
+        ],
+        [
+          "3",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          327.9,
+          363,
+          13,
+          24
+        ],
+        [
+          "15",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          540.2,
+          363,
+          25.9,
+          24
+        ],
+        [
+          "70",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          758.9,
+          363,
+          25.9,
+          24
+        ],
+        [
+          "12",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          977.7,
+          363,
+          25.9,
+          24
+        ],
+        [
+          "0人",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          458.2,
+          488.7,
+          26.4,
+          20
+        ],
+        [
+          "100人",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          774.6,
+          488.7,
+          47.1,
+          20
+        ],
+        [
+          "来源：input.json，合成验证材料；仅验证图表表达与交付路径，非真实业务结论。",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          40,
+          677.8,
+          1200,
+          16.2
+        ],
+        [
+          "3",
+          "\"Deck Inter\", \"Deck Noto Sans SC\", sans-serif",
+          "400",
+          1240.6,
+          698,
+          7.4,
+          12
+        ]
+      ],
+      "printCritical": [],
+      "printVisualPolicy": {
+        "errors": [],
+        "warnings": [],
+        "findings": [
+          {
+            "code": "V-RASTER-VECTOR-MANUAL",
+            "selector": "div:nth-child(3) > div:nth-child(1) > svg:nth-child(1)",
+            "message": "SVG、位图及嵌入内容的装饰边条与视觉均衡须结合整页和实际 PDF 人工检查；此检查器不证明其合规。",
+            "bounds": {
+              "x": 90,
+              "y": 136.703125,
+              "width": 1100,
+              "height": 410
+            }
+          },
+          {
+            "code": "V-COVERAGE",
+            "message": "自动范围：可见 HTML 模块的典型边框、简单伪元素/窄块、零模糊 inset 阴影，以及局部空置线索。小于70×32px的文字装饰、复杂绘制、未声明对齐关系和整页重心仍须逐页实际审查；无错误不代表视觉通过。"
+          }
+        ]
+      },
+      "printText": {
+        "expectedUnits": 97,
+        "missingUnits": 0,
+        "coverage": 1
+      },
+      "criticalPdf": {
+        "status": "CHECKED",
+        "scope": "仅作者显式关键内容及关联对象的真实PDF文字位置",
+        "errors": []
+      }
+    }
+  ],
+  "visualStatus": "NOT_REVIEWED：必须实际查看每页图片与PDF",
+  "geometryStatus": "PASS"
+}

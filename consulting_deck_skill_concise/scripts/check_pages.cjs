@@ -1,5 +1,5 @@
 /* pages.json 是 S3 的机器可读产物：逐页声明这条页面证明什么、用什么形式实现。
-   这里只做结构与一致性校验，不判定形式选得好不好——那是分析取舍与目视验收。 */
+   form 是实现入口，visual 是实际表达。这里只做结构与一致性校验，不判定形式选得好不好——那是分析取舍与目视验收。 */
 'use strict';
 const fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto');
 const forms = require('../assets/deck-forms.js');
@@ -24,6 +24,8 @@ function check(doc) {
     if (!Number.isInteger(page.page) || page.page < 1) bad(at + ' 缺少合法 page 序号');
     else if (seen.has(page.page)) bad('page 序号重复: ' + page.page); else seen.add(page.page);
     if (!norm(page.proves)) bad(at + '（page ' + page.page + '）缺少 proves：这页要让读者看出什么关系');
+    if (page.form === 'svg.custom' && !norm(page.visual)) bad(at + ' svg.custom 必须用 visual 声明实际表达');
+    if (page.visual !== undefined && (typeof page.visual !== 'string' || !norm(page.visual))) bad(at + ' visual 须为非空的实际表达名称');
     let entry = null;
     try { entry = forms.get(page.form); }
     catch (error) { bad(at + '（page ' + page.page + '）' + error.message); }
@@ -33,11 +35,14 @@ function check(doc) {
       page.regions.forEach((region, r) => {
         const where = at + ' regions[' + r + ']';
         if (!region || typeof region !== 'object') { bad(where + ' 须为对象'); return; }
+        if (region.form === 'svg.custom' && !norm(region.visual)) bad(where + ' svg.custom 必须用 visual 声明实际表达');
+        if (region.visual !== undefined && (typeof region.visual !== 'string' || !norm(region.visual))) bad(where + ' visual 须为非空字符串');
         if (!SLOTS.includes(region.slot)) bad(where + ' slot 须为 ' + SLOTS.join('/'));
         if (!ROLES.includes(region.role)) bad(where + ' role 须为 ' + ROLES.join('/'));
         if (typeof region.span !== 'number' || !Number.isFinite(region.span) || region.span <= 0) bad(where + ' span 须为正数');
         try { forms.get(region.form); } catch (error) { bad(where + ' ' + error.message); }
       });
+      if (primaries.length === 1 && primaries[0].visual !== undefined && norm(primaries[0].visual) !== norm(page.visual)) bad(at + ' 主区 visual 与 page.visual 不一致');
       if (page.form !== undefined && primaries.length === 1 && primaries[0].form !== page.form) bad(at + ' 主区形式与 page.form 不一致：' + primaries[0].form + ' ≠ ' + page.form);
     }
     if (page.annotations !== undefined) {
@@ -57,15 +62,8 @@ function check(doc) {
         if (a.of !== undefined && !norm(a.of)) bad(where + ' of 不能为空');
       });
     }
-    // planner 规划的能力必须由本页声明的形式真的能实现，否则就是"规划了机制图、交了排行柱"。
-    if (page.planner !== undefined) {
-      if (!page.planner || !norm(page.planner.capability_id)) bad(at + ' planner 须写 capability_id（planner 实际返回的能力 id）');
-      else {
-        const declared = [page.form, ...((page.regions || []).map(r => r && r.form))].filter(Boolean);
-        if (declared.length && !declared.some(form => { try { return forms.canImplement(form, page.planner.capability_id); } catch (error) { return false; } }))
-          bad(at + ' 声明实现 ' + page.planner.capability_id + '，但本页形式（' + declared.join('、') + '）都不在它的实现入口里；可实现的规划能力见 assets/deck-forms.js 的 planner 字段');
-      }
-    }
+    // 外部能力 ID 不限制自定义绘制；采用 plan 的版本与落实由专门检查器和实际看图核对。
+    if (page.planner !== undefined && (!page.planner || !norm(page.planner.capability_id))) bad(at + ' planner 须写 capability_id');
     if (page.repetitionReason !== undefined && !norm(page.repetitionReason)) bad(at + ' repetitionReason 不能为空');
     if (page.fallback !== undefined && (!page.fallback || !norm(page.fallback.then))) bad(at + ' fallback 须写清 then（容量不足时改用什么）');
   });
@@ -77,12 +75,14 @@ function check(doc) {
   return { status: errors.length ? 'FAIL' : 'PASS', errors, inventory: inventory(doc) };
 }
 
+const expression = page => norm(page.visual) || page.form;
+
 /* 重复必须是被解释的决定，不能是默认：同一形式第 3 次起、或连续 3 页同形式，都要写理由。
    这不是图型配额——不规定用几种、不因数量定级，只要求"你注意到了并说得出为什么"。 */
 function repetitionErrors(doc) {
   const errors = [], pages = Array.isArray(doc && doc.pages) ? doc.pages : [];
   const counts = {};
-  pages.forEach(page => { if (page && page.form) (counts[page.form] = counts[page.form] || []).push(page); });
+  pages.forEach(page => { if (page && page.form) (counts[expression(page)] = counts[expression(page)] || []).push(page); });
   Object.entries(counts).forEach(([form, list]) => {
     list.forEach((page, index) => {
       if (index >= 2 && !norm(page.repetitionReason)) errors.push('page ' + page.page + '：' + form + ' 已是本稿第 ' + (index + 1) + ' 次出现，必须写 repetitionReason 说明为什么这里还是它');
@@ -90,9 +90,9 @@ function repetitionErrors(doc) {
   });
   let run = 1;
   for (let i = 1; i < pages.length; i++) {
-    if (pages[i] && pages[i - 1] && pages[i].form && pages[i].form === pages[i - 1].form) {
+    if (pages[i] && pages[i - 1] && pages[i].form && expression(pages[i]) === expression(pages[i - 1])) {
       run += 1;
-      if (run >= 3 && !norm(pages[i].repetitionReason)) errors.push('page ' + pages[i].page + '：与前两页同为 ' + pages[i].form + '，连续三页同形式必须写 repetitionReason');
+      if (run >= 3 && !norm(pages[i].repetitionReason)) errors.push('page ' + pages[i].page + '：与前两页同为 ' + expression(pages[i]) + '，连续三页同形式必须写 repetitionReason');
     } else run = 1;
   }
   return [...new Set(errors)];
@@ -100,20 +100,21 @@ function repetitionErrors(doc) {
 
 function inventory(doc) {
   const pages = (doc && Array.isArray(doc.pages)) ? doc.pages : [];
-  const byForm = {}, byFamily = {};
+  const byForm = {}, byFamily = {}, byVisual = {};
   let annotated = 0, regions = 0;
   const runs = [];
   pages.forEach(page => {
     if (!page || !page.form) return;
     byForm[page.form] = (byForm[page.form] || 0) + 1;
+    byVisual[expression(page)] = (byVisual[expression(page)] || 0) + 1;
     let family = 'unknown';
     try { family = forms.familyOf(page.form); } catch (error) { /* 未知形式已在 check 里报错 */ }
     byFamily[family] = (byFamily[family] || 0) + 1;
     if (Array.isArray(page.annotations) && page.annotations.length) annotated += page.annotations.length;
     if (Array.isArray(page.regions)) regions += page.regions.length;
     const last = runs[runs.length - 1];
-    if (last && last.form === page.form) { last.pages.push(page.page); last.length = last.pages.length; }
-    else runs.push({ form: page.form, pages: [page.page], length: 1 });
+    if (last && last.form === expression(page)) { last.pages.push(page.page); last.length = last.pages.length; }
+    else runs.push({ form: expression(page), pages: [page.page], length: 1 });
   });
   const entries = Object.entries(byForm).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   return {
@@ -121,6 +122,8 @@ function inventory(doc) {
     forms: Object.fromEntries(entries),
     families: Object.fromEntries(Object.entries(byFamily).sort((a, b) => b[1] - a[1])),
     distinctForms: entries.length,
+    visuals: byVisual,
+    distinctVisuals: Object.keys(byVisual).length,
     annotations: annotated,
     regions,
     longestRun: runs.reduce((max, run) => Math.max(max, run.length), 0),
@@ -147,6 +150,7 @@ function verifyDeck(doc, slides) {
     if (!slide.form) { errors.push('第 ' + slide.page + ' 页缺少 data-form；逐页显式声明，没有静默默认值'); return; }
     try { forms.get(slide.form); } catch (error) { errors.push('第 ' + slide.page + ' 页 ' + error.message); return; }
     if (slide.form !== declared.form) errors.push('第 ' + slide.page + ' 页 data-form="' + slide.form + '" 与 pages.json 的 ' + declared.form + ' 不一致');
+    if (declared.visual !== undefined && norm(slide.visual) !== norm(declared.visual)) errors.push('第 ' + slide.page + ' 页 data-visual 缺失或与 pages.json 不一致');
     if (norm(slide.proves) && norm(slide.proves) !== norm(declared.proves)) errors.push('第 ' + slide.page + ' 页 data-proves 与 pages.json 的 proves 不一致');
   });
   return errors;

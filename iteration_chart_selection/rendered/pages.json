@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "pages": [
+    {
+      "page": 1,
+      "proves": "30分钟内完成：A组为95%，B组为70%",
+      "form": "svg.custom",
+      "visual": "ecdf"
+    },
+    {
+      "page": 2,
+      "proves": "B的点估计最高，但其区间跨过零",
+      "form": "svg.custom",
+      "visual": "forest"
+    },
+    {
+      "page": 3,
+      "proves": "高价值客户中，38%向下迁移或流失",
+      "form": "svg.custom",
+      "visual": "transition-matrix"
+    }
+  ]
+}

@@ -131,7 +131,7 @@ Chrome 走 Playwright 的 `channel: 'chrome'`，需要本机已装 Chrome；用�
 node scripts/probe_capabilities.cjs /tmp/deck-probe
 ```
 
-制稿流程由 Agent 按 [SKILL.md](SKILL.md) 执行；任务合同字段、交付门禁与审查契约见[交付契约](references/delivery.md)。技能内部按需加载 11 份说明文件，入口见 [SKILL.md](SKILL.md)。
+制稿流程由 Agent 按 [SKILL.md](SKILL.md) 执行；任务合同字段、交付门禁与审查契约见[交付契约](references/delivery.md)。技能内部按需加载说明文件，入口见 [SKILL.md](SKILL.md)。
 
 ```bash
 node scripts/assemble_deck.cjs /任务/pages.html /任务/deck.html --css /任务/page.css --title "报告标题" --contract /任务/task.json
@@ -140,7 +140,7 @@ node scripts/aggregate_reviews.cjs /任务/renders/audit.json /任务/renders/re
 node scripts/package_delivery.cjs /任务/deck.html /任务/renders/deck.pdf /任务/delivery 报告名
 ```
 
-选型可接入独立的 [echarts-viz-planner](https://github.com/ZeroxZhang/echarts-viz-planner)；随包已带可离线使用的快照，不装也能跑。维护与回归入口（`test_*`、`sync_*`、`build_*`）不是制稿必需。
+默认按内置[图表选型](references/charts.md)覆盖 13 类关系，包含丰富候选及准确性条件，不依赖独立 planner。专门的选型难题可按[专家接入](references/planner.md)使用已有本地安装；本技能不再分发或同步 planner 快照。维护与回归入口（`test_*`、`sync_*`、`build_*`）不是制稿必需。
 
 ---
 

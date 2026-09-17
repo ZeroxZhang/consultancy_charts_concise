@@ -81,7 +81,7 @@ async function assemble(options={}){
     if(!['line','integrated','space'].includes(slide.getAttribute('data-frame-boundary')))throw Error('每页须由作者显式声明data-frame-boundary="line|integrated|space"；不自动选择标题边界');
     const role=slide.dataset.pageRole||null,isBookend=['cover','references','back-cover','divider'].includes(role);
     if(!isBookend&&!slide.dataset.form)throw Error('第'+(slideForms.length+1)+'页缺少data-form：每页须显式声明本页主形式（取值见assets/deck-forms.js，字段见references/delivery.md的pages合同）；没有静默默认值');
-    slideForms.push({page:slideForms.length+1,form:slide.dataset.form||null,proves:slide.dataset.proves||'',role});
+    slideForms.push({page:slideForms.length+1,form:slide.dataset.form||null,visual:slide.dataset.visual||'',proves:slide.dataset.proves||'',role});
     slide.classList.remove('active');
     if(!slide.querySelector(':scope > .slide__frame')){const frame=doc.createElement('div');frame.className='slide__frame';frame.setAttribute('aria-hidden','true');slide.prepend(frame);}
    }

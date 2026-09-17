@@ -22,7 +22,8 @@
 【本页简报】
 主张：{本页主判断，一句话}
 读者要看清的关系：{…}
-本页形式（data-form）：{pages.json 中本页的 form 值，原样照抄，不要自创}
+实现入口（data-form）：{pages.json 中本页的 form 值}
+实际图型（data-visual）：{pages.json 声明 visual 时原样填写；它不受组件清单限制}
 主证据与互补内容：{…}
 关键数字、单位与口径：{…}
 来源与边界：{…}
@@ -45,7 +46,7 @@
   <div class="slide__page">{页码}</div>
 </section>
 
-【必填：data-form】原样照抄简报里给的"本页形式"，不要自创名字。缺了或写了枚举以外的名字，装配直接失败，没有默认值。
+【必填：data-form】照抄简报的实现入口；通用 SVG 用 svg.custom，能承载现成组件外的图型。简报给了 visual 时同时写 data-visual；缺失或与 pages.json 不一致会失败。
 
 【类名随 mode 走，不要写死】骨架里的 reading 类只在报告为 reading 时保留；报告是 presentation 时必须去掉，写成 `<section class="slide" …>`。两者不一致装配直接失败。
 

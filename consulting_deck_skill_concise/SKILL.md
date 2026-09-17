@@ -39,7 +39,7 @@ description: >-
 
 ## 开工：登记任务合同
 
-制作前把本次选择写入任务目录的 `task.json`。字段定义与完整示例只有一个来源：[交付契约](references/delivery.md)。它同时驱动装配参数、复核要求和交付校验，所以**先写它，再动手**——包括 workMode、complexity、majorConclusion、mode、theme、typography、ratio、kind、planner、pages、critical。`complexity` 未判断时按 complex；simple 必须是真实判断，不能为绕过复核而填。
+制作前把本次选择写入任务目录的 `task.json`。字段定义与完整示例只有一个来源：[交付契约](references/delivery.md)。它同时驱动装配参数、复核要求和交付校验，所以**先写它，再动手**——包括 workMode、complexity、majorConclusion、mode、theme、typography、ratio、kind、pages、critical；未用外部专家时 planner 可省略。`complexity` 未判断时按 complex；simple 必须是真实判断，不能为绕过复核而填。
 
 用户点名的构图、图示、密度、留白和对齐要求进入本次质量合同，验收时不能降为"仅审美偏好"。认可的字体与配色可以继承，已被否定的版式不能继承成基线。
 
@@ -64,9 +64,9 @@ description: >-
 **S2 实际执行分析，形成主线。** 保留材料结构再综合：数值保留明细、分布与比较口径，文本保留主体、动作、条件、层级、反证与依赖。围绕问题读原材料，不要先把所有输入压成几条摘要。选择能回答问题的方法，完成计算、比较、编码或机制推理，检验替代解释。区分事实、假设、预测、目标与建议；贡献不等于因果，样本不等于市场，口径不同不能强比。重要未知要说明它改变什么判断。
 *做完的标志*：关键推理有依据；标题骨架连读形成推进，每页带来新理解；相邻页重复同一说明时已合并或重新分工。
 
-**S3 逐页构思视觉论证。** 制作前先回答"这页要让人看懂什么关系"，把关系变成可见结构，再决定用什么工具。不要从空白模板逐格填摘要，也不要把几个独立完成的组件拼起来算作一页。
-*做完的标志*：**内容和它的组织形式都定了**——逐页把 `proves`、`form`（必要时 `regions`、`annotations`、`fallback`）写进 `pages.json` 并在 `task.json` 绑定，成稿每页带上对应的 `data-form`；笔记里记下本页证明什么、哪些关系如何可见、主次与阅读顺序、空间与对齐的关键取舍。简单页不必建坐标台账。`form` 只能取 `assets/deck-forms.js` 里真实可实现的值，重复到第 3 次必须写理由。
-读[整页创作](references/page_design.md)。要点有四条：
+**S3 逐页构思视觉论证。** 先读[图表选型](references/charts.md)：覆盖 13 类关系的丰富候选，按内容、数据前提和静态媒介选择，不以组件目录限制图型。准确且丰富地使用图表与图示是质量目标；有表达价值的关系要主动展开，不能因省事退回重复柱图或摘要。制作前先回答"这页要让人看懂什么关系"，把关系变成可见结构，再决定用什么工具。不要从空白模板逐格填摘要，也不要把几个独立完成的组件拼起来算作一页。
+*做完的标志*：**内容和它的组织形式都定了**——逐页把 `proves`、`form`（通用 SVG 补 `visual`，必要时 `regions`、`annotations`、`fallback`）写进 `pages.json` 并在 `task.json` 绑定，成稿每页带上对应的 `data-form`；笔记里记下本页证明什么、哪些关系如何可见、主次与阅读顺序、空间与对齐的关键取舍。简单页不必建坐标台账。`form` 只标记实现入口，现成组件外可走 `svg.custom` 并声明实际图型 `visual`／`data-visual`；相同表达重复到第 3 次写理由。
+读[整页创作](references/page_design.md)：
 
 - **主动找视觉表达机会。** 数字适合比较、组成和变化；文本也可以呈现机制、主体与资金路径、层级、反馈、时间、条件与权衡。图表、表格、机制图、信息图和矢量元素可在同页协作，分别承担证据、解释、识别和导航。
 - **把旁解读当作页面的一部分设计。** 关键差额、增长率、份额、极值、目标缺口和反例，要用引线标注**贴近对象**说明，不能只写在正文或页底。入口与容量见[证据与表达](references/exhibits.md)的"旁解读"一节；看图的读者不该自己去算哪根柱最重要。
@@ -74,7 +74,7 @@ description: >-
 - **按整页分配空间。** 先构思主视觉及其互补内容，再统筹标题、正文、解释与来源。主辅不必等高，但收短模块后要回到整页重新组织，不能自然高度贴顶就结束。
 - **不做过度约束。** 低密度、表格或文字页只要适合本页任务就成立；没有图型配额、固定填充率或逐页审批。简洁来自分析取舍和组织，不能靠删掉分析、收缩展品或把关键解释移进脚注获得。
 
-**S4 实现。** 主题沿用已有选择，无选择且允许自主决定时用 mckinsey；颜色只来自 `assets/deck-themes.js`，字体只来自 `assets/deck-typography.js`（新 reading 默认 serif-report-bold，正文 Noto Sans SC／Inter）。数值与文本适配读[证据与表达](references/exhibits.md)；共享几何、复杂标注与关键语义声明读[精度与标注](references/precision.md)；母版、字体角色与字号读[母版与排印](references/type_frame.md)。需要实质选型时按[planner 接入](references/planner.md)运行 `node scripts/load_viz_planner.cjs`；已有清晰选择直接制作。
+**S4 实现。** 主题沿用已有选择，无选择且允许自主决定时用 mckinsey；颜色只来自 `assets/deck-themes.js`，字体只来自 `assets/deck-typography.js`（新 reading 默认 serif-report-bold，正文 Noto Sans SC／Inter）。数值与文本适配读[证据与表达](references/exhibits.md)；共享几何、复杂标注与关键语义声明读[精度与标注](references/precision.md)；母版、字体角色与字号读[母版与排印](references/type_frame.md)。实现入口与容量可用 `node scripts/sweep_forms.cjs` 查询；没有封装时用原生 ECharts 或自定义 SVG，不因此降低选型质量。常规流程不加载独立 planner。
 *做完的标志*：页面片段与样式写定，每页显式声明边界，无外部依赖。
 
 **S5 装配并亲眼验收。** 先以读者身份判断整份报告是否实现简报目标，再检查展品、标注、排印和工程。看原尺寸与关键局部；打印 DOM 不能替代最终 PDF。

@@ -175,17 +175,34 @@ results.annotation_entries_work = annotated.length;
   results.samples_follow_contract = true;
 }
 
-// 11. 遍历入口：目录解析、覆盖统计与能力漂移都必须可核对。
+// 11. 查实现入口不能触发外部 planner；空安装环境照样得到完整本地清单。
 {
   const sweep = require('./sweep_forms.cjs').sweep();
-  assert.ok(sweep.families.length >= 10, '遍历必须覆盖全部已登记的分析族');
-  assert.equal(sweep.families.reduce((n, group) => n + group.forms.length, 0), forms.list().length, '每条形式都应出现在某个族里');
-  if (sweep.plannerCoverage.total) {
-    assert.ok(sweep.plannerCoverage.implemented > 0 && sweep.plannerCoverage.implemented <= sweep.plannerCoverage.total);
-    assert.equal(sweep.plannerCoverage.implemented + sweep.plannerCoverage.unimplemented.length, sweep.plannerCoverage.total);
-  }
-  assert.deepEqual(sweep.drift, [], '枚举里的 planner 能力必须仍存在于当前目录：' + JSON.stringify(sweep.drift));
-  results.sweep = { plannerCapabilities: sweep.plannerCoverage.total, implemented: sweep.plannerCoverage.implemented, gaps: sweep.plannerCoverage.unimplemented.length };
+  assert.equal(sweep.families.reduce((n, group) => n + group.forms.length, 0), forms.list().length);
+  assert.equal(require.cache[require.resolve('./load_viz_planner.cjs')], undefined, '本地入口查询不应加载 planner');
+  results.local_sweep = true;
 }
 
+// 12. 三种自定义图不算重复，同种图换实现入口仍算重复；不能由能力映射挡住真实 SVG 实现。
+{
+  const custom = (pageNumber, visual, extra = {}) => page({ page: pageNumber, form: 'svg.custom', visual, ...extra });
+  const mixed = { version: 1, pages: [custom(1, 'ecdf'), custom(2, 'forest'), custom(3, 'adjacency-matrix', { planner: { capability_id: 'heatmap.matrix' } })] };
+  assert.equal(C.check(mixed).status, 'PASS');
+  assert.equal(C.inventory(mixed).distinctVisuals, 3);
+  assert.equal(C.inventory(mixed).longestRun, 1);
+  assert.equal(C.inventory(mixed).families.custom, 3);
+  const repeated = { version: 1, pages: [custom(1, 'waterfall'), custom(2, 'waterfall', {form:'kit.waterfall'}), custom(3, 'waterfall', {form:'precision.waterfall'})] };
+  assert.equal(C.check(repeated).status, 'FAIL');
+  repeated.pages[2].repetitionReason = '三个业务单元统一量尺核对同一种贡献分解';
+  assert.equal(C.check(repeated).status, 'PASS');
+  assert.equal(C.check({version:1,pages:[custom(1, '')]}).status, 'FAIL');
+  assert.equal(C.check({version:1,pages:[page({form:'svg.custom'})]}).status, 'FAIL');
+  assert.equal(C.check({version:1,pages:[custom(1,'forest',{regions:[{slot:'main',role:'primary',span:12,form:'svg.custom'}]})]}).status, 'FAIL');
+  assert.equal(C.check({version:1,pages:[custom(1,'forest',{regions:[{slot:'main',role:'primary',span:12,form:'svg.custom',visual:'bar'}]})]}).status, 'FAIL');
+  const actual = mixed.pages.map(p => ({...p, role:null}));
+  assert.deepEqual(C.verifyDeck(mixed, actual), []);
+  assert.ok(C.verifyDeck(mixed, actual.map(p=>({...p, visual:''}))).every(e=>e.includes('data-visual')));
+  assert.ok(C.verifyDeck(mixed, [{...actual[0],visual:'bar'},...actual.slice(1)]).some(e=>e.includes('data-visual')));
+  results.open_visuals = true;
+}
 console.log(JSON.stringify({ pass: true, forms: forms.list().length, ...results }));
