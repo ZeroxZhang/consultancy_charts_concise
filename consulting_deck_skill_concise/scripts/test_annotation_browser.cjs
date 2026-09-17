@@ -1,5 +1,5 @@
 /* 独立读取浏览器实际 SVG：锚点声明必须等于真实几何，引线端点必须落在声明边界上。 */
-const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{pathToFileURL}=require('node:url');
+const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),assert=require('node:assert/strict'),{pathToFileURL}=require('node:url'),{execFileSync}=require('node:child_process');
 const pw=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 
 async function audit(page){return page.evaluate(()=>{
@@ -66,9 +66,10 @@ async function audit(page){return page.evaluate(()=>{
 });}
 
 (async()=>{
-  const dir=path.resolve(process.argv[2]||path.join(__dirname,'..','..','demo','annotation'));
+  const dir=path.resolve(process.argv[2]||path.join(os.tmpdir(),'deck-annotation-gallery'));
   const html=path.join(dir,'annotation-gallery.html');
-  if(!fs.existsSync(html))throw Error('先运行 node scripts/build_annotation_example.cjs');
+  // 夹具不随仓库发布，缺失时自己造；克隆后可直接跑，不必先手动执行构建脚本。
+  if(!fs.existsSync(html))execFileSync(process.execPath,[path.join(__dirname,'build_annotation_example.cjs'),'--no-raster',dir],{stdio:'inherit'});
   const browser=await pw.chromium.launch({channel:process.env.CHROME_CHANNEL||'chrome',headless:true});
   const page=await browser.newPage({viewport:{width:1360,height:1200},deviceScaleFactor:1});
   try{

@@ -22,9 +22,12 @@
   "ratio": "16x9",
   "kind": "fragment",
   "planner": {"mode": "direct"},
+  "pages": {"record": "pages.json"},
   "critical": []
 }
 ```
+
+开工时 `pages.record` 先按此占位，指向 S3 产出的 `pages.json`；装配时文件必须已存在且与成稿逐页一致。给 `sha256` 时必须与文件实际摘要相符，不给则由装配器读取填入。
 
 字段含义：
 

@@ -22,17 +22,18 @@
 【本页简报】
 主张：{本页主判断，一句话}
 读者要看清的关系：{…}
+本页形式（data-form）：{pages.json 中本页的 form 值，原样照抄，不要自创}
 主证据与互补内容：{…}
 关键数字、单位与口径：{…}
 来源与边界：{…}
 用户明确要求：{构图／密度／留白／对齐等；没有就写"无"}
 
 【输出两个文件】
-1. {目录}/pages_{批次}.html —— 一个顶层 <section class="slide reading"> 片段（可以只含这一页）
+1. {目录}/pages_{批次}.html —— 一个顶层 <section class="slide"> 片段（可以只含这一页；类名与属性按下方骨架）
 2. {目录}/page_{批次}.css —— 本页样式，不得含 @import
 
 【页面骨架：照抄容器名，不要改】
-<section class="slide reading" data-frame-boundary="line|integrated|space">
+<section class="slide reading" data-form="{本页形式}" data-frame-boundary="line|integrated|space">
   <div class="slide__frame" aria-hidden="true"></div>
   <div class="slide__tracker">章节名称</div>
   <header class="slide__header">
@@ -43,6 +44,10 @@
   <div class="source">来源与边界</div>
   <div class="slide__page">{页码}</div>
 </section>
+
+【必填：data-form】原样照抄简报里给的"本页形式"，不要自创名字。缺了或写了枚举以外的名字，装配直接失败，没有默认值。
+
+【类名随 mode 走，不要写死】骨架里的 reading 类只在报告为 reading 时保留；报告是 presentation 时必须去掉，写成 `<section class="slide" …>`。两者不一致装配直接失败。
 
 【必填：data-frame-boundary】三选一，没有默认值。
 - line：标题之后需要清楚的分区，在标题组与正文留白中放 1px 淡线
@@ -72,6 +77,8 @@
   表头 15px/600，来源 12px。数字右对齐并用 lining-nums tabular-nums。
 
 【交付前自检，逐条过】
+- 每页都有 data-form，值照抄简报，没有自创（封面、参考资料、封底、分隔页除外）
+- reading 类与该页所属报告的 mode 一致（presentation 时已去掉）
 - 每页都有 data-frame-boundary
 - 没有 script／canvas／外部 URL／@import
 - 没有装饰色条模块
