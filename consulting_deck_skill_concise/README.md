@@ -119,7 +119,7 @@ npm ci            # 装配、QA、PDF 导出、几何审计所需的 Node 依赖
 npm run setup-fonts   # 建 .font-venv 并装 fontTools（仅构建字体子集需要）
 ```
 
-`scripts/setup_font_venv.sh` 只往技能的 `.font-venv` 里装依赖，不写系统 Python（PEP 668 环境也适用）。装好后 `pack_fonts.cjs` 与 `probe_capabilities.cjs` 会自动找到它，**不需要再导出 `FONT_PYTHON`**；要从别处指定解释器时该变量仍然优先。不想建 venv 也可以自行准备 fontTools，再用 `FONT_PYTHON` 指向它。
+`scripts/setup_font_venv.sh` 只往技能的 `.font-venv` 里装依赖，不写系统 Python（PEP 668 环境也适用）。装好后 `pack_fonts.cjs` 与 `probe_capabilities.cjs` 会自动找到它，**不需要再导出 `FONT_PYTHON`**；要从别处指定解释器时该变量仍然优先。不想建 venv 也可以自行准备 fontTools，再用 `FONT_PYTHON` 指向它。脚本也能直接用在 uv 等工具建的 venv 上：那类 venv 默认不带 pip，脚本会用 ensurepip 自己引导，所以日志里出现“无 pip，用 ensurepip 引导”属正常，不是报错。
 
 Chrome 走 Playwright 的 `channel: 'chrome'`，需要本机已装 Chrome；用别的浏览器或既有 Playwright 模块时按 [交付契约](references/delivery.md)设 `CHROME_CHANNEL` / `PLAYWRIGHT_MODULE`。
 
