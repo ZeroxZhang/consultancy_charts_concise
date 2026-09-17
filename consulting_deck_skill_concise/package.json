@@ -2,6 +2,7 @@
   "name": "consulting-deck-skill-concise-runtime",
   "version": "13.0.0",
   "private": true,
+  "license": "Apache-2.0",
   "description": "Pinned build/runtime dependencies for deck assembly, ECharts SVG rendering, PDF export and PDF geometry audits.",
   "scripts": {
     "setup-fonts": "sh scripts/setup_font_venv.sh"
