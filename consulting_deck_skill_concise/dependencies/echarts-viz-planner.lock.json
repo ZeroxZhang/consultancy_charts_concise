@@ -2,13 +2,13 @@
   "format": 1,
   "name": "echarts-viz-planner",
   "repository": "https://github.com/ZeroxZhang/echarts-viz-planner",
-  "base_revision": "fbca3ce5734471dcdc909b065000ac57482516c5",
-  "source_dirty": true,
-  "fetch_revision": null,
-  "source_sha256": "d9b109177eeff68e0270e9531f0224f36399fa259f768724f111ff6fd092a1ef",
-  "bundle_sha256": "2a2f76d690d89356ade02dc525ede71a6fefbeef19d1eab6a56ce3b32b25ba5a",
-  "bundle_bytes": 72257,
-  "file_count": 59,
+  "base_revision": "dfb377ee9325fe4eae1ebdb3548654ef0566fbbb",
+  "source_dirty": false,
+  "fetch_revision": "dfb377ee9325fe4eae1ebdb3548654ef0566fbbb",
+  "source_sha256": "21056de6e919d8ccaaf432b1f1d72c2232835b205f42276e30d1654b65eda372",
+  "bundle_sha256": "3e2e2068eb9423311401befa23a6af1a568e9e36fb6f036da97a69dee48de65c",
+  "bundle_bytes": 75901,
+  "file_count": 60,
   "files": [
     {
       "path": "LICENSE",
@@ -17,8 +17,8 @@
     },
     {
       "path": "SKILL.md",
-      "sha256": "8f0a6663c3640fffb3951fedcd1b7b38e36dfa26ff9362db959705d6e8b635ab",
-      "bytes": 22823
+      "sha256": "1c1f7344aa3faf828364c0adeba2f76d3019e053a28a5d91bb7326a7b1c0dfe1",
+      "bytes": 23033
     },
     {
       "path": "capabilities.json",
@@ -96,6 +96,11 @@
       "bytes": 12309
     },
     {
+      "path": "references/business-expression-boundaries.md",
+      "sha256": "371eceb77f69a1ecb999cff99bda9ace6a3c193274d11b61e6101d27fed28701",
+      "bytes": 6734
+    },
+    {
       "path": "references/composition.md",
       "sha256": "a476c2ebdea00bcd7167baa9a9b5ed96c598835a2f1c62152ea7db1a29677311",
       "bytes": 3268
@@ -117,8 +122,8 @@
     },
     {
       "path": "references/selection.md",
-      "sha256": "59a70bf835b49d9402fae2e8a2e5178c3e2cacddb46455d50d15ccefa90bb519",
-      "bytes": 7410
+      "sha256": "8fd3da59ec9ba85ed3daa53920ba3531645acf0ca7fb12addca27d0c7320befd",
+      "bytes": 7831
     },
     {
       "path": "references/visual-quality.md",
