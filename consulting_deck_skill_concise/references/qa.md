@@ -103,7 +103,7 @@
 
 ## 分析前置与内容复核
 
-- 复杂分析、重大结论或关键推理有争议时，要在 S2 形成核心结论之前安排独立复核，不能等页面做完才检查推理；触发条件见[分析](analysis.md)。
+- 复杂分析、重大结论时，要在 S2 形成核心结论之前安排独立复核，不能等页面做完才检查推理；触发条件见[分析](analysis.md)。**关键推理有争议时同样要安排**——这是判断要求，不改变 `task.json` 的派生规则，作者要自己识别并如实记录实际独立性。
 - S5 复核时读取实际保留的分析底稿、来源和最终标题，重点核对：方法前提、关键反证、目标/预测与建议条件有没有丢失。
 - editorial 用原文定位和必要核对记录执行内容复核，不补建台账。
 - 分析 ready 只说明当前有限结论可以进入制作，不代表事实外部核验、视觉或工程已经通过。
@@ -174,13 +174,15 @@
 
 常规制稿不需要重跑整个组件库。按这次实际改了什么选：
 
+下表默认环境已按 [README](README.md) 装好：克隆后先 `npm ci`，再 `npm run setup-fonts`。少了 `.font-venv` 时字体相关的回归（如 `test_assemble_deck`、`test_dense_inputs`）会以 `No module named 'fontTools'` 失败，那是缺前置不是代码问题。夹具缺失的测试会自己生成，不必先手动跑构建脚本。
+
 | 任务 | 建议执行 | 不要求重复执行 |
 |---|---|---|
 | 新 deck／大量内容改写 | 核对关键事实与计算、标题与证据一致；跑 `qa_deck` 并实际看逐页与 PDF | 整套组件、字体、引擎单元回归 |
 | 少量文字或数据更新 | 受影响的来源、计算、标题、图；重打包字体、重建 PDF 并检查受影响页 | 无关分析与无关组件测试 |
 | 自定义图表或图示 | 验证该图的映射、标签、边、流量、尺度；最终截图与 PDF | 逐一遍历全部图型 |
 | 旁解读／标注改动 | `test_annotation_layer.cjs`（契约、语义、碰撞回退）、`test_annotation_browser.cjs`（真实 bbox、引线两端绑定、4px 突变反例）、代表成稿截图与 PDF | 不相关的行为测试 |
-| 页面合同／形式枚举改动 | `test_pages_contract.cjs`（枚举与真实实现一一对应、标注入口真能出图、反单调门禁、成稿对账、遍历覆盖）、`test_assemble_deck.cjs`、`test_qa_v12.cjs`、`test_delivery.cjs`、端到端样张 `build_pages_contract_example.cjs` | 不相关的图型算法回归 |
+| 页面合同／形式枚举改动 | `test_pages_contract.cjs`（枚举与真实实现一一对应、标注入口真能出图、反单调门禁、成稿对账、遍历覆盖）、`test_assemble_deck.cjs`、`test_qa_integration.cjs`、`test_delivery.cjs`、端到端样张 `build_pages_contract_example.cjs` | 不相关的图型算法回归 |
 | planner 接入／能力映射改动 | `sweep_forms.cjs --check`（能力漂移）、`test_viz_planner_loader.cjs`、`test_execution_contracts.cjs`、`test_pages_contract.cjs` | 不相关的选型质量重评 |
 | 同步本机 planner 安装 | `sync_installed_planner.cjs --dry-run` 核对增改清单，执行后 `load_viz_planner.cjs` 必须返回 `origin:"installed"` 且 `source_sha256` 与 lock 一致 | 不重跑选型质量评测 |
 | 引擎功能或默认示例改动 | `test_engine`，受影响样稿 QA；导航、打印、离线 | 未改方法的完整研究验证 |

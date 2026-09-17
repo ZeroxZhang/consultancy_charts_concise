@@ -6,7 +6,7 @@ description: >-
   交付自包含HTML与同版分页PDF。精简版（concise）。
 ---
 
-# 咨询分析与视觉论证 · V13 Concise
+# 咨询分析与视觉论证 · Concise
 
 交付目标是**有分析分量、有视觉表现力、审美完整且可直接阅读的报告**：读者能看见关键关系，理解依据与取舍，核对重要数据。作者负责全篇叙事和整页设计，工具负责准确实现与可靠导出。
 
@@ -43,9 +43,13 @@ description: >-
 
 | 条件 | 此时读或执行 | 继续条件 |
 |---|---|---|
-| 复杂分析、重大结论或建议，或关键推理存在争议 | S2 形成核心结论前读[分析复核](references/analysis.md)，安排必要独立复核 | 错误已修正或结论已收窄，重要限制进入正文 |
+| 复杂分析、重大结论或建议 | S2 形成核心结论前读[分析复核](references/analysis.md)，安排必要独立复核 | 错误已修正或结论已收窄，重要限制进入正文 |
 | 完整报告（kind=report） | S1 确认范围、S3 定结构前读[首尾规则](references/bookends.md) | 封面、正文/必要附录、单页参考资料、封底各有位置，完整出处有去向 |
-| 首次使用或环境变化 | 批量制作前从实际 skill 根目录跑 `node scripts/probe_capabilities.cjs`，验证最小渲染、字体与实际 PDF 路径 | 已知可用路线；缺能力如实记录并采用可行替代，不冒认完成 |
+| 首次使用或环境变化 | 批量制作前从实际 skill 根目录跑 `node scripts/probe_capabilities.cjs`，验证最小渲染、字体与实际 PDF 路径；按输出的 `prompt` 实际查看那张挑战图，再用 `--verify` 回填 | 已知可用路线；**看图能力已确认**；缺能力如实记录并采用可行替代，不冒认完成 |
+
+表里第一行的独立复核是**判断要求，不是合同字段**：`reviewPolicy` 只从 `complexity`/`majorConclusion` 派生（见[交付契约](references/delivery.md)）。若关键推理存在争议——替代解释没被排除、证据强度与结论不匹配、口径还可能有别的读法——即使 `complexity=simple` 也应安排独立复核，并在 review 里如实记录实际独立性。
+
+表里第三行的图像挑战是**S5 能不能做的前提**：完成判据第 3 条要求逐页看过 HTML 截图与最终 PDF，看不了图的执行者做不到这件事。它不阻塞环境自检（探测此时退出码仍为 0，状态标 `image-pending` 是正常的），但**必须在开工前跑完 `--verify`，并把结论告诉用户**——若确认看不了图，先说清本稿只能交付"未验收"，让用户在开工前决定要不要继续，不要等做完两小时才说。
 
 **S1 读懂目标与材料。** 从用户请求、项目约定、此前反馈和认可成稿中提取读者任务、内容深度、媒介与交付范围；已明确的偏好直接执行，不重复问。深度研究/预读用 reading，现场讲述用 presentation；默认中文随用户、16:9。
 *做完的标志*：`task.json` 已写，材料清单与口径已看清，关键数字的来源定位可复查。
@@ -82,7 +86,7 @@ description: >-
 工具会直接拒绝，或产出一定出问题。违反这几条没有商量余地。
 
 - 每页是一个顶层 `<section class="slide">`，并且**逐页显式**声明 `data-frame-boundary="line|integrated|space"`；封面与全出血页用 `data-frame="off"`，同时仍要声明 `data-frame-boundary="space"`。没有静默默认值。
-- 静态装配只接受内联 SVG 与 `data:` 资源：不接受 `script`、`canvas`、外部 URL、`@import`、事件属性。需要图表时先在构建期 SSR 成内联 SVG。
+- 静态装配只接受内联 SVG 与 `data:` 资源：不接受 `script`、`canvas`、`.chart`、`data-opt`/`data-recipe`、外部 URL、`@import`、事件属性。需要图表时先在构建期 SSR 成内联 SVG。
 - `task.json` 必须在装配前存在并通过 `--contract` 传入。`kind` 只决定首尾编排，**不能**用 fragment 绕过风险复核，也不让简单完整稿重做复杂研究。
 - 正文保留 `.slide__header` 与 `.slide__frame`；首排模块已有必要结构分隔线时用 integrated。
 - **报告禁止装饰性色条模块**：注释/判断块的侧边条、数字卡片的顶部色条，以及换类名、伪元素、阴影、渐变或 SVG 绘制的同类外观均禁用。数据条、坐标轴、关系线、必要分隔线和 quiet 母版不在禁令内。去掉边条后要重排内容，不能留下同样大的空框。
@@ -96,7 +100,9 @@ description: >-
 ```sh
 node scripts/assemble_deck.cjs /任务/pages.html /任务/deck.html --css /任务/page.css --title "报告标题" --contract /任务/task.json
 node scripts/qa_deck.cjs /任务/deck.html /任务/renders
-node scripts/aggregate_reviews.cjs /任务/renders/audit.json /任务/renders/review.json /任务/renders/author.json /任务/renders/independent.json
+node scripts/aggregate_reviews.cjs /任务/renders/audit.json /任务/renders/review.json /任务/renders/author.json
+# 派生为 independent 的任务再追加 /任务/renders/independent.json。简单任务不传这一项——
+# 缺文件会直接报错，但不要为了凑参数造一个假结果，那是"自检冒充独立"。
 node scripts/package_delivery.cjs /任务/deck.html /任务/renders/deck.pdf /任务/delivery 报告名
 ```
 

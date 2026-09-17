@@ -65,14 +65,17 @@
 状态：.status-label .status-good .status-risk .status-caution .microbar .row-label
 
 【硬约束】
-- 静态装配只接受内联 SVG 与 data: 资源。禁止 script、canvas、iframe、外部 URL、@import、
-  事件属性（on*）、srcset。要图表就在构建期 SSR 成内联 SVG 再放进来。
+- 静态装配只接受内联 SVG 与 data: 资源。禁止 script、canvas、iframe、.chart、data-opt／
+  data-recipe、外部 URL、@import、事件属性（on*）、srcset。要图表就在构建期 SSR 成内联
+  SVG 再放进来；只调用配方 build 或 prepare、没有渲染成 SVG 的写法一律不能进静态稿。
 - 禁止装饰性色条模块：注释／判断块的侧边条、数字卡片的顶部色条，以及换类名、伪元素、
   阴影、渐变或 SVG 画的同类外观，全部禁止。数据条、坐标轴、关系线、必要分隔与 quiet
   母版不在禁令内。去掉边条后要重排内容，不能留下同样大的空框。
-- 颜色只从 assets/deck-themes.js 的角色取：brand／accent／ink／gray-1..4／cat-1..6／
-  seq-1..5／delta-* ／good／risk／caution。字体只从 assets/deck-typography.js 取。
-  不要写死十六进制色值或字体名，不要用系统字体。
+- 颜色只从 assets/deck-themes.js 已注册的角色取；该文件是唯一来源，这里不列全表（清单会
+  随主题扩展过期）。按语义选：结构与品牌 brand／brand-mid，强调 accent／accent-vivid，
+  表格强调列 selected，正文、底纹与交替行 ink／gray-1..4／surface，状态 good／risk／
+  caution 及其 -soft，类别 cat-1..6，连续量 seq-1..5，偏差 delta-*。
+  字体只从 assets/deck-typography.js 取。不要写死十六进制色值或字体名，不要用系统字体。
 - 字号角色：页主判断 32px/700，模块标题 18–20px/600，正文 16–17px，常规数据 15–16px，
   表头 15px/600，来源 12px。数字右对齐并用 lining-nums tabular-nums。
 

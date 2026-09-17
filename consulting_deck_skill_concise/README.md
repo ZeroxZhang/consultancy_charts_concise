@@ -112,7 +112,9 @@
 
 ## 安装与运行
 
-构建需要 Node、Chrome、Playwright、Poppler（pdfinfo/pdffonts/pdftotext）与 Python 字体依赖；**成稿在浏览器打开不需要这些**。
+构建需要 Node 18+、Chrome、Playwright、Poppler（pdfinfo/pdffonts/pdftotext）与 Python 3 字体依赖；**成稿在浏览器打开不需要这些**。
+
+构建链路在 macOS 与 Linux 上验证。**Windows 未验证**：`setup_font_venv.sh` 是 POSIX shell，且按 `venv/bin/python` 的路径写，Poppler 也要另行安装。请走 WSL；或自行准备 fontTools，再用 `FONT_PYTHON` 指向解释器。
 
 ```bash
 npm ci            # 装配、QA、PDF 导出、几何审计所需的 Node 依赖

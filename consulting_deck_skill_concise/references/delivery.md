@@ -211,7 +211,8 @@ API：`await assemble({pagesFile, outputFile, contractFile?, cssFile?, title?, k
 ### 聚合与打包
 
 ```sh
-node scripts/aggregate_reviews.cjs /任务/renders/audit.json /任务/renders/review.json /任务/renders/author.json /任务/renders/independent.json
+node scripts/aggregate_reviews.cjs /任务/renders/audit.json /任务/renders/review.json /任务/renders/author.json
+# 派生为 independent 的任务再追加 /任务/renders/independent.json
 node scripts/package_delivery.cjs /任务/deck.html /任务/renders/deck.pdf /任务/delivery 报告名
 ```
 

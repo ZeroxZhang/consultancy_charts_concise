@@ -67,7 +67,8 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
   if(result.fonts.identity==='FAIL')errors.push('第'+(i+1)+'页字体未就绪或出现系统回退');
   const titleFit=await p.locator('.slide.active .slide__title').evaluateAll(es=>es.map(e=>{const cs=getComputedStyle(e);return {text:e.textContent,lines:e.offsetHeight/parseFloat(cs.lineHeight)};}));if(titleFit.some(t=>t.lines>2.1))warnings.push('第'+(i+1)+'页标题超过两行建议，请目视判断');
   if(result.tinyText.length||result.smallDataText.length)warnings.push('第'+(i+1)+'页部分文字低于建议字号，请按实际可读性复核');
-  if(result.frame.ruleVisible&&!result.frame.boundary)warnings.push('第'+(i+1)+'页标题线已生效但未显式声明 data-frame-boundary（line/integrated/space），请按正文结构选择边界');
+  // 声明"没有静默默认值"就必须真的拦住：新稿缺 boundary 直接失败；老稿保持提示，不追溯返工。
+  if(!result.frame.boundary){if(modern)errors.push('第'+(i+1)+'页未显式声明 data-frame-boundary（line/integrated/space）：没有静默默认值，须按正文结构逐页选择');else if(result.frame.ruleVisible)warnings.push('第'+(i+1)+'页标题线已生效但未显式声明 data-frame-boundary（line/integrated/space），请按正文结构选择边界');}
   if(result.frame.ruleVisible&&result.frame.doubleBorder.length)warnings.push('第'+(i+1)+'页标题区隔线与正文首排顶线可能并存（'+result.frame.doubleBorder[0]+'）：首排模块已有顶线时建议 data-frame-boundary="integrated"');
   if(!modern&&result.notePad.length)warnings.push('第'+(i+1)+'页有文字贴近左侧边条（padding-left<6px）：'+result.notePad.slice(0,4).map(x=>(x.text||x.cls||'?')+'('+x.pad+')').join('；'));
   await p.locator('.slide.active').screenshot({path:path.join(out,result.screenshot)});rows.push(result);

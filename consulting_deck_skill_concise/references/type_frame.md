@@ -15,7 +15,7 @@
 
 | 角色 | 中文 | 西文 | 基线 |
 |---|---|---|---|
-| 封面主标题 | Noto Serif SC700 | Playfair Display700 | 46px / 1.2 |
+| 封面主标题 | Noto Serif SC700 | Playfair Display700 | 46px / 1.28 |
 | 章节标题 | 同上 | 同上 | 38px / 1.25 |
 | 页主判断 | 同上 | 同上 | 32px / 1.28，通常两行 |
 | 模块、展品标题 | Noto Sans SC600 | Inter600 | 18–20px / 1.3 |
