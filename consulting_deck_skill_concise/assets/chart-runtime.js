@@ -1,4 +1,4 @@
-/* 浏览器/Node共用的画布预算、主题解析和完整表格回退。不承担事实核验。 */
+/* 浏览器/Node共用的画布预算、主题解析与文字验收。只生成作者选定的表达并报告问题，不替作者换图型。 */
 (function(root,factory){
   const api=factory(typeof module==='object'&&module.exports?require('./echarts-recipes.js'):root.EChartsRecipes,typeof module==='object'&&module.exports?require('./deck-typography.js'):root.DeckTypography);
   if(typeof module==='object'&&module.exports)module.exports=api;
@@ -7,12 +7,7 @@
   'use strict';
   const required=['ink','accent','gray-1','gray-2','gray-3','gray-4','page-bg','on-accent',...Array.from({length:6},(_,i)=>'cat-'+(i+1)),'seq-1','seq-3','seq-5'];
   const fmt=v=>typeof v==='number'?(v!==0&&Math.abs(v)<.0001?String(v):Number(v.toFixed(4)).toLocaleString('zh-CN',{maximumFractionDigits:4})):String(v??'—');
-  function widthOf(s,font=14){return [...String(s)].reduce((sum,c)=>sum+(/[\u0020-\u007e]/.test(c)?font*.68:font),0);}
-  function wrap(s,width,font){
-    const lines=[];
-    for(const line of String(s).split('\n')){let current='';for(const c of line){if(current&&widthOf(current+c,font)>width){lines.push(current);current='';}current+=c;}lines.push(current);}
-    return lines;
-  }
+  function widthOf(s,font=14){return [...String(s)].reduce((sum,c)=>sum+(/[ -~]/.test(c)?font*.68:font),0);}
   function rgb(c){if(/^#[\da-f]{6}$/i.test(c))return c.slice(1).match(/../g).map(x=>parseInt(x,16));if(/^#[\da-f]{3}$/i.test(c))return [...c.slice(1)].map(x=>parseInt(x+x,16));if(/^rgba?\(/.test(c))return c.match(/[\d.]+/g).slice(0,3).map(Number);throw Error('颜色需先解析为HEX或RGB: '+c);}
   function luminance(c){const a=rgb(c).map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;});return a[0]*.2126+a[1]*.7152+a[2]*.0722;}
   function contrast(a,b){const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
@@ -57,113 +52,123 @@
     normalize(opt);
     return opt;
   }
-  function tableFor(name,spec,opt){
-    const unit=spec.unit?'（'+spec.unit+'）':'';
-    if(name==='rankedBar'){const custom=spec.items.some(d=>d.display!==undefined);return {columns:['对象','原值'+unit,'序位',...(custom?['自定义标注']:[])],rows:opt.yAxis.data.map((label,i)=>[label,fmt(opt.series[0].data[i].value),String(i+1),...(custom?[opt.series[0].data[i].label.formatter]:[])])};}
-    if(name==='composition')return {columns:['对象',...spec.items[0].segments.map(s=>s.label+unit),'总量'+unit],rows:spec.items.map(item=>{const total=item.segments.reduce((sum,s)=>sum+s.value,0);return [item.label,...item.segments.map(s=>fmt(s.value)+' / '+fmt(s.value/total*100)+'%'),fmt(total)];})};
-    if(name==='groupedBar'||name==='timeSeries')return {columns:['对象 / 期间',...spec.series.map(s=>s.name+unit)],rows:(spec.categories||spec.periods).map((v,i)=>[v,...spec.series.map(s=>fmt(s.values[i]))])};
-    if(name==='heatmap')return {columns:['对象',...spec.columns],rows:spec.rows.map((v,i)=>[v,...spec.values[i].map(fmt)])};
-    if(name==='histogram')return {columns:['区间','频数'+unit],rows:spec.bins.map(d=>[d.label,fmt(d.value)])};
-    if(name==='scatter')return {columns:['对象',(spec.xLabel||'X')+(spec.xUnit?'（'+spec.xUnit+'）':''),(spec.yLabel||'Y')+(spec.yUnit?'（'+spec.yUnit+'）':''),spec.sizeUnit?'规模（'+spec.sizeUnit+'）':'规模'],rows:spec.items.map(d=>[d.label,fmt(d.x),fmt(d.y),fmt(d.size)])};
-    if(name==='sankey')return {columns:['起点','终点','流量'+unit],rows:spec.links.map(d=>[d.source,d.target,fmt(d.value)])};
-    if(name==='tree'){const rows=[];function visit(n,parent){rows.push([n.label,parent||'根节点',fmt(n.value)]);(n.children||[]).forEach(c=>visit(c,n.label));}visit(spec.root);return {columns:['节点','父节点','数值'+unit],rows};}
-    throw Error('未定义回退表: '+name);
-  }
-  function tablePages(table,ctx,reason){
-    const fontFamily=typography.get(ctx.typography_id).body;
-    const {width,height,fontSize:font,tokens:t}=ctx,pad=12,rowPad=6,lineHeight=font*1.4;
-    const weights=table.columns.map((c,i)=>Math.max(80,Math.min(260,Math.max(widthOf(c,font),...table.rows.map(r=>Math.min(230,widthOf(r[i],font))))+pad*2)));
-    const total=weights.reduce((a,b)=>a+b,0),widths=weights.map(v=>v/total*(width-16));
-    if(widths.some(w=>w<font*3))throw Error('表格列宽不足；按列分面或增加画布，不能缩字');
-    const cells=row=>row.map((v,i)=>wrap(v,widths[i]-pad*2,font));
-    const header=cells(table.columns),headerHeight=Math.max(...header.map(x=>x.length))*lineHeight+rowPad*2;
-    const groups=[];let group=[],used=headerHeight;
-    for(const row of table.rows){const lines=cells(row),h=Math.max(...lines.map(x=>x.length))*lineHeight+rowPad*2;if(h+headerHeight>height-40)throw Error('单条记录过长；需拆分该记录或改正文表格');if(used+h>height-40){groups.push(group);group=[];used=headerHeight;}group.push({row,lines,h});used+=h;}
-    if(group.length)groups.push(group);
-    return groups.map((g,page)=>{
-      const graphic=[];let y=8;
-      function draw(lines,h,isHeader){let x=8;graphic.push({type:'rect',silent:true,shape:{x,y,width:width-16,height:h},style:{fill:isHeader?t['gray-4']:t['page-bg'],stroke:t['gray-3'],lineWidth:.5}});
-        lines.forEach((ls,i)=>{const numeric=!isHeader&&i>0&&ls.every(s=>/^[\d\s.,%+−/()—-]+$/.test(s));graphic.push({type:'text',silent:true,x:numeric?x+widths[i]-pad:x+pad,y:y+rowPad,style:{text:ls.join('\n'),fontSize:font,fontFamily,fontWeight:isHeader?600:400,lineHeight,fill:t.ink,align:numeric?'right':'left',verticalAlign:'top'}});x+=widths[i];});y+=h;
-      }
-      draw(header,headerHeight,true);g.forEach(r=>draw(r.lines,r.h,false));
-      graphic.push({type:'text',silent:true,x:8,y:height-20,style:{text:'完整数据表'+(groups.length>1?' · '+(page+1)+'/'+groups.length:''),fontFamily,fontSize:font,fill:t['gray-2']}});
-      return {kind:'table',reason,table:{columns:table.columns,rows:g.map(r=>r.row)},option:options({graphic},t,font,ctx.typography_id)};
-    });
-  }
+  /* 预算只产生风险提示：写明受影响的对象和下一步该改什么，不改变表达类型、不写替代图形。 */
   function prepare(name,spec,settings){
     const ctx={width:960,height:500,fontSize:14,...settings};const {width,height,fontSize:font,tokens:t}=ctx;
-    const fontFamily=typography.get(ctx.typography_id).body;
     if(!Number.isFinite(width)||!Number.isFinite(height)||width<320||height<200)throw Error('画布至少320×200');
-    if(!Number.isFinite(font)||font<14)throw Error('配方数据字号至少14px；放不下时回退');
+    if(!Number.isFinite(font)||font<14)throw Error('图表数据字号至少14px；模块放不下时扩大模块、拆分视图或减少同屏对象，不缩字号');
     theme(t,font,ctx.typography_id);
-    let raw;
-    try{raw=recipes.build(name,spec);}catch(e){
-      if(name==='sankey'&&e.message.startsWith('没有正流量')){const reason='无正流量；完整保留零值流量表';return {recipe:name,width,height,fontSize:font,reason,pages:tablePages(tableFor(name,spec,{}),ctx,reason)};}
-      throw e;
-    }
-    const opt=options(raw,t,font,ctx.typography_id),plotH=height-100;let reason='';
+    const opt=options(recipes.build(name,spec),t,font,ctx.typography_id),plotH=height-100,risks=[];
+    const risk=(code,scope,message)=>risks.push({code,scope,message});
     // 值轴名称位于轴端上方：预留名称、nameGap与字体空间，不靠验收失败后每图补坐标。
     if(opt.grid&&opt.yAxis?.name)opt.grid.top=Math.max(opt.grid.top||0,font*2+(opt.yAxis.nameGap??15)+5);
     if(name==='rankedBar'){
-      const labels=opt.yAxis.data,maxWidth=Math.max(...labels.map(s=>widthOf(s,font))),valueWidth=Math.max(...opt.series[0].data.map(d=>widthOf(d.label.formatter,font)));
-      if(labels.length*font*1.9>plotH||maxWidth+valueWidth>width*.65)reason='类别或长标签超出实际画布预算';
+      const labels=opt.yAxis.data,perLabel=plotH/labels.length,maxWidth=Math.max(...labels.map(s=>widthOf(s,font))),valueWidth=Math.max(...opt.series[0].data.map(d=>widthOf(d.label.formatter,font)));
+      if(perLabel<font*1.9)risk('category-space',labels,labels.length+' 个类别在 '+Math.round(plotH)+'px 绘图高度内每项约 '+perLabel.toFixed(1)+'px，低于标签行高；请提高模块高度、分组或拆成小多图。');
+      if(maxWidth+valueWidth>width*.65)risk('label-space',labels,'最长类别名与数值合计占画布 65% 以上，绘图区被压到不足；请缩短措辞、换点图，或在更宽的版位上重排。');
       opt.grid={left:maxWidth+18,right:valueWidth+25,top:36,bottom:42,containLabel:false};
     }else if(name==='composition'){
       const totals=spec.items.map(x=>x.segments.reduce((sum,s)=>sum+s.value,0)),max=Math.max(...totals),barWidth=Math.min(54,(width-100)/spec.items.length*.6);
-      spec.items.forEach((item,i)=>item.segments.forEach((seg,j)=>{const v=opt.series[j].data[i],label=opt.series[j].label.formatter({value:v}),denom=spec.mode==='percent'?totals[i]:max;if(seg.value/denom*plotH<font*1.8||widthOf(label,font)>barWidth-6)reason='构成小片或标签空间不足；保留原值、份额与零值';}));
+      spec.items.forEach((item,i)=>item.segments.forEach((seg,j)=>{
+        const v=opt.series[j].data[i],label=opt.series[j].label.formatter({value:v}),denom=spec.mode==='percent'?totals[i]:max,h=seg.value/denom*plotH;
+        if(h<font*1.8)risk('segment-space',{item:item.label,segment:seg.label,value:seg.value},'「'+item.label+'·'+seg.label+'」高度约 '+h.toFixed(1)+'px，段内放不下标签；请改用引线标注或局部放大，零值以位置标记表示，不虚增面积。');
+        else if(widthOf(label,font)>barWidth-6)risk('segment-label',{item:item.label,segment:seg.label},'「'+item.label+'·'+seg.label+'」的标注长于我方可用的柱宽；请改用引线或缩短标签。');
+      }));
       opt.series.forEach(s=>s.label.color=textColor(s.itemStyle.color,t));
     }else if(name==='groupedBar'){
-      const cellWidth=(width-100)/spec.categories.length/spec.series.length;
-      if(spec.categories.some(s=>widthOf(s,font)>(width-100)/spec.categories.length-8)||spec.series.some(s=>s.values.some(v=>widthOf(fmt(v),font)+8>cellWidth)))reason='簇状柱标签过密';
+      const cellWidth=(width-100)/spec.categories.length/spec.series.length,long=spec.categories.filter(s=>widthOf(s,font)>(width-100)/spec.categories.length-8);
+      if(long.length)risk('category-space',long,'类别标签「'+long.join('」「')+'」在 '+spec.categories.length+' 类中超出可用列宽；请换横向布局、缩短措辞或减少类别。');
+      spec.series.forEach(s=>s.values.forEach((v,i)=>{if(widthOf(fmt(v),font)+8>cellWidth)risk('value-space',{category:spec.categories[i],series:s.name},'「'+spec.categories[i]+'·'+s.name+'」的数值标注超出柱宽；请减少系列、加宽模块或改用点图。');}));
     }else if(name==='heatmap'){
       const left=Math.max(...spec.rows.map(s=>widthOf(s,font)))+18,colW=(width-left-84)/spec.columns.length,rowH=plotH/spec.rows.length;
-      if(rowH<font*2||spec.columns.some(s=>widthOf(s,font)>colW-8)||spec.values.flat().some(v=>widthOf(fmt(v),font)>colW-8))reason='热力单元格不足以完整显示行列与数值';
+      if(rowH<font*2)risk('row-space',spec.rows,spec.rows.length+' 行在 '+Math.round(plotH)+'px 内每行约 '+rowH.toFixed(1)+'px；请提高模块高度或拆分矩阵。');
+      const wide=spec.columns.filter(s=>widthOf(s,font)>colW-8);
+      if(wide.length)risk('column-space',wide,'列名「'+wide.join('」「')+'」超出单元格宽度；请缩短列名、减少列数或改用横向布局。');
+      spec.values.forEach((row,i)=>row.forEach((v,j)=>{if(widthOf(fmt(v),font)>colW-8)risk('cell-space',{row:spec.rows[i],column:spec.columns[j]},'「'+spec.rows[i]+'·'+spec.columns[j]+'」的数值超出单元格宽度；请减少小数位或拆分矩阵。');}));
       opt.grid={left,right:84,top:48,bottom:32,containLabel:false};
       opt.xAxis.axisLabel.interval=0;opt.yAxis.axisLabel.interval=0;
       const vm=opt.visualMap;opt.series[0].data.forEach(d=>{const bg=interpolate(vm.inRange.color,(d.value[2]-vm.min)/(vm.max-vm.min));d.label={color:textColor(bg,t),formatter:fmt(d.value[2])};});
     }else if(name==='histogram'){
-      if(spec.bins.some(d=>widthOf(d.label,font)>(width-100)/spec.bins.length-6))reason='直方区间标签过密';
+      const cellW=(width-100)/spec.bins.length,wide=spec.bins.filter(d=>widthOf(d.label,font)>cellW-6);
+      if(wide.length)risk('bin-space',wide.map(d=>d.label),'区间标签「'+wide.map(d=>d.label).join('」「')+'」超出柱宽；请减少区间数、改为较少分箱或旋转标签。');
     }else if(name==='timeSeries'){
-      if(spec.series.some(s=>widthOf(s.name,font)>82))reason='折线端点系列名过长；完整表格保留全部系列与缺失值';
+      const long=spec.series.filter(s=>widthOf(s.name,font)>82);
+      if(long.length)risk('endpoint-space',long.map(s=>s.name),'系列名「'+long.map(s=>s.name).join('」「')+'」超出末端标签预算；请缩短系列名、改用图例或在更宽的版位上重排。');
     }else if(name==='tree'){
-      const rows=tableFor(name,spec,opt).rows;
+      let nodes=0,maxLabel=0,depth=0;(function visit(n,d){nodes++;depth=Math.max(depth,d);maxLabel=Math.max(maxLabel,widthOf(n.label,font));(n.children||[]).forEach(c=>visit(c,d+1));})(spec.root,0);
+      if(nodes>12||depth>3||maxLabel>width/4)risk('node-space',{nodes,depth,maxLabel:Math.round(maxLabel)},nodes+' 个节点、'+depth+' 层、最长标签约 '+Math.round(maxLabel)+'px；请拆成总览＋局部，或把同一层换成更宽的版位。');
       opt.series[0].label.formatter=p=>p.name+(p.value===undefined?'':'\n'+fmt(p.value));
-      if(rows.length>12||rows.some(r=>widthOf(r[0],font)>width/4))reason='树节点较多或文字过长；以父子关系表保留全部节点';
     }else if(name==='sankey'){
-      if(spec.links.some(l=>l.value===0)||spec.nodes.length>12||spec.links.length>15||spec.nodes.some(n=>widthOf(typeof n==='string'?n:n.name,font)>width/4))reason='流量关系超出静态标签预算，或含需显式保留的零流量';
+      const zero=spec.links.filter(l=>l.value===0),long=spec.nodes.map(n=>typeof n==='string'?n:n.name).filter(n=>widthOf(n,font)>width/4);
+      if(zero.length)risk('zero-flow',zero.map(l=>l.source+'→'+l.target),'零流量连线「'+zero.map(l=>l.source+'→'+l.target).join('」「')+'」的带宽为零，图上只有它的数值标签 0 落在该路径上；请在旁解读里写明这是真实的零，或把该状态改为独立表达。');
+      if(spec.nodes.length>12||spec.links.length>15)risk('flow-space',{nodes:spec.nodes.length,links:spec.links.length},spec.nodes.length+' 节点 / '+spec.links.length+' 连线超出静态标签预算；请分组、只画主要流向，或拆成总览＋局部。');
+      if(long.length)risk('node-label',long,'节点名「'+long.join('」「')+'」超出画布四分之一；请缩短节点名或加宽模块。');
     }else if(name==='scatter'){
-      if(spec.items.some(d=>d.size===0))reason='零规模不应获得虚构面积；用表格同时保留坐标与规模';
+      const zeros=spec.items.filter(d=>d.size===0);
+      if(zeros.length){
+        risk('zero-size',zeros.map(d=>d.label),'零规模对象「'+zeros.map(d=>d.label).join('」「')+'」面积为零；已用等大的空心位置标记表示位置，不参与面积编码。');
+        opt.series[0].data.forEach((d,i)=>{if(spec.items[i].size===0){d.symbol='emptyCircle';d.symbolSize=[9,9];}});
+      }
       if(spec.items.some(d=>d.size!==undefined)){
         const max=Math.max(...spec.items.map(d=>d.size));
         opt.series[0].data.forEach((d,i)=>{const item=spec.items[i];d.label.show=d.label.show||item.size===max;d.label.formatter=item.label+'\n'+fmt(item.size)+(spec.sizeUnit||'');});
-        opt.graphic=[{type:'text',x:12,y:height-18,silent:true,style:{text:'气泡面积与规模成正比；最大圆：'+fmt(max)+(spec.sizeUnit||'（规模单位未提供）'),fontSize:font,fontFamily,fill:t['gray-2']}}];
+        opt.graphic=[{type:'text',x:12,y:height-18,silent:true,style:{text:'气泡面积与规模成正比；最大圆：'+fmt(max)+(spec.sizeUnit||'（规模单位未提供）')+(zeros.length?'；空心小圈为零规模的位置标记，不代表面积':''),fontSize:font,fontFamily:typography.get(ctx.typography_id).body,fill:t['gray-2']}}];
       }
       // 数值轴末端留空白给标签，不改变数据点。
       for(const [axis,key] of [['xAxis','x'],['yAxis','y']]){const vals=spec.items.map(d=>d[key]),lo=Math.min(0,...vals),hi=Math.max(0,...vals),pad=(hi-lo||1)*.12;opt[axis].min=lo-pad;opt[axis].max=hi+pad;}
     }
-    const pages=reason?tablePages(tableFor(name,spec,opt),ctx,reason):[{kind:'chart',option:opt}];
-    return {recipe:name,width,height,fontSize:font,reason:reason||null,pages,fallback:tableFor(name,spec,opt),context:ctx};
+    // 逐类目/期间必须出现的坐标轴标签：ECharts 会自动抽稀，静默丢标签不能被当成通过。
+    const axes=[];
+    if(name==='timeSeries')axes.push(...spec.periods);
+    else if(name==='groupedBar'||name==='histogram')axes.push(...(spec.categories||spec.bins.map(d=>d.label)));
+    else if(name==='rankedBar')axes.push(...spec.items.map(d=>d.label));
+    else if(name==='heatmap')axes.push(...spec.rows,...spec.columns);
+    return {recipe:name,width,height,fontSize:font,risks,axes,pages:[{kind:'chart',option:opt}],context:ctx};
+  }
+  // 图元可能嵌在分组里，局部矩形要乘上累计变换，否则拿到的是自己的坐标系而不是画布坐标。
+  function rectOf(el){const rect=el.getBoundingRect().clone(),t=el.getComputedTransform?el.getComputedTransform():el.transform;if(t)rect.applyTransform(t);return rect;}
+  /* 实心图元才算遮挡：描边、虚线和透明填充不挡字，且只比较画在文字之后的图元——
+     段内标签画在自己的色块之后属正常，画在色块之前才会被吞掉。 */
+  function solid(el){
+    if(el.ignore||el.invisible||el.type==='tspan'||el.type==='text')return null;
+    const style=el.style||{},fill=style.fill,opacity=(style.opacity??1)*(style.fillOpacity??1);
+    if(!fill||fill==='none'||fill==='transparent'||/^rgba\([^)]*,\s*0\s*\)$/i.test(fill)||opacity<.85)return null;
+    const rect=rectOf(el);
+    if(rect.width<2||rect.height<2)return null;
+    return rect;
   }
   function audit(chart,minFont=14){
     const boxes=[],problems=[],width=chart.getWidth(),height=chart.getHeight();
-    for(const el of chart.getZr().storage.getDisplayList(true)){
+    const list=chart.getZr().storage.getDisplayList(true);
+    for(let index=0;index<list.length;index++){
+      const el=list[index];
       if(el.type!=='tspan'||el.ignore||el.invisible||!String(el.style.text||'').trim())continue;
-      const rect=el.getBoundingRect().clone();if(el.transform)rect.applyTransform(el.transform);
-      const font=parseFloat(el.style.fontSize||el.style.font||minFont),scale=el.transform?Math.hypot(el.transform[2],el.transform[3]):1;
+      const rect=rectOf(el),t=el.getComputedTransform?el.getComputedTransform():el.transform;
+      const font=parseFloat(el.style.fontSize||el.style.font||minFont),scale=t?Math.hypot(t[2],t[3]):1;
       const item={text:String(el.style.text),x:rect.x,y:rect.y,w:rect.width,h:rect.height};
       if(rect.x<-.5||rect.y<-.5||rect.x+rect.width>width+.5||rect.y+rect.height>height+.5)problems.push({type:'bounds',text:item.text});
       if(Number.isFinite(font)&&font*scale<minFont-.5)problems.push({type:'font',text:item.text});
-      for(const other of boxes){const dx=Math.min(item.x+item.w,other.x+other.w)-Math.max(item.x,other.x),dy=Math.min(item.y+item.h,other.y+other.h)-Math.max(item.y,other.y);if(dx>1&&dy>1)problems.push({type:'overlap',text:item.text,other:other.text});}
+      for(const other of boxes){const dx=Math.min(item.x+item.w,other.x+other.w)-Math.max(item.x,other.x),dy=Math.min(item.y+item.h,other.y+other.h)-Math.max(item.y,other.y);if(dx>.5&&dy>.5)problems.push({type:'overlap',text:item.text,other:other.text});}
+      // 被后画的实心图元盖住：数值还在，但读者读不到，不能算通过。
+      // 只看是否盖住文字中心：图例色块、色阶块这类贴边的小图元会压到文本框，但不会挡字。
+      const cx=item.x+item.w/2,cy=item.y+item.h/2;
+      for(let later=index+1;later<list.length;later++){
+        const mark=solid(list[later]);if(!mark)continue;
+        if(cx<mark.x||cx>mark.x+mark.width||cy<mark.y||cy>mark.y+mark.height)continue;
+        const dx=Math.min(item.x+item.w,mark.x+mark.width)-Math.max(item.x,mark.x),dy=Math.min(item.y+item.h,mark.y+mark.height)-Math.max(item.y,mark.y);
+        if(dx*dy/(item.w*item.h)>=.25){problems.push({type:'covered',text:item.text,by:list[later].type});break;}
+      }
       boxes.push(item);
     }
     return {problems,texts:boxes.map(b=>b.text)};
   }
-  function check(chart,plan,pageIndex=0){
-    const inspection=audit(chart,plan.fontSize||14);
-    if(!inspection.problems.length)return plan;
-    if(plan.pages[pageIndex].kind!=='chart'||!plan.fallback)throw Error('最终文字验收失败：'+JSON.stringify(inspection.problems.slice(0,3)));
-    const reason='最终文字存在越界、重叠或字号不足；改用完整数据表';
-    return {...plan,reason,inspection,pages:tablePages(plan.fallback,plan.context,reason)};
+  const FIX={bounds:'标签超出画布：调整绘图区边距、换行、标签位置或引线；仍放不下就扩大模块或拆分视图。',overlap:'标签相互遮挡：调整方向、顺序、间距或引线位置，或改用分面与局部细节；不能靠缩小字号或删掉必要标签解决。',font:'实际字号小于 14px：扩大模块或减少同屏对象，不缩字号。',missing:'声明的类目或期间没有出现在图上：查是否被自动抽稀、截断或隐藏，改到每个都画出来或改成明确的分面。',covered:'有数值被后画的图形盖住：把标签移到带内、空白处或加引线，必要时调整节点尺寸与间距。'};
+  /* 报告实测问题：越界、遮挡、字号，以及声明了却没画出来的类目。通过前必须据此返修，不能换成别的表达。 */
+  function check(chart,plan){
+    const inspection=audit(chart,plan.fontSize||14),seen=new Set(inspection.texts);
+    const problems=inspection.problems.map(p=>({...p,fix:FIX[p.type]}));
+    for(const label of plan.axes||[])if(!seen.has(String(label)))problems.push({type:'missing',text:String(label),fix:FIX.missing});
+    return {status:problems.length?'needs-repair':'ok',problems};
   }
-  return {version:'2.0.0',prepare,check,audit,options,theme,resolve,contrast,textColor,interpolate,tablePages,widthOf};
+  return {version:'3.0.0',prepare,check,audit,options,theme,resolve,contrast,textColor,interpolate,widthOf};
 });

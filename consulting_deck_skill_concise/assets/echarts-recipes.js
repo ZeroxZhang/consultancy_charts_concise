@@ -14,7 +14,8 @@
   function list(value,name){if(!Array.isArray(value)||!value.length)fail(name+' 必须是非空数组');return value;}
   function text(value,name){if(typeof value!=='string'||!value.trim())fail(name+' 必须是非空文字');return value.trim();}
   function num(value,name){if(typeof value!=='number'||!Number.isFinite(value))fail(name+' 必须是有限数值');return value;}
-  function count(value,max,name){if(value>max)fail(name+' 超出单页起始预算 '+max+'；改用表格、小倍数或拆页');}
+  function count(value,max,name){if(value>max)fail(name+' 超出单页起始预算 '+max+'；请分面、拆页、换更宽的版位或换绘制路径，不把数据压回表格');}
+  function span(value,min,max,def,name){if(value===undefined)return def;if(typeof value!=='number'||!Number.isFinite(value)||value<min||value>max)fail(name+' 需为 '+min+'–'+max+' 的数值');return value;}
   function decimals(value,digits=1){return Number(value.toFixed(digits)).toLocaleString('zh-CN',{maximumFractionDigits:digits});}
   function display(item,spec){return item.display===undefined?decimals(item.value,spec.decimals===undefined?1:spec.decimals)+(spec.suffix||''):String(item.display);}
   function roleColor(role,index){
@@ -56,7 +57,8 @@
     const series=list(spec.series,'series');count(periods.length,limits.timeSeries,'时间点数');count(series.length,5,'折线系列数');
     series.forEach((s,i)=>{text(s.name,'series['+i+'].name');if(!Array.isArray(s.values)||s.values.length!==periods.length)fail('series['+i+'].values 与 periods 长度不一致');s.values.forEach((v,j)=>{if(v!==null)num(v,'series['+i+'].values['+j+']');});});
     const values=series.flatMap(s=>s.values).filter(v=>v!==null);
-    return {animation:false,tooltip:{show:false},grid:grid({right:92}),xAxis:categoryAxis(periods,{boundaryGap:false}),yAxis:valueAxis(spec,{min:spec.zeroBaseline?Math.min(0,...values):undefined,max:spec.zeroBaseline?Math.max(0,...values):undefined}),series:series.map((s,i)=>({name:s.name,type:'line',connectNulls:false,showSymbol:periods.length<=8,symbolSize:5,lineStyle:{width:s.selected?3:2,color:roleColor(s.role,i)},itemStyle:{color:roleColor(s.role,i)},endLabel:{show:true,formatter:s.name,color:roleColor(s.role,i),fontWeight:s.selected?700:400},labelLayout:{moveOverlap:'shiftY'},data:s.values}))};
+    // 每个期间都必须出现：交给 axisLabel.interval 自动抽稀会静默丢掉期号，实测验收看不出被丢的是哪一期。
+    return {animation:false,tooltip:{show:false},grid:grid({right:92}),xAxis:categoryAxis(periods,{boundaryGap:false,axisLabel:{color:'@gray-2',interval:0}}),yAxis:valueAxis(spec,{min:spec.zeroBaseline?Math.min(0,...values):undefined,max:spec.zeroBaseline?Math.max(0,...values):undefined}),series:series.map((s,i)=>({name:s.name,type:'line',connectNulls:false,showSymbol:periods.length<=8,symbolSize:5,lineStyle:{width:s.selected?3:2,color:roleColor(s.role,i)},itemStyle:{color:roleColor(s.role,i)},endLabel:{show:true,formatter:s.name,color:roleColor(s.role,i),fontWeight:s.selected?700:400},labelLayout:{moveOverlap:'shiftY'},data:s.values}))};
   }
 
   function composition(spec={}){
@@ -78,7 +80,7 @@
   function scatter(spec={}){
     const items=list(spec.items,'items').map((d,i)=>({label:text(d.label,'items['+i+'].label'),x:num(d.x,'items['+i+'].x'),y:num(d.y,'items['+i+'].y'),size:d.size===undefined?null:num(d.size,'items['+i+'].size'),role:d.role,selected:!!d.selected}));count(items.length,limits.scatter,'散点数');
     if(items.some(d=>d.size!==null&&d.size<0))fail('气泡尺寸不能为负数');
-    if(items.some(d=>d.size===null)&&items.some(d=>d.size!==null))fail('气泡规模缺失不能与零或普通散点混用；请分组或改表');
+    if(items.some(d=>d.size===null)&&items.some(d=>d.size!==null))fail('气泡规模缺失不能与零或普通散点混用；请分组、拆成两张图，或对缺失对象单独编码');
     const actualMax=Math.max(0,...items.map(d=>d.size||0));
     const maxSize=spec.sizeDomainMax===undefined?actualMax:num(spec.sizeDomainMax,'sizeDomainMax');
     if(maxSize<actualMax||maxSize<0)fail('sizeDomainMax必须覆盖全部规模');
@@ -101,8 +103,10 @@
     const links=list(spec.links,'links').map((d,i)=>{const source=text(d.source,'links['+i+'].source'),target=text(d.target,'links['+i+'].target'),value=num(d.value,'links['+i+'].value');if(!names.has(source)||!names.has(target))fail('Sankey连线引用未知节点');if(value<0)fail('Sankey流量不能为负数');return {source,target,value};});count(links.length,limits.sankeyLinks,'Sankey连线数');
     const visiting=new Set(),done=new Set();function visit(name){if(visiting.has(name))fail('Sankey不能含环；改用关系图');if(done.has(name))return;visiting.add(name);links.filter(l=>l.source===name).forEach(l=>visit(l.target));visiting.delete(name);done.add(name);}nodes.forEach(n=>visit(n.name));
     nodes.forEach(n=>{const incoming=links.filter(l=>l.target===n.name).reduce((s,l)=>s+l.value,0),outgoing=links.filter(l=>l.source===n.name).reduce((s,l)=>s+l.value,0);if(incoming>0&&outgoing>0&&Math.abs(incoming-outgoing)>Math.max(incoming,outgoing)*1e-9)fail('Sankey中间节点流量不闭合：'+n.name+'；显式补出有来源的流失/新增项');if(!links.some(l=>l.source===n.name||l.target===n.name))fail('Sankey节点没有连线：'+n.name);});
-    if(!links.some(l=>l.value>0))fail('没有正流量，不能生成Sankey；保留零值流量表');
-    return {animation:false,tooltip:{show:false},series:[{type:'sankey',data:nodes,links,nodeAlign:spec.nodeAlign||'justify',layoutIterations:32,nodeGap:10,nodeWidth:14,lineStyle:{color:'gradient',opacity:.35},label:{color:'@ink',fontSize:14},edgeLabel:{show:true,formatter:'{c}',fontSize:14,color:'@ink'},emphasis:{disabled:true}}]};
+    if(!links.some(l=>l.value>0))fail('全部流量为零，Sankey 无法用带宽表示任何关系；请补充正流量数据，或改用能表示零状态的表达（流程状态图、占位标注）');
+    if(spec.nodeAlign!==undefined&&!['justify','left','right'].includes(spec.nodeAlign))fail('Sankey nodeAlign 应为 justify/left/right');
+    // 节点宽与间距不编码数据，只影响标签能否落在空白处；边标签容易被节点条压住时应显式调小。
+    return {animation:false,tooltip:{show:false},series:[{type:'sankey',data:nodes,links,nodeAlign:spec.nodeAlign||'justify',layoutIterations:32,nodeGap:span(spec.nodeGap,0,40,10,'Sankey nodeGap'),nodeWidth:span(spec.nodeWidth,4,40,14,'Sankey nodeWidth'),lineStyle:{color:'gradient',opacity:.35},label:{color:'@ink',fontSize:14},edgeLabel:{show:true,formatter:'{c}',fontSize:14,color:'@ink'},emphasis:{disabled:true}}]};
   }
 
   function tree(spec={}){

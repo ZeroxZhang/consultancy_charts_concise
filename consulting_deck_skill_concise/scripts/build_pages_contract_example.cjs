@@ -47,7 +47,7 @@ const pagesHtml = [
         ],
         annotations: [{ id: 'm-南区', on: 'seg:南区|新业务', kind: 'share', text: '{label} 占该区 {value}', weight: 600 }]
       }),
-      '同实体跨地区保持同色；窄段放不下名称与数值时组件自动转为完整数据表。')),
+      '同实体跨地区保持同色；窄段放不下名称与数值时改走同侧引线通道，仍按原值画面积。')),
   page(3, 'kit.bullet', '三项指标都没达到目标，交付达成率缺口最大',
     '三项指标均低于目标，缺口最大的是交付达成率',
     '同一指标内实际与目标可比；缺口按真实端点计算，不由减号硬写。',
@@ -88,17 +88,13 @@ const pagesContract = {
   version: 1,
   pages: [
     { page: 1, proves: '商超是净下滑的主要来源，电商的增长不足以抵消', form: 'kit.dumbbell',
-      annotations: [{ on: 'end:商超', kind: 'delta', from: 'start:商超', text: '{label} {delta}（{rate}）' }, { on: 'end:电商', kind: 'delta', from: 'start:电商', text: '{label} {delta}（{rate}）' }],
-      fallback: { if: '行数超过 14', then: 'kit.comparisonTable + 差额列' } },
+      annotations: [{ on: 'end:商超', kind: 'delta', from: 'start:商超', text: '{label} {delta}（{rate}）' }, { on: 'end:电商', kind: 'delta', from: 'start:电商', text: '{label} {delta}（{rate}）' }] },
     { page: 2, proves: '南区的新业务已是该区主要构成，总量却最小', form: 'kit.mekko',
-      annotations: [{ on: 'seg:南区|新业务', kind: 'share', text: '{label} 占该区 {value}' }],
-      fallback: { if: '窄列放不下名称与数值', then: 'kit.comparisonTable + 完整份额表' } },
+      annotations: [{ on: 'seg:南区|新业务', kind: 'share', text: '{label} 占该区 {value}' }] },
     { page: 3, proves: '三项指标都没达到目标，交付达成率缺口最大', form: 'kit.bullet',
-      annotations: [{ on: 'value:交付达成率%', kind: 'delta', from: 'target:交付达成率%', text: '缺口 {delta}' }, { on: 'value:留存率%', kind: 'delta', from: 'target:留存率%', text: '缺口 {delta}' }],
-      fallback: { if: '指标超过 6 项', then: 'html.table + 目标列' } },
+      annotations: [{ on: 'value:交付达成率%', kind: 'delta', from: 'target:交付达成率%', text: '缺口 {delta}' }, { on: 'value:留存率%', kind: 'delta', from: 'target:留存率%', text: '缺口 {delta}' }] },
     { page: 4, proves: '净减少 0.8 亿元可直接从贡献桥读出，商超解释主要降幅', form: 'kit.waterfall',
-      annotations: [{ on: 'bar:商超', kind: 'delta', text: '主要拖累 {value}' }, { on: 'bar:电商', kind: 'delta', text: '仅抵消拖累的 36%' }],
-      fallback: { if: '贡献项超过 8 项', then: 'kit.stacked + 完整数据表' } }
+      annotations: [{ on: 'bar:商超', kind: 'delta', text: '主要拖累 {value}' }, { on: 'bar:电商', kind: 'delta', text: '仅抵消拖累的 36%' }] }
   ]
 };
 

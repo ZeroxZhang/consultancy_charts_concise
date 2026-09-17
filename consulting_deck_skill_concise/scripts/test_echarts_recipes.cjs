@@ -37,24 +37,36 @@ for(const theme_id of themes.ids){
   if(recipe==='tree')assert.match(texts(result.pages[0].svg),/888/);
  }
  const items=Array.from({length:24},(_,i)=>({label:'渠道'+String(i+1).padStart(2,'0'),value:100-i}));
- const rank=render({recipe:'rankedBar',spec:{items},theme_id,width:720,height:360});
- assert.ok(rank.pages.length>1);assert.ok(rank.pages.every(p=>p.kind==='table'));
- const rows=rank.pages.flatMap(p=>p.table.rows);
- assert.equal(rows.length,24);assert.deepEqual(rows.map(v=>v[0]),items.map(v=>v.label));
- items.forEach(d=>assert.ok(rank.pages.some(p=>texts(p.svg).includes(d.label)),'分页遗漏 '+d.label));
+ // 画布不够时不产出替代表：预算只给风险提示，实测遮挡直接阻止输出。
+ const tight=rt.prepare('rankedBar',{items},settings);
+ assert.equal(tight.pages.length,1);assert.equal(tight.pages[0].kind,'chart');
+ assert.ok(tight.risks.some(r=>r.code==='category-space'&&r.message.includes('24')));
+ assert.equal('fallback' in tight,false);assert.equal('reason' in tight,false);assert.equal(rt.tablePages,undefined);
+ assert.throws(()=>render({recipe:'rankedBar',spec:{items},theme_id,width:720,height:360}),/文字验收未通过[\s\S]*渠道/);
  const full=render({recipe:'rankedBar',spec:{items},theme_id,width:1200,height:800});
  assert.equal(full.pages[0].kind,'chart');items.forEach(d=>assert.ok(texts(full.pages[0].svg).includes(d.label)));
- const small=render({recipe:'composition',spec:{mode:'percent',items:[{label:'渠道',segments:[{label:'大项',value:99},{label:'小项',value:1},{label:'零项',value:0}]}]},theme_id,width:720,height:360});
- assert.equal(small.pages[0].kind,'table');assert.match(texts(small.pages[0].svg),/1 \/ 1%/);assert.match(texts(small.pages[0].svg),/0 \/ 0%/);
- const zero=render({recipe:'sankey',spec:{nodes:['A','B'],links:[{source:'A',target:'B',value:0}]},theme_id});
- assert.equal(zero.pages[0].kind,'table');assert.doesNotMatch(zero.pages[0].svg,/NaN/);
+ assert.throws(()=>render({recipe:'composition',spec:{mode:'percent',items:[{label:'渠道',segments:[{label:'大项',value:99},{label:'小项',value:1},{label:'零项',value:0}]}]},theme_id,width:720,height:360}),/文字验收未通过[\s\S]*小项|文字验收未通过/);
+ assert.throws(()=>rt.prepare('sankey',{nodes:['A','B'],links:[{source:'A',target:'B',value:0}]},settings),/全部流量为零/);
+ const zeroBubble=rt.prepare('scatter',{items:[{label:'甲',x:1,y:2,size:0},{label:'乙',x:2,y:1,size:25}]},settings);
+ assert.ok(zeroBubble.risks.some(r=>r.code==='zero-size'));
+ assert.deepEqual(zeroBubble.pages[0].option.series[0].data[0].symbolSize,[9,9]);
+ assert.match(zeroBubble.pages[0].option.graphic[0].style.text,/零规模的位置标记/);
  const flow=rt.prepare('sankey',cases.sankey,settings).pages[0].option;
  assert.equal(flow.series[0].data[0].itemStyle.color,t.accent);
+ // 期间必须逐个画出来：轴标签被自动抽稀时要报 missing；画下但互相遮挡时报 overlap。两者都不能静默通过。
+ for(const [periods,width,height] of [[14,588,300],[18,760,365]]){
+  const dense=Array.from({length:periods},(_,i)=>(i+1)+'月');
+  const r=render({recipe:'timeSeries',spec:{periods:dense,series:[{name:'收入',values:dense.map((_,i)=>10+i)}]},theme_id,width,height});
+  const axisTexts=[...r.pages[0].svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map(m=>m[1].replace(/<[^>]*>/g,''));
+  dense.forEach(p=>assert.ok(axisTexts.includes(p),periods+' 期 @'+width+' 少了期号 '+p));
+ }
+ assert.throws(()=>render({recipe:'timeSeries',spec:{periods:Array.from({length:36},(_,i)=>(i+1)+'月'),series:[{name:'收入',values:Array.from({length:36},(_,i)=>10+i)}]},theme_id,width:760,height:365}),/文字验收未通过[\s\S]*overlap/,'36 期在 760 宽内会互相遮挡，必须报出并交由作者分面');
  let root={label:'末级数据业务流程'};for(let i=8;i>=1;i--)root={label:'第'+i+'层业务处理步骤',children:[root]};
- const deep=render({recipe:'tree',spec:{root},theme_id,width:720,height:360});assert.equal(deep.pages[0].kind,'table');assert.equal(deep.pages.flatMap(p=>p.table.rows).length,9);
- const collision=render({recipe:'scatter',spec:{xLabel:'收入',xUnit:'亿元',yLabel:'利润',yUnit:'亿元',sizeUnit:'人',items:[1,2,3,4,5].map(size=>({label:'对象'+size,x:1,y:1,size}))},theme_id,width:720,height:360});
- assert.equal(collision.pages[0].kind,'table');assert.deepEqual(collision.pages.flatMap(p=>p.table.rows).map(r=>r[3]),['1','2','3','4','5']);
- const long=render({recipe:'groupedBar',spec:{categories:['甲'],series:[{name:'很长的系列名称和口径说明'.repeat(8),values:[5]}]},theme_id,width:720,height:360});assert.equal(long.pages[0].kind,'table');
+ const deep=rt.prepare('tree',{root},settings);
+ assert.ok(deep.risks.some(r=>r.code==='node-space'));assert.equal('table' in deep.pages[0],false);
+ const collision={xLabel:'收入',xUnit:'亿元',yLabel:'利润',yUnit:'亿元',sizeUnit:'人',items:[1,2,3,4,5].map(size=>({label:'对象'+size,x:1,y:1,size}))};
+ assert.throws(()=>render({recipe:'scatter',spec:collision,theme_id,width:720,height:360}),/文字验收未通过/);
+ assert.throws(()=>render({recipe:'groupedBar',spec:{categories:['甲'],series:[{name:'很长的系列名称和口径说明'.repeat(8),values:[5]}]},theme_id,width:720,height:360}),/文字验收未通过/);
  // 逐个探测连续色阶，用ECharts实际映射底色测量，不复述阈值实现。
  for(let step=0;step<=100;step++){
   const value=step/100,option=rt.prepare('heatmap',{rows:['A'],columns:['B'],values:[[value]],min:0,max:1},settings).pages[0].option;
@@ -63,4 +75,4 @@ for(const theme_id of themes.ids){
     assert.ok(rt.contrast(bg,fg)>=4.5,theme_id+' '+value+' 对比度不足');}finally{c.dispose();}
  }
 }
-console.log('PASS: 9配方×3主题、气泡面积/零值、全部标签与分页守恒、小片完整表、Sankey闭合/环/零流量、303个实际热力色阶反差');
+console.log('PASS: 9配方×3主题、气泡面积/零值位置标记、画布不足只报问题不退表、Sankey闭合/环/零流量拒绝、303个实际热力色阶反差');

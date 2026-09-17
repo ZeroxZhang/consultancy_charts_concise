@@ -62,15 +62,17 @@ const {pathToFileURL}=require('node:url');
   const pdf43=path.join(dir,'4x3.pdf');await page.pdf({path:pdf43,preferCSSPageSize:true,printBackground:true});
   const info=execFileSync('pdfinfo',[pdf43],{encoding:'utf8'});assert.match(info,/Pages:\s+7/);assert.match(info,/Page size:\s+768 x 576 pts/);
   await page.emulateMedia({media:'print'});assert.equal(await page.locator('#deck-actions').evaluate(e=>getComputedStyle(e).display),'none');await page.emulateMedia({media:'screen'});
-  // 实际验收后才触发的多页回退：请求第2/3页不能被初始单图计划拦截。
-  const pagination=await page.evaluate(()=>{
+  // 打印尺寸下实测不过关时只报具体问题：不产出替代表，也不留下能被当成成稿的图形。
+  const failure=await page.evaluate(()=>{
    let root={label:'末级数据业务流程'};for(let i=8;i>=1;i--)root={label:'第'+i+'层业务处理步骤',children:[root]};
-   const cells=[0,1,2,null].map(index=>{const el=document.createElement('div');el.className='chart';el.style='position:fixed;left:0;top:0;width:720px;height:200px';el.dataset.recipe='tree';el.dataset.spec=JSON.stringify({root});if(index!==null)el.dataset.recipePage=index;document.body.appendChild(el);return el;});
+   const el=document.createElement('div');el.className='chart';el.style='position:fixed;left:0;top:0;width:720px;height:200px';el.dataset.recipe='tree';el.dataset.spec=JSON.stringify({root});document.body.appendChild(el);
    window.dispatchEvent(new Event('beforeprint'));
-   const out=cells.map((el,i)=>({error:el.dataset.chartError||null,kind:el.dataset.renderKind,rows:el._plan?.pages[i]?.table?.rows}));
-   cells.forEach(el=>{if(el._chart)el._chart.dispose();el.remove();});window.dispatchEvent(new Event('afterprint'));return out;
+   const out={error:el.dataset.chartError||null,kind:el.dataset.renderKind||null,hasPlan:!!el._plan,html:el.innerHTML};
+   if(el._chart)el._chart.dispose();el.remove();window.dispatchEvent(new Event('afterprint'));return out;
   });
-  assert.ok(pagination.slice(0,3).every(p=>!p.error&&p.kind==='table'));assert.equal(pagination.slice(0,3).flatMap(p=>p.rows).length,9);assert.match(pagination[3].error,/3页/);
+  assert.match(failure.error||'',/文字验收未通过[\s\S]*(bounds|overlap|font)/,'实测不过关必须报出具体问题');
+  assert.equal(failure.kind,null);assert.equal(failure.hasPlan,false);
+  assert.doesNotMatch(failure.html,/<table|完整数据表/,'失败不能留下替代表格');
   assert.deepEqual(errors,[]);
   console.log('PASS: ECharts 6 recipe, signed waterfall geometry, total closure, SVG, #3, G/Escape, resize, print restoration, 16:9 and 4:3 PDFs. 临时产物已清理。'+'');
  } finally {await browser.close();fs.rmSync(dir,{recursive:true,force:true});}

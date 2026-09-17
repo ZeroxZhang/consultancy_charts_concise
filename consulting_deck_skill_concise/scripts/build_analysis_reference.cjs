@@ -24,10 +24,10 @@ page('收入增长60%，新业务份额提高15个百分点','同一份数据的
   ex('规模｜总量从100增至160','收入，亿元；柱高=总量，柱上数字=总量',chart('stacked',{height:375,items:periods,mode:'absolute',comparison:{from:0,to:2,mode:'cagr',periods:2,decimals:1}}),'累计增长60%；两年CAGR约26.5%，不能把3个观测年当作3个间隔。'),
   ex('构成｜新业务从20%升至35%','柱高=100%；柱上数字=收入总量（亿元）',chart('stacked',{height:375,items:periods,mode:'percent',labelContent:'share'}),'份额增加15个百分点；相对增幅为75%，两者不能混写。')
 ),'先确定读者要比较“多少”还是“占比”；不因图型复杂就默认使用Mekko。','kit.stacked');
-page('窄列中的5个单位，仍应有完整可查的分项','Mekko的列宽与面积保持按值比例；标签放不下时转入完整数据表，不放大小片。',paired(
+page('窄列中的5个单位，仍应有完整可查的分项','Mekko的列宽与面积保持按值比例；标签放不下时改走同侧引线通道，不放大小片，也不改成表格。',paired(
   ex('基础版本｜小片标签被省略','销售额，任意单位；列宽=地区总量',baseline.svg[themeId].mekko,'南区总量为5，但图中没有呈现核心3、新业务2的分项。'),
-  ex('升级版本｜图形与完整数据表关联','列宽=总量；表内=原值与列内份额',chart('mekko',{height:385,items:baseline.mekko,labelContent:'both'}),'序号关联地区；零值也必须明确记录，未知值不能替换成零。')
-),'若读者主要需要查精确值，直接使用比较表；图形只承担结构概览。','kit.mekko');
+  ex('升级版本｜引线标注绑回窄列','列宽=总量；引线栏=该列的原值与份额',chart('mekko',{height:385,items:baseline.mekko,labelContent:'both'}),'引线把南区的核心3、新业务2和总量5绑回该列；零值只留位置标记并写明0，不虚增面积。')
+),'若读者主要需要逐格查精确值，另起一个比较表展品；图形本身仍要能读出小片的分项。','kit.mekko');
 const channelColumns=[{key:'name',label:'渠道'},{key:'start',label:'2024年',type:'number',unit:'亿元',format:{decimals:1}},{key:'end',label:'2025年',type:'number',unit:'亿元',format:{decimals:1}},{key:'delta',label:'收入变化',type:'number',unit:'亿元',derive:{from:'start',to:'end'},format:{decimals:1},bar:{domain:[-1.2,.6]}},{key:'growth',label:'相对变化',type:'number',derive:{from:'start',to:'end',mode:'relative'},format:{decimals:1}},{key:'note',label:'下一步验证'}];
 const channels=[{values:{name:'商超',start:6.4,end:5.3,note:'拆分门店、客户、价格与销量'}},{values:{name:'电商',start:1.6,end:2,note:'核验增量的毛利与获客成本'}},{values:{name:'经销',start:3.2,end:3.1,note:'核验库存与客户结构'}},{kind:'total',values:{name:'总计',start:11.2,end:10.4,note:'贡献合计−0.8亿元'}}];
 page('商超解释主要降幅，比较表把规模、差额和线索放在同一行','把查数任务留给表格：同一列同一单位，变化条共享零基线与量尺；总计使用给定值。',

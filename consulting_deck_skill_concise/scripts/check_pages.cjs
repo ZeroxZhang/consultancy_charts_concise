@@ -65,7 +65,8 @@ function check(doc) {
     // 外部能力 ID 不限制自定义绘制；采用 plan 的版本与落实由专门检查器和实际看图核对。
     if (page.planner !== undefined && (!page.planner || !norm(page.planner.capability_id))) bad(at + ' planner 须写 capability_id');
     if (page.repetitionReason !== undefined && !norm(page.repetitionReason)) bad(at + ' repetitionReason 不能为空');
-    if (page.fallback !== undefined && (!page.fallback || !norm(page.fallback.then))) bad(at + ' fallback 须写清 then（容量不足时改用什么）');
+    // 图型不因容量不足改表：合同里不再有降级出口，放不下时在同一表达内重排、分面或换实现。
+    if (page.fallback !== undefined) bad(at + ' 已取消 fallback：容量不足时调整布局、分面、换实现或如实报未完成，不能改表');
   });
   if (doc.pages.length && !errors.some(e => /缺少合法 page 序号/.test(e))) {
     const numbers = doc.pages.map(p => p.page);

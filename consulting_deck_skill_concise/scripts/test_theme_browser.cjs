@@ -18,13 +18,15 @@ const pw=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     const result=await p.evaluate(({name,spec,tokens})=>{
      let plan=ChartRuntime.prepare(name,spec,{tokens,width:720,height:360});
      const el=document.createElement('div');el.style='position:fixed;left:0;top:0;width:720px;height:360px;background:white';document.body.appendChild(el);
-     const c=echarts.init(el,null,{renderer:'svg'});c.setOption(plan.pages[0].option);plan=ChartRuntime.check(c,plan);c.setOption(plan.pages[0].option,true);ChartRuntime.check(c,plan);
+     const c=echarts.init(el,null,{renderer:'svg'});c.setOption(plan.pages[0].option);
+     const report=ChartRuntime.check(c,plan);
      const text=[...el.querySelectorAll('text')].map(t=>t.textContent),bad=[];
      for(const t of el.querySelectorAll('text')){const r=t.getBoundingClientRect(),b=el.getBoundingClientRect();if(r.left<b.left-1||r.right>b.right+1||r.top<b.top-1||r.bottom>b.bottom+1)bad.push(t.textContent);}
      const colors=name==='sankey'?plan.pages[0].option.series[0].data.map(d=>d.itemStyle.color):[];
-     const out={kind:plan.pages[0].kind,text,bad,colors};c.dispose();el.remove();return out;
+     const out={status:report.status,problems:report.problems,text,bad,colors};c.dispose();el.remove();return out;
     },{name,spec,tokens:themes.get(id).tokens});
-    assert.equal(result.kind,server.pages[0].kind);
+    assert.equal(result.status,'ok',id+' '+name+'浏览器实测未通过：'+JSON.stringify(result.problems));
+    assert.equal(server.report.status,'ok');assert.equal(server.pages[0].kind,'chart');
     const serverTexts=[...server.pages[0].svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map(m=>m[1]);
     assert.deepEqual(result.text.slice().sort(),serverTexts.sort(),id+' '+name+'文本路径不同');
     assert.deepEqual(result.bad,[],id+' '+name+'浏览器标签越界');

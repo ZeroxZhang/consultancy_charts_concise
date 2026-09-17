@@ -3,7 +3,7 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 const fontAudit=require('./browser_font_audit.cjs');
 const bookends=require('./check_bookends.cjs');
 const geometry=require('./browser_geometry_audit.cjs');
-const taskContracts=require('./report_contract.cjs'),criticalContent=require('./critical_content.cjs'),visualPolicy=require('./browser_visual_policy.cjs'),auditEvidence=require('./audit_evidence.cjs');
+const taskContracts=require('./report_contract.cjs'),criticalContent=require('./critical_content.cjs'),visualPolicy=require('./browser_visual_policy.cjs'),auditEvidence=require('./audit_evidence.cjs'),deckForms=require('../assets/deck-forms.js');
 let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)throw Error('请安装playwright，或将PLAYWRIGHT_MODULE设为现有模块路径');pw=require(process.env.PLAYWRIGHT_MODULE)}
 (async()=>{
  const input=path.resolve(process.argv[2]||''),out=path.resolve(process.argv[3]||'renders');if(!fs.statSync(input).isFile())throw Error('需要HTML文件');fs.mkdirSync(out,{recursive:true});
@@ -57,7 +57,9 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
     const cs=getComputedStyle(e);
     if(parseFloat(cs.borderLeftWidth)>=2&&cs.borderLeftStyle!=='none'&&parseFloat(cs.paddingLeft)<6&&e.getBoundingClientRect().height>10){noteSeen.add(e);notePad.push({cls:String(e.className).slice(0,40),pad:cs.paddingLeft,text:(e.textContent||'').trim().slice(0,40)});}
    }
-   return {exhibits,textEvidence,unreadableText:unreadable,form:s.dataset.form||null,visual:s.dataset.visual||'',proves:s.dataset.proves||'',title:s.querySelector('.slide__title,.cover-title,.divider-name')?.textContent||'',overflow:bad,tinyText:tiny,smallDataText:smallData,charts:[...s.querySelectorAll('.chart')].map(e=>({width:e.clientWidth,height:e.clientHeight,rendered:!!e.querySelector('svg,canvas'),error:e.dataset.chartError||null})),textLength:s.innerText.length,frame,notePad};
+   return {exhibits,textEvidence,unreadableText:unreadable,form:s.dataset.form||null,visual:s.dataset.visual||'',proves:s.dataset.proves||'',title:s.querySelector('.slide__title,.cover-title,.divider-name')?.textContent||'',overflow:bad,tinyText:tiny,smallDataText:smallData,charts:[...s.querySelectorAll('.chart')].map(e=>({width:e.clientWidth,height:e.clientHeight,rendered:!!e.querySelector('svg,canvas'),error:e.dataset.chartError||null,risks:e.dataset.chartRisks||null})),
+   // 表格内的数据条 sparkline 也是 svg；不排除它，"整页图被换成带数据条的表"就会漏判。
+   shapes:{svg:s.querySelectorAll('.slide__body svg:not(.table-bar)').length,sparklines:s.querySelectorAll('.slide__body svg.table-bar').length,tables:s.querySelectorAll('.slide__body table').length},textLength:s.innerText.length,frame,notePad};
   });result.page=i+1;result.screenshot=`p${String(i+1).padStart(2,'0')}.png`;
   result.bookends=await p.locator('.slide.active').evaluate(bookends.inspectPage);
   if(modern){result.critical=await p.locator('.slide.active').evaluate(criticalContent.inspectSlide);result.visualPolicy=await p.locator('.slide.active').evaluate(visualPolicy.inspectSlide);errors.push(...result.visualPolicy.errors.map(e=>'第'+(i+1)+'页视觉禁令：'+JSON.stringify(e)));warnings.push(...result.visualPolicy.warnings.map(e=>'第'+(i+1)+'页视觉诊断：'+JSON.stringify(e)));}
@@ -100,6 +102,12 @@ let pw;try{pw=require('playwright')}catch(e){if(!process.env.PLAYWRIGHT_MODULE)t
    pagesCheck={status:all.length?'FAIL':'PASS',errors:all,record,sha256:taskContract.pages.sha256,inventory:checked.inventory};
    all.forEach(e=>errors.push('pages合同：'+e));
   }catch(error){pagesCheck={status:'FAIL',errors:[error.message]};errors.push('pages合同：'+error.message);}
+ }
+ // 声明为图的形式必须在成稿里真的出现 SVG：绘图受阻不能退成表格再沿用原图型名称通过。
+ if(modern)for(const r of rows){
+  if(!r.form)continue;let entry=null;try{entry=deckForms.get(r.form);}catch(e){continue;}
+  if(entry.kind==='svg'&&!r.shapes.svg)errors.push('第'+r.page+'页声明 '+r.form+'（'+entry.label+'）是图形实现，但正文里没有 SVG'+(r.shapes.tables?'，只有表格（含 '+(r.shapes.sparklines||0)+' 个表格内数据条）':'')+'：图型不因容量不足被替换');
+  for(const c of r.charts||[])if(c.risks)warnings.push('第'+r.page+'页图表预算提示：'+c.risks);
  }
  const expected=rows.flatMap(r=>r.exhibits.map(e=>({...e,page:r.page})));
  await p.emulateMedia({media:'print'});await p.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));

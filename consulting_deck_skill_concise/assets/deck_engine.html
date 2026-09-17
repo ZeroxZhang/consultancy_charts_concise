@@ -579,13 +579,10 @@ body[data-ratio="4x3"] .bookend-subtitle{max-width:640px}
     }
     try{
       if(el.id==='waterfall-demo'){ initWaterfall(el); return; }
-      var raw,opt;
+      var raw,opt,plan=null;
       if(el.getAttribute('data-recipe')){
         if(!window.ChartRuntime) throw new Error('ChartRuntime未加载');
-        var plan=ChartRuntime.prepare(el.getAttribute('data-recipe'),JSON.parse(el.getAttribute('data-spec')||'{}'),{width:el.clientWidth,height:el.clientHeight,tokens:runtimeTokens(),typography_id:document.documentElement.dataset.typography});
-        var pageAttr=el.getAttribute('data-recipe-page'),pageIndex=pageAttr===null?0:Number(pageAttr);
-        if(!Number.isInteger(pageIndex)||pageIndex<0)throw new Error('配方页号必须是从0起的整数');
-        // 总是先用首页探测最终布局；实际验收可能把一张图转成多页表。
+        plan=ChartRuntime.prepare(el.getAttribute('data-recipe'),JSON.parse(el.getAttribute('data-spec')||'{}'),{width:el.clientWidth,height:el.clientHeight,tokens:runtimeTokens(),typography_id:document.documentElement.dataset.typography});
         opt=plan.pages[0].option;
       }else{
         raw=JSON.parse(el.getAttribute('data-opt'));
@@ -595,15 +592,15 @@ body[data-ratio="4x3"] .bookend-subtitle{max-width:640px}
       if(!opt.textStyle){opt.textStyle={fontFamily:getComputedStyle(document.documentElement).getPropertyValue('--font-body')};}
       var c=echarts.init(el, null, {renderer:'svg'});c.setOption(opt);
       if(plan){
-        var checked=ChartRuntime.check(c,plan,0);
-        if(checked.pages.length>1&&pageAttr===null)throw new Error('最终布局需'+checked.pages.length+'页，请拆页并设置data-recipe-page');
-        if(!checked.pages[pageIndex])throw new Error('配方页号超出最终范围');
-        if(checked!==plan||pageIndex!==0)c.setOption(checked.pages[pageIndex].option,true);
-        ChartRuntime.check(c,checked,pageIndex);
-        el._plan=checked;el.dataset.renderKind=checked.pages[pageIndex].kind;
+        // 实测验收不通过就报修并显示问题，绝不把图换成表格来“通过”。
+        var report=ChartRuntime.check(c,plan);
+        if(report.status!=='ok')throw new Error('文字验收未通过：'+report.problems.slice(0,3).map(function(p){return p.type+'「'+p.text+'」→'+p.fix;}).join('；'));
+        el._plan=plan;el.dataset.renderKind='chart';
+        // 预算风险提示也要落到元素上，否则引擎里根本看不到“类别过密/零流量/层级过深”。
+        if(plan.risks&&plan.risks.length)el.dataset.chartRisks=plan.risks.map(function(r){return r.code+'：'+r.message;}).join(' | ');else delete el.dataset.chartRisks;
       }
       el._chart=c;delete el.dataset.chartError;
-    }catch(err){if(c)c.dispose();el.dataset.chartError=err.message;el.textContent='图表待处理：'+err.message;console.error('chart parse error',err);}
+    }catch(err){if(c)c.dispose();delete el.dataset.renderKind;delete el.dataset.chartRisks;el.dataset.chartError=err.message;el.textContent='图表待处理：'+err.message;console.error('chart parse error',err);}
   }
   /* 瀑布图以显式起止值绘制；允许跨零，兼容旧 abs 类型。 */
   function buildWaterfall(items){

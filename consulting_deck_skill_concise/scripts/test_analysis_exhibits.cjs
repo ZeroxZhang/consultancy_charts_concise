@@ -28,17 +28,34 @@ for(const id of themes.ids){
   assert.match(valueTable,new RegExp('fill="'+palette.accent+'" data-value="1"'));
 }
 const narrow=[{label:'甲',segments:[{label:'核心',value:100},{label:'新业务',value:0}]},{label:'乙',segments:[{label:'核心',value:1},{label:'新业务',value:1}]}];
-const fallback=kit.mekko({width:620,height:440,items:narrow,labelContent:'both'});
-assert.match(fallback,/>0 \(0%\)<\/text>/);assert.match(fallback,/>1 \(50%\)<\/text>/);
-assert.equal(rects(fallback).find(r=>r.v===0).h,0);
+// 小片、零值与窄列改走同侧引线通道：面积编码不变，图形与关键标注仍留在图上，不再自动转表。
+const callouts=kit.mekko({width:620,height:440,items:narrow,labelContent:'both'});
+assert.match(callouts,/>新业务 0 \(0%\)<\/text>/);assert.match(callouts,/>核心 1 \(50%\)<\/text>/);
+assert.match(callouts,/>乙<\/text>/);assert.match(callouts,/data-role="zero-mark"/);
+assert.equal([...callouts.matchAll(/data-role="leader"/g)].length,5);
+assert.equal(rects(callouts).find(r=>r.v===0).h,0);
+assert.doesNotMatch(callouts,/<table|完整数据表/);
+const wide=[{label:'甲',segments:[{label:'核心',value:80},{label:'新业务',value:20}]},{label:'乙',segments:[{label:'核心',value:90},{label:'新业务',value:60}]}];
 for(const type of ['stacked','mekko']){
-  const shares=kit[type]({width:800,height:500,items:narrow,labelContent:'share'});
-  assert.match(shares,/>系列 \/ 份额<\/text>/);assert.match(shares,/>50%<\/text>/);
-  assert.doesNotMatch(shares,/>系列 \/ 原值<\/text>/);
+  const shares=kit[type]({width:800,height:500,items:wide,labelContent:'share'});
+  assert.match(shares,/>80%<\/text>/);assert.doesNotMatch(shares,/>80<\/text>/);
+  assert.doesNotMatch(kit[type]({width:800,height:500,items:wide}),/data-role="leader"/,'放得下时不出现引线通道');
 }
-assert.throws(()=>kit.mekko({width:320,height:200,items:narrow}),/装不下|空间/);
+assert.throws(()=>kit.mekko({width:320,height:200,items:narrow}),/绘图区/);
+assert.throws(()=>kit.mekko({items:narrow,labels:'table'}),/改表开关/);
+// 收窄绘图区会带出更长的外置标注；通道宽度必须跟着重算，不能把标签画到画布外。
+const overlong=[{label:'二二二二二二二二二二二二二二二二二二二二',segments:[{label:'甲',value:900},{label:'乙',value:1}]},{label:'乙列',segments:[{label:'甲',value:1},{label:'乙',value:1}]}];
+assert.throws(()=>kit.stacked({width:800,height:500,items:overlong}),/超出通道可用宽度/);
+for(const type of ['stacked','mekko']){
+  const svg=kit[type]({width:800,height:500,items:[{label:'甲',segments:[{label:'核心',value:900},{label:'小项',value:1}]},{label:'乙',segments:[{label:'核心',value:1},{label:'小项',value:1}]}]});
+  const minX=Math.min(...[...svg.matchAll(/<text x="([\d.-]+)"/g)].map(m=>+m[1]));
+  assert.ok(minX>=0,type+' 外置标注越出画布左边界：'+minX);
+}
 const crowded=[{label:'成熟市场',segments:[{label:'主业',value:600},{label:'试点',value:400}]},{label:'新市场甲',segments:[{label:'主业',value:1},{label:'试点',value:1}]},{label:'新市场乙',segments:[{label:'主业',value:2},{label:'试点',value:1}]}];
-assert.throws(()=>kit.mekko({width:800,height:500,items:crowded,labelContent:'both'}),/序号无法区分/);
+// 两个窄列的分项都进引线通道，通道用满整幅高度；画布真的放不下时明确拒绝，仍不给表格。
+const cramped=kit.mekko({width:800,height:500,items:crowded,labelContent:'both'});
+assert.equal([...cramped.matchAll(/data-role="leader"/g)].length,8);assert.doesNotMatch(cramped,/<table/);
+assert.throws(()=>kit.mekko({width:400,height:200,items:crowded,labelContent:'both'}),/绘图区|通道/);
 assert.throws(()=>kit.mekko({items:[{label:'甲',segments:[{label:'一',value:2},{label:'一',value:3}]}]}),/唯一/);
 assert.throws(()=>kit.stacked({items:[...items,{label:'缺项',segments:[{label:'核心',value:2}]}]}),/显式/);
 assert.throws(()=>kit.stacked({items:[{label:'未知',segments:[{label:'核心',value:null}]}]}),/数值/);
@@ -53,4 +70,4 @@ const stages=[{label:'验证',owner:'业务',output:'清单',gate:'准入通过'
 assert.match(kit.processFlow({stages,transitions:['通过']}),/准入通过/);
 assert.throws(()=>kit.processFlow({stages,transitions:['通过','通过']}),/条件/);
 assert.throws(()=>kit.processFlow({stages:[{...stages[0],output:'信息'.repeat(200)},stages[1]],transitions:['通过']}),/过长/);
-console.log('v5 PASS: differences, CAGR intervals, signed/zero values, shared scales, composition geometry, complete fallback, theme compatibility and invalid inputs');
+console.log('v5 PASS: differences, CAGR intervals, signed/zero values, shared scales, composition geometry, zero and small-segment callouts, theme compatibility and invalid inputs');

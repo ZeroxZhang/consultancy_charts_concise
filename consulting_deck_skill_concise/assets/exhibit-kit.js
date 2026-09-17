@@ -121,7 +121,7 @@
   // 保守估宽用于选择布局，不声称取代浏览器字形测量。
   const textWidth=(value,fs)=>Array.from(String(value)).reduce((n,ch)=>n+(/[\u0000-\u007f]/.test(ch)?.62:1),0)*fs;
   function fittedText(c,x,y,value,width,anchor='start',color=c.p.ink,extra='') {
-    if(textWidth(value,c.fs)>width)throw new Error('标签空间不足，请扩容、简化措辞或改用表格：'+value);
+    if(textWidth(value,c.fs)>width)throw new Error('标签空间不足，请扩容、简化措辞、换行或把该标注移到引线通道：'+value);
     c.text(x,y,value,anchor,color,extra);
   }
   function comparisonBracket(c,points,options) {
@@ -163,7 +163,7 @@
     const c=canvas(s),data=list(s.items,'items'),names=[];
     const content=s.labelContent||'value';
     if(!['value','share','both'].includes(content))throw new Error('labelContent 应为 value/share/both');
-    if(!['auto','table',undefined].includes(s.labels))throw new Error('labels 应为 auto/table');
+    if(s.labels!==undefined)throw new Error('构成图不再提供改表开关：段内放不下的标注改用同侧引线通道；需要精确查数时另起一个表格展品');
     data.forEach(v=>{
       if(v.label===undefined||v.label===null||String(v.label).trim()==='')throw new Error('类别标签不能为空');
       const seen=new Set();list(v.segments,'segments').forEach(g=>{
@@ -176,25 +176,61 @@
     totals.forEach(v=>{num(v,'total');if(v<=0)throw new Error('类别总量须大于0');});
     const total=num(totals.reduce((a,b)=>a+b,0),'total'),normalized=variableWidth||s.mode==='percent';
     if(!variableWidth&&!['absolute','percent',undefined].includes(s.mode))throw new Error('stacked mode 应为 absolute/percent');
-    const top=s.comparison?92:52,left=60,pw=c.w-90-(variableWidth?0:90);
+    const top=s.comparison?92:52,max=normalized?1:Math.max(...totals),ph=c.h-top-72;
     if(variableWidth&&s.comparison)throw new Error('Mekko 比较请用相邻表或份额图，避免给列宽添加含混标注');
-    const dx=pw/data.length,widths=totals.map(t=>variableWidth?pw*t/total:dx*.58);
+    if(ph<90)throw new Error('构成图绘图区仅 '+Math.round(ph)+'px；请提高模块高度、减少系列或拆页');
     const values=(g,i)=>content==='share'?formatNumber(g.value/totals[i]*100,{decimals:s.shareDecimals===undefined?0:s.shareDecimals,suffix:'%'}):formatNumber(g.value,s.format)+(content==='both'?' ('+formatNumber(g.value/totals[i]*100,{decimals:s.shareDecimals===undefined?0:s.shareDecimals,suffix:'%'})+')':'');
-    const max=normalized?1:Math.max(...totals);
-    let ph=c.h-top-72;
-    let useTable=s.labels==='table'||data.some((v,i)=>v.segments.some(g=>{
-      const hh=ph*(normalized?g.value/totals[i]:g.value)/max;
-      return hh<(variableWidth?c.fs*2.6:c.fs+8)||(variableWidth&&textWidth(g.label,c.fs)>widths[i]-14)||textWidth(values(g,i),c.fs)>widths[i]-14;
-    }));
-    const rowH=c.fs+13,tableH=useTable?(names.length+2)*rowH+20:0;
-    ph-=tableH;if(ph<90)throw new Error('图表与完整标签表装不下，请增加高度或拆页');
-    const tableLeft=140,tableCW=(c.w-tableLeft-20)/data.length;
+    /* 段内放不下名称与数值的段（含零值）与放不下类目名的窄列改走引线通道：通道在绘图区两侧，
+       引线就近接回同一侧的图元，不横穿绘图区。面积仍按原值计算，零值只留位置标记，不改成表格。 */
+    const pw0=c.w-90-(variableWidth?0:90);
+    const widthsFor=pw=>variableWidth?totals.map(t=>pw*t/total):data.map(()=>pw/data.length*.58);
+    let needRight=false;
+    const scan=pw=>{
+      const widths=widthsFor(pw),dx=pw/data.length,items=[];let cum=0;
+      data.forEach((v,i)=>{
+        const room=(variableWidth?widths[i]:dx)-8,last=i===data.length-1;
+        const center=variableWidth?(cum+totals[i]/2)/total:(i+.5)/data.length;
+        cum+=totals[i];
+        const side=center<.5?'left':'right';
+        // 右侧有通道时，最后一列的系列名不能再摆到右留白里，段内要放得下"名称+数值"两行。
+        const folded=last&&!variableWidth&&needRight,need=variableWidth||folded?c.fs*2.6:c.fs+8;
+        v.segments.forEach(g=>{
+          const hh=ph*(normalized?g.value/totals[i]:g.value)/max;
+          const wide=variableWidth?(textWidth(g.label,c.fs)>widths[i]-14||textWidth(values(g,i),c.fs)>widths[i]-14):textWidth(folded?g.label+' '+values(g,i):values(g,i),c.fs)>widths[i]-14;
+          if(hh<need||wide)items.push({key:'seg:'+i+'|'+g.label,text:g.label+' '+values(g,i),side});
+        });
+        if(textWidth(v.label,c.fs)>room)items.push({key:'col:'+i,text:v.label,side});
+        if(textWidth(formatNumber(totals[i],s.format),c.fs)>widths[i]-4)items.push({key:'total:'+i,text:'合计 '+formatNumber(totals[i],s.format),side});
+      });
+      return items;
+    };
+    // 收窄绘图区会带出更多要外置的标注：反复求解到两侧通道宽度稳定，不能只用第一次的结果。
+    let pw=pw0,widths=widthsFor(pw0),lane=[],laneW={left:0,right:0};
+    for(let pass=0;pass<6;pass++){
+      const need=scan(pw);
+      if(!need.length){lane=[];break;}
+      lane=need;needRight=need.some(v=>v.side==='right');
+      const next={left:0,right:0};
+      for(const side of ['left','right']){
+        const group=need.filter(v=>v.side===side);
+        next[side]=group.length?Math.max(...group.map(v=>textWidth(v.text,c.fs)))+26:0;
+        if(next[side]>230){const over=group.find(v=>textWidth(v.text,c.fs)+26>230);throw new Error('引线标注「'+over.text+'」超出通道可用宽度；请缩短系列名、类目名或数值格式');}
+      }
+      const npw=pw0-(next.left?next.left+14:0)-(next.right?next.right+14:0);
+      laneW=next;
+      if(npw===pw)break;
+      pw=npw;widths=widthsFor(pw);
+    }
+    for(const side of ['left','right'])for(const item of lane.filter(v=>v.side===side))if(textWidth(item.text,c.fs)>laneW[side]-25)throw new Error('引线标注「'+item.text+'」超出通道可用宽度；请缩短系列名、类目名或数值格式');
+    if(lane.length&&pw<Math.max(160,pw0*.4))throw new Error('外置标注需要 '+Math.round(laneW.left+laneW.right)+'px 引线通道，剩余绘图区仅 '+Math.round(pw)+'px；请加宽模块、减少系列或拆成两页');
+    const left=60+(laneW.left?laneW.left+14:0),dx=pw/data.length,routed=new Set(lane.map(v=>v.key)),sideOf=new Map(lane.map(v=>[v.key,v.side]));
+    const plotRight=left+pw;
     let x=left;
     if(normalized){c.text(left-8,top+5,'100%','end',c.p.muted);c.text(left-8,top+ph+5,'0','end',c.p.muted);}
-    const points=[];
+    const points=[],callouts=[];
     data.forEach((v,i)=>{
       const width=widths[i],xx=variableWidth?x:left+i*dx+(dx-width)/2;
-      const barH=ph*(normalized?1:totals[i]/max);let yy=top+ph;
+      const barH=ph*(normalized?1:totals[i]/max),folded=i===data.length-1&&needRight;let yy=top+ph;
       points.push({x:xx+width/2,value:totals[i]});
       // 同一系列跨列固定堆积顺序和颜色，第一系列从零基线起。
       names.forEach((name,k)=>{
@@ -202,37 +238,41 @@
         yy-=hh;const fill=c.p.series[k%c.p.series.length];
         const as=c.anchor({id:'seg:'+v.label+'|'+name,x:xx+width/2,y:yy+hh/2,side:'right',value:g.value,label:name,box:{x:xx,y:yy,width,height:hh},group:'col:'+v.label,fill});
         c.rect(xx,yy,width,hh,fill,`${as} stroke="white" stroke-width="1" data-value="${g.value}" data-total="${totals[i]}"`);
-        if(!useTable){
-          const color=cellText(fill,1,c.p.ink);
-          if(variableWidth){c.text(xx+width/2,yy+hh/2-3,name,'middle',color);c.text(xx+width/2,yy+hh/2+c.fs+2,values(g,i),'middle',color);}
-          else {c.text(xx+width/2,yy+hh/2+c.fs/3,values(g,i),'middle',color);if(i===data.length-1)fittedText(c,xx+width+12,yy+hh/2+c.fs/3,name,c.w-xx-width-20);}
-        }
+        if(g.value===0)c.line(xx,yy,xx+Math.max(8,Math.min(width,12)),yy,fill,'stroke-width="2" data-role="zero-mark"');
+        const key='seg:'+i+'|'+name;
+        if(routed.has(key)){callouts.push({side:sideOf.get(key),y:yy+hh/2,x1:sideOf.get(key)==='right'?xx+width:xx,fill,text:name+' '+values(g,i)});return;}
+        const color=cellText(fill,1,c.p.ink);
+        if(variableWidth||folded){c.text(xx+width/2,yy+hh/2-3,name,'middle',color);c.text(xx+width/2,yy+hh/2+c.fs+2,values(g,i),'middle',color);}
+        else {c.text(xx+width/2,yy+hh/2+c.fs/3,values(g,i),'middle',color);if(i===data.length-1)fittedText(c,xx+width+12,yy+hh/2+c.fs/3,name,c.w-xx-width-20);}
       });
-      const label=useTable?String(i+1):v.label;
-      fittedText(c,xx+width/2,top+ph+24,label,variableWidth?Math.max(width-4,15):dx-8,'middle');
-      if(!useTable)fittedText(c,xx+width/2,top+ph-barH-12,formatNumber(totals[i],s.format),width,'middle',c.p.ink,'font-weight="700"');
+      if(routed.has('col:'+i))callouts.push({side:sideOf.get('col:'+i),y:top+ph-4,x1:xx+width/2,fill:c.p.ink,text:v.label});
+      else fittedText(c,xx+width/2,top+ph+24,v.label,variableWidth?Math.max(width-4,15):dx-8,'middle');
+      const total=formatNumber(totals[i],s.format);
+      if(routed.has('total:'+i))callouts.push({side:sideOf.get('total:'+i),y:top+ph-barH-6,x1:xx+width/2,fill:c.p.ink,text:'合计 '+total});
+      else fittedText(c,xx+width/2,top+ph-barH-12,total,width,'middle',c.p.ink,'font-weight="700"');
       if(variableWidth)x+=width;
     });
-    if(useTable&&variableWidth){
-      for(let i=1;i<points.length;i++){
-        const required=(textWidth(i,c.fs)+textWidth(i+1,c.fs))/2+4;
-        if(points[i].x-points[i-1].x<required)throw new Error('Mekko窄列序号无法区分，请增宽或改用完整比较表');
-      }
-    }
-    c.line(left,top+ph,left+pw,top+ph,c.p.ink);
-    if(useTable){
-      const y=top+ph+58;
-      const tableHeading=content==='share'?'系列 / 份额':content==='both'?'原值 / 份额':'系列 / 原值';
-      fittedText(c,12,y,tableHeading,tableLeft-20);
-      data.forEach((v,i)=>fittedText(c,tableLeft+(i+.5)*tableCW,y,(i+1)+' '+v.label,tableCW-12,'middle'));
-      c.line(12,y+10,c.w-20,y+10,c.p.ink);
-      names.forEach((name,k)=>{
-        const yy=y+(k+1)*rowH;c.rect(12,yy-c.fs+2,8,c.fs,c.p.series[k%c.p.series.length]);
-        fittedText(c,26,yy,name,tableLeft-34);
-        data.forEach((v,i)=>fittedText(c,tableLeft+(i+.5)*tableCW,yy,values(v.segments.find(g=>g.label===name),i),tableCW-12,'middle'));
+    c.line(left,top+ph,plotRight,top+ph,c.p.ink);
+    for(const side of ['left','right']){
+      const group=callouts.filter(v=>v.side===side);
+      if(!group.length)continue;
+      // 通道在绘图区外侧的留白里，可用高度是全画布，不受绘图区上下界限制。
+      const rowH=c.fs+8,laneBottom=c.h-c.fs;
+      group.sort((a,b)=>a.y-b.y);
+      let cursor=c.fs;
+      group.forEach(v=>{v.ly=Math.max(cursor,v.y);if(v.ly>laneBottom)throw new Error(group.length+' 条引线标注超出通道可用高度；请拆页、减少系列或提高模块高度');cursor=v.ly+rowH;});
+      group.forEach(v=>{
+        c.circle(v.x1,v.y,2.5,v.fill);
+        if(side==='left'){
+          const edge=left-62;
+          c.out.push(`<path d="M ${v.x1} ${v.y} H ${edge-2} V ${v.ly+c.fs*.35} H ${edge-8}" fill="none" stroke="${esc(c.p.muted)}" stroke-width="1" data-role="leader"/>`);
+          c.text(edge-8,v.ly+c.fs*.35,v.text,'end',c.p.ink);
+        }else{
+          const edge=plotRight+14;
+          c.out.push(`<path d="M ${v.x1} ${v.y} H ${edge+2} V ${v.ly+c.fs*.35} H ${edge+8}" fill="none" stroke="${esc(c.p.muted)}" stroke-width="1" data-role="leader"/>`);
+          c.text(edge+8,v.ly+c.fs*.35,v.text,'start',c.p.ink);
+        }
       });
-      const yy=y+(names.length+1)*rowH;c.line(12,yy-rowH+9,c.w-20,yy-rowH+9,c.p.grid);
-      c.text(12,yy,'总量');data.forEach((v,i)=>fittedText(c,tableLeft+(i+.5)*tableCW,yy,formatNumber(totals[i],s.format),tableCW-12,'middle',c.p.ink,'font-weight="700"'));
     }
     if(s.comparison)comparisonBracket(c,points,s.comparison);
     return c.end();

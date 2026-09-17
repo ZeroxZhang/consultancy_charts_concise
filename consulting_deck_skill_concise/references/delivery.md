@@ -77,8 +77,7 @@
         {"slot": "main", "span": 7, "form": "kit.waterfall", "role": "primary"},
         {"slot": "aside", "span": 5, "form": "kit.dumbbell", "role": "support"}
       ],
-      "annotations": [{"on": "bar:商超", "kind": "delta", "text": "主要拖累 {value}"}],
-      "fallback": {"if": "容量不足", "then": "kit.stacked + 完整数据表"}
+      "annotations": [{"on": "bar:商超", "kind": "delta", "text": "主要拖累 {value}"}]
     }
   ]
 }
@@ -93,7 +92,8 @@
 | `regions` | 否 | 一页多展品时写明分区；必须恰好一个 `role:"primary"` 且与 `form` 一致；主区写了 visual 时须与 page.visual 相同 |
 | `annotations` | 否 | 图上的旁解读，见[证据与表达](exhibits.md)的"旁解读"一节；**只有 `annotation:'layer'` 的形式能声明**，其余会被明确拒绝而不是静默忽略 |
 | `repetitionReason` | 视情况 | 同一表达第 3 次起、或连续 3 页相同表达时写；有 visual 按 visual，否则按 form |
-| `fallback` | 否 | 容量不足时改用什么 |
+
+**没有降级字段。** 容量不足时改的是布局、分面、模块高度或绘制路径，不是表达类型；写了 `fallback` 会被直接拒绝。装配后的 QA 还会核对声明为图形实现（`kind:'svg'`）的形式在成稿里确实出现了 SVG，只有表格就报错。
 
 成稿每页必须显式声明 `data-form`（封面、参考资料、封底、分隔页除外），取值与 `pages.json` 一致；**没有静默默认值**，缺了或写了枚举以外的名字装配直接失败。`pages.json` 声明 `visual` 时，成稿须声明相同 `data-visual`，否则对账失败。`data-proves` 可选，写了就必须与 `pages.json` 的 `proves` 一致。
 

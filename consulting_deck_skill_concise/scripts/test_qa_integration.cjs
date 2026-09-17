@@ -19,5 +19,22 @@ const contracts=require('./report_contract.cjs');
   ['planner-missing',contracts.install(source,{...contracts.read(source),planner:{mode:'used',record:'missing.json',sha256:'a'.repeat(64)}}),false,/planner合同/]
  ];
  for(const [name,html,pass,expected] of cases){const file=path.join(dir,name+'.html'),out=path.join(dir,name);fs.writeFileSync(file,html);const proc=spawnSync(process.execPath,[path.join(__dirname,'qa_deck.cjs'),file,out],{env:process.env,encoding:'utf8',maxBuffer:20*1024*1024});if(!fs.existsSync(path.join(out,'audit.json')))throw Error(name+': '+proc.stderr+proc.stdout);const audit=JSON.parse(fs.readFileSync(path.join(out,'audit.json')));assert.equal(audit.geometryStatus,pass?'PASS':'FAIL',name+JSON.stringify(audit.errors));if(expected)assert.ok(audit.errors.some(e=>expected.test(e)),name+JSON.stringify(audit.errors));if(pass){assert.equal(audit.plannerExecution.status,'DIRECT');assert.equal(audit.evidenceManifest.entries.length,2);assert.ok(audit.evidenceManifest.entries.some(e=>e.medium==='pdf'&&e.path==='pdf-p01.png'));assert.deepEqual(audit.rows[0].criticalPdf.errors,[]);assert.equal(audit.taskContract.reviewPolicy,'author');}console.log(name+': '+audit.geometryStatus);}
- console.log('PASS QA integration: actual PDF evidence, critical text, decoration, task identity and planner binding');
+ // 声明为图却只给表格：不带数据条的替代表要失败，带数据条 sparkline 的替代表也要失败。
+ const svgPages=path.join(dir,'svg-pages.html'),svgDeck=path.join(dir,'svg-deck.html'),svgTask=path.join(dir,'svg-task.json'),svgRecord=path.join(dir,'svg-pages.json');
+ fs.writeFileSync(svgRecord,JSON.stringify({version:1,pages:[{page:1,proves:'两条渠道的差额与量级',form:'kit.dumbbell'}]}));
+ fs.writeFileSync(svgTask,JSON.stringify({workMode:'editorial',complexity:'simple',planner:{mode:'direct'},pages:{record:'svg-pages.json'},critical:[]}));
+ const body=table=>`<section class="slide reading" data-frame-boundary="space" data-form="kit.dumbbell" data-proves="两条渠道的差额与量级"><header class="slide__header"><h1 class="slide__title">渠道差额</h1></header><div class="slide__body">${table}</div><div class="source">合成验证材料</div><div class="slide__page">1</div></section>`;
+ fs.writeFileSync(svgPages,body('<table class="data-table"><thead><tr><th>渠道</th><th>差额</th></tr></thead><tbody><tr><td>商超</td><td>−1.1</td></tr></tbody></table>'));
+ await assemble({pagesFile:svgPages,outputFile:svgDeck,contractFile:svgTask});
+ const sparkline='<svg class="table-bar" viewBox="0 0 160 14"><rect x="0" y="3" width="80" height="8" fill="#000080" data-value="1"/></svg>';
+ const bypass=fs.readFileSync(svgDeck,'utf8').replace('</tbody>',`<tr><td>电商</td><td>${sparkline}</td></tr></tbody>`);
+ for(const [name,html] of [['svg-form-as-table',fs.readFileSync(svgDeck,'utf8')],['svg-form-as-table-with-sparkline',bypass]]){
+  const file=path.join(dir,name+'.html'),out=path.join(dir,name);fs.writeFileSync(file,html);
+  const proc=spawnSync(process.execPath,[path.join(__dirname,'qa_deck.cjs'),file,out],{env:process.env,encoding:'utf8',maxBuffer:20*1024*1024});
+  const audit=JSON.parse(fs.readFileSync(path.join(out,'audit.json')));
+  assert.equal(audit.geometryStatus,'FAIL',name+' 必须失败：'+JSON.stringify(audit.errors));
+  assert.ok(audit.errors.some(e=>/是图形实现，但正文里没有 SVG/.test(e)),name+' 未命中声明不一致：'+JSON.stringify(audit.errors));
+  console.log(name+': '+audit.geometryStatus);
+ }
+ console.log('PASS QA integration: actual PDF evidence, critical text, decoration, task identity, planner binding and svg-form substitution');
 }finally{fs.rmSync(dir,{recursive:true,force:true})}})().catch(e=>{console.error(e);process.exitCode=1});

@@ -9,7 +9,7 @@ function collect(html,extra=''){
   const specs=[...html.matchAll(/data-(?:spec|opt)=(['"])([\s\S]*?)\1/g)].map(m=>decode(m[2])).join('');
   const visible=html.replace(/<script\b[\s\S]*?<\/script>/gi,'').replace(/<style\b[\s\S]*?<\/style>/gi,'').replace(/<!--[\s\S]*?-->/g,'').replace(/<[^>]+>/g,'');
   const ascii=Array.from({length:95},(_,i)=>String.fromCharCode(32+i)).join('');
-  return [...new Set(decode(visible)+specs+extra+ascii+'%+−—–/()[]:;￥¥$€£亿元万元年月日%完整数据表对象期间原值序位自定义标注总量起点终点流量节点父节点根节点规模气泡面积与规模成正比最大圆单位未提供缺失')].sort().join('');
+  return [...new Set(decode(visible)+specs+extra+ascii+'%+−—–/()[]:;￥¥$€£亿元万元年月日%对象期间原值总量起点终点流量节点规模气泡面积与规模成正比最大圆单位未提供缺失')].sort().join('');
 }
 function pack(html,{profile,extraText='',assetDir}={}){
   const inherited=html.match(/data-typography="([^"]+)"/)?.[1];const p=type.get(profile||inherited);
