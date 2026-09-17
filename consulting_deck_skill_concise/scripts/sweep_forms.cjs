@@ -18,7 +18,10 @@ function text(report, onlyFamily) {
   for (const group of report.families) {
     if (onlyFamily && group.family !== onlyFamily) continue;
     lines.push('', '## ' + group.label + '（' + group.family + '）');
-    for (const item of group.forms) lines.push('- ' + item.form + '：' + item.label + ' · ' + item.capacity + ' · 标注入口 ' + (item.annotation || '作者实现'));
+    for (const item of group.forms) {
+      const annotation = item.annotation === 'layer' ? '通用标注层' : item.annotation === 'comparisons' ? '自带 Δ 入口' : '未接入';
+      lines.push('- ' + item.form + '：' + item.label + ' · ' + item.capacity + ' · 旁解读 ' + annotation);
+    }
   }
   return lines.join('\n');
 }

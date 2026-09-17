@@ -47,10 +47,10 @@ Full product description, deliverable contract and build instructions: [skill RE
 | Content | Location |
 |---|---|
 | Skill entry (completion criteria, six-step spine, hard contract, commands) | [SKILL.md](consulting_deck_skill_concise/SKILL.md) |
-| On-demand references (11 files) | [references/](consulting_deck_skill_concise/references/) |
+| On-demand references (chart selection, analysis, precision, delivery, …) | [references/](consulting_deck_skill_concise/references/) |
 | Engine, themes, fonts, exhibit runtime | [assets/](consulting_deck_skill_concise/assets/) |
 | Authoring and maintenance scripts | [scripts/](consulting_deck_skill_concise/scripts/) |
-| Independent chart-selection module | [echarts-viz-planner](https://github.com/ZeroxZhang/echarts-viz-planner) |
+| Optional external selection advisor (off by default; no snapshot bundled) | [echarts-viz-planner](https://github.com/ZeroxZhang/echarts-viz-planner) |
 
 This repository presents the skill itself. Development records, past iterations and reviews are kept locally and are not distributed with the repository.
 
