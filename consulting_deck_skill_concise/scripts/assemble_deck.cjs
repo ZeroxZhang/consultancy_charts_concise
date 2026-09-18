@@ -19,6 +19,9 @@ function sectionContract(source){
 async function assemble(options={}){
  let {pagesFile,outputFile,cssFile,title='报告',contractFile}=options;
  if(!pagesFile||!outputFile)throw Error('需要pagesFile与outputFile');
+ // 逐页迭代只装到当前页：整册页数必须与 pages 合同逐页对上，收窄必须两边同时做，否则装不出来。
+ const upto=options.upto===undefined?0:Number(options.upto);
+ if(options.upto!==undefined&&(!Number.isInteger(upto)||upto<1))throw Error('--upto 需要正整数页码：它表示只装前 N 页正文');
  const contractApi=require('./report_contract.cjs');
  const sourceMode=/class=["'][^"']*\breading\b/.test(fs.readFileSync(pagesFile,'utf8'))?'reading':'presentation';
  const defaults={mode:sourceMode,kind:options.kind||'fragment',theme:options.theme||'mckinsey',typography:options.typography||(sourceMode==='reading'?'serif-report-bold':'sans-presentation'),ratio:options.ratio||'16x9'};
@@ -39,7 +42,7 @@ async function assemble(options={}){
   browser=await playwright().chromium.launch({channel:process.env.CHROME_CHANNEL||'chrome',headless:true});
   const page=await browser.newPage(),issues=[];page.on('pageerror',e=>issues.push(e.message));
   await page.route('**/*',route=>route.abort());
-  const assembled=await page.evaluate(({engine,pages,css,title,kind,ratio,mode,explicitContract})=>{
+  const assembled=await page.evaluate(({engine,pages,css,title,kind,ratio,mode,explicitContract,upto})=>{
    const doc=new DOMParser().parseFromString(engine,'text/html'),stage=doc.querySelector('#stage');
    if(!stage||doc.querySelectorAll('#stage').length!==1||stage.parentElement.id!=='viewport'||![...doc.querySelectorAll('.slide')].every(s=>stage.contains(s)))throw Error('引擎#stage结构已变化，需更新装配适配器');
    const template=document.createElement('template');template.innerHTML=pages;
@@ -48,7 +51,13 @@ async function assemble(options={}){
     if(node.nodeType===Node.ELEMENT_NODE&&node.tagName==='STYLE'){authorCSS.push(node.textContent);node.remove();continue;}
     if(node.nodeType!==Node.ELEMENT_NODE||node.tagName!=='SECTION'||!node.classList.contains('slide'))throw Error('顶层仅允许完整section.slide、style与空白/注释');
    }
-   const slides=[...template.content.children];if(!slides.length||template.content.querySelectorAll('.slide').length!==slides.length)throw Error('每页必须是独立的顶层section.slide，不能嵌套slide');
+   const all=[...template.content.children];if(!all.length||template.content.querySelectorAll('.slide').length!==all.length)throw Error('每页必须是独立的顶层section.slide，不能嵌套slide');
+   const BOOKENDS=['cover','references','back-cover','divider'];
+   // 制作期只看前 N 页：首尾页留着（它们是整册骨架），正文只留前 N 页，其余从片段里摘掉。
+   // 切在这里而不是切文件：上面已经用真解析器验过结构，再拿正则去截字符串只会引入第二套语法。
+   if(upto){let content=0;for(const slide of all){if(BOOKENDS.includes(slide.dataset.pageRole))continue;if(content++<upto)continue;slide.remove();}
+    if(!template.content.children.length)throw Error('--upto '+upto+' 收窄后没有剩余页面');}
+   const slides=[...template.content.children];
    const reserved=new Set([...doc.querySelectorAll('[id]')].filter(e=>!stage.contains(e)).map(e=>e.id)),ids=new Set();
    const allowedUrl=value=>!value||value.startsWith('#')||/^data:(?:image\/(?:png|jpeg|gif|webp)|font\/(?:woff2?|ttf|otf));base64,/i.test(value);
    function checkCSS(text){
@@ -86,12 +95,14 @@ async function assemble(options={}){
     if(!slide.querySelector(':scope > .slide__frame')){const frame=doc.createElement('div');frame.className='slide__frame';frame.setAttribute('aria-hidden','true');slide.prepend(frame);}
    }
    slides[0].classList.add('active');stage.replaceChildren(...slides);doc.title=title;doc.documentElement.dataset.deckKind=kind;doc.documentElement.dataset.assemblyRoute='static-html-svg';doc.body.dataset.ratio=ratio;
+   // 切片留在成稿上：文件本身要说得清自己是制作期产物，不能靠调用者记得。
+   if(upto)doc.documentElement.dataset.assemblyPartial=String(upto);
    // 静态页不加载未使用图表库；主引擎及其导航、打印、PDF下载功能保持原样。
    for(const script of doc.querySelectorAll('script[src]')){const src=script.getAttribute('src');if(src==='./deck-typography.js')continue;if(['./echarts-recipes.js','./chart-runtime.js'].includes(src)||/^https:\/\/cdn\.jsdelivr\.net\/npm\/echarts@[^/]+\/dist\/echarts\.min\.js$/.test(src))script.remove();else throw Error('未知引擎依赖，不能静默丢弃: '+src);}
    for(const script of doc.querySelectorAll('script[type="module"]')){if(script.textContent.includes('@icon-park/svg'))script.remove();else throw Error('未知引擎模块依赖');}
    const style=doc.createElement('style');style.id='deck-author';style.textContent=authorCSS.join('\n');doc.head.append(style);
-   return {html:'<!DOCTYPE html>\n'+doc.documentElement.outerHTML,pages:slides.length,slideForms};
-  },{engine,pages,css,title,kind,ratio,mode:task.mode,explicitContract:!!contractFile});
+   return {html:'<!DOCTYPE html>\n'+doc.documentElement.outerHTML,pages:slides.length,slideForms,partial:upto||null};
+  },{engine,pages,css,title,kind,ratio,mode:task.mode,explicitContract:!!contractFile,upto});
   // 形式取值走封闭枚举：写了就必须是真能渲染出来的入口，不是自造名字。
   const deckForms=require('../assets/deck-forms.js');
   for(const item of assembled.slideForms)if(item.form){try{deckForms.get(item.form);}catch(error){throw Error('第'+item.page+'页 data-form="'+item.form+'"：'+error.message);}}
@@ -100,7 +111,9 @@ async function assemble(options={}){
   if(contractFile&&!pagesRecord)throw Error('任务合同缺少 pages：S3 须产出 pages.json，并在 task.json 用 {"pages":{"record":"pages.json","sha256":"..."}} 绑定（字段见 references/delivery.md）');
   if(pagesRecord){
    const pagesApi=require('./check_pages.cjs'),pagesContract=pagesApi.load(pagesRecord);
-   const pagesErrors=pagesApi.verifyDeck(pagesContract.doc,assembled.slideForms);
+   // pages.json 记录的 sha256 仍在 load 里照常核对——切片只收窄成稿要对账的条目，不改动那份记录。
+   const declared=upto?{...pagesContract.doc,pages:pagesContract.doc.pages.filter(page=>page.page<=upto)}:pagesContract.doc;
+   const pagesErrors=pagesApi.verifyDeck(declared,assembled.slideForms);
    if(pagesErrors.length)throw Error('pages 合同与成稿不一致：'+pagesErrors.join('；'));
   }
   const base=path.join(tmp,'assembled.html'),themed=path.join(tmp,'themed.html');fs.writeFileSync(base,contractApi.install(assembled.html,task));
@@ -118,9 +131,9 @@ async function assemble(options={}){
   if(await page.locator('#stage > .slide').count()!==assembled.pages||requests.length||issues.length)throw Error('静态装配运行失败: '+JSON.stringify({requests,errors:issues}));
   fs.mkdirSync(path.dirname(output),{recursive:true});const pending=output+'.assembling-'+crypto.randomBytes(5).toString('hex');
   try{fs.writeFileSync(pending,html);fs.renameSync(pending,output);}finally{if(fs.existsSync(pending))fs.unlinkSync(pending);}
-  return {status:'assembled',output,pages:assembled.pages,theme,typography,kind,ratio,sha256:sha(html),route:'static-html-svg'};
+  return {status:'assembled',output,pages:assembled.pages,theme,typography,kind,ratio,sha256:sha(html),route:'static-html-svg',partial:assembled.partial};
  }finally{try{if(browser)await browser.close();}finally{fs.rmSync(tmp,{recursive:true,force:true});}}
 }
-function args(argv){const [pagesFile,outputFile,...rest]=argv;if(!pagesFile||!outputFile)throw Error('用法: node assemble_deck.cjs pages.html deck.html [--css page.css] [--title 标题] [--kind fragment|report|collection] [--theme mckinsey] [--typography serif-report-bold] [--ratio 16x9|4x3]');const out={pagesFile,outputFile},names={css:'cssFile',title:'title',kind:'kind',theme:'theme',typography:'typography',ratio:'ratio',contract:'contractFile'},seen=new Set();for(let i=0;i<rest.length;i+=2){const key=rest[i].replace(/^--/,'');if(!rest[i].startsWith('--')||!names[key]||rest[i+1]===undefined||seen.has(key))throw Error('未知/缺值/重复参数: '+rest[i]);seen.add(key);out[names[key]]=rest[i+1];}return out;}
+function args(argv){const [pagesFile,outputFile,...rest]=argv;if(!pagesFile||!outputFile)throw Error('用法: node assemble_deck.cjs pages.html deck.html [--css page.css] [--title 标题] [--kind fragment|report|collection] [--theme mckinsey] [--typography serif-report-bold] [--ratio 16x9|4x3] [--upto N]');const out={pagesFile,outputFile},names={css:'cssFile',title:'title',kind:'kind',theme:'theme',typography:'typography',ratio:'ratio',contract:'contractFile',upto:'upto'},seen=new Set();for(let i=0;i<rest.length;i+=2){const key=rest[i].replace(/^--/,'');if(!rest[i].startsWith('--')||!names[key]||rest[i+1]===undefined||seen.has(key))throw Error('未知/缺值/重复参数: '+rest[i]);seen.add(key);out[names[key]]=rest[i+1];}return out;}
 if(require.main===module)assemble(args(process.argv.slice(2))).then(r=>console.log(JSON.stringify(r))).catch(e=>{console.error(e.message);process.exitCode=1;});
 module.exports={assemble,sectionContract,args};

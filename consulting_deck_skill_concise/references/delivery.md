@@ -89,7 +89,7 @@
 | `proves` | 是 | 这一页要让读者看出的**一个**关系；与 `data-proves` 一致时会被核对 |
 | `form` | 是 | 本页主实现入口，取自 `assets/deck-forms.js`；未封装的 ECharts 或手写 SVG 用 svg.custom，不限制实际图型 |
 | `visual` | 通用 SVG 时填写 | 实际表达名称，如 ecdf、forest、adjacency-matrix；相同图型跨页同名。可用于其他入口，regions 也可填写。成稿对应 data-visual |
-| `regions` | 否 | 一页多展品时写明分区；必须恰好一个 `role:"primary"` 且与 `form` 一致；主区写了 visual 时须与 page.visual 相同 |
+| `regions` | 否 | 一页多展品时写明分区；必须恰好一个 `role:"primary"` 且与 `form` 一致；主区写了 visual 时须与 page.visual 相同。它不生成布局，只做声明——写法与分区规则见[单页布局选型](layouts.md) |
 | `annotations` | 否 | 图上的旁解读，见[证据与表达](exhibits.md)的"旁解读"一节；**只有 `annotation:'layer'` 的形式能声明**，其余会被明确拒绝而不是静默忽略 |
 | `repetitionReason` | 视情况 | 同一表达第 3 次起、或连续 3 页相同表达时写；有 visual 按 visual，否则按 form |
 

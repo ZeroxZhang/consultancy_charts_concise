@@ -52,12 +52,16 @@ async function preview(options = {}) {
       rows.push(row);
     }
     // 关键语义只在作者显式声明时核对；打印与 PDF 位置属于冒烟/验收档，不在这里重复。
+    // 本次只看部分页时按范围核对：范围外的关键语义列入 uncovered，不当阻塞报出来。
     const contract = modern ? require('./report_contract.cjs').read(fs.readFileSync(input, 'utf8')) : null;
-    const critical = criticalContent.verifyDeclared(contract, rows).map(message => ({page: 0, message}));
+    const critical = criticalContent.verifyScoped(contract, rows);
+    const criticalErrors = critical.errors.map(message => ({page: 0, message}));
     const flatten = (key, code) => rows.flatMap(r => (r.review[key] || []).map(item => ({page: r.page, code, ...item})));
     return {
-      file: input, out, total, pages: rows.map(r => r.page), shots: rows.map(r => r.screenshot),
-      errors: [...flatten('errors').map(e => ({page: e.page, code: e.code, detail: e.message || e.text || e.error || ''})), ...critical.map(c => ({page: 0, code: 'CRITICAL', detail: c.message})), ...problems.map(p => ({page: 0, code: 'RUNTIME', detail: p}))],
+      file: input, out, total, partial: await page.evaluate(() => Number(document.documentElement.dataset.assemblyPartial) || null),
+      pages: rows.map(r => r.page), shots: rows.map(r => r.screenshot),
+      uncovered: critical.uncovered,
+      errors: [...flatten('errors').map(e => ({page: e.page, code: e.code, detail: e.message || e.text || e.error || ''})), ...criticalErrors.map(c => ({page: 0, code: 'CRITICAL', detail: c.message})), ...problems.map(p => ({page: 0, code: 'RUNTIME', detail: p}))],
       warnings: flatten('warnings').map(w => ({page: w.page, code: w.code, detail: w.message || w.text || ''})),
       manual: flatten('manual', 'MANUAL').map(m => ({page: m.page, code: m.code, detail: m.message || ''}))
     };
@@ -66,7 +70,10 @@ async function preview(options = {}) {
 function report(summary, json) {
   if (json) { console.log(JSON.stringify(summary, null, 2)); return; }
   console.log('单页自查：' + summary.file + '（共 ' + summary.total + ' 页，本次看 ' + summary.pages.length + ' 页）');
+  if (summary.partial) console.log('  ⚠ 这是只装了前 ' + summary.partial + ' 页正文的制作期切片，不能当作交付成稿。');
   for (const shot of summary.shots) console.log('  截图 ' + path.join(summary.out, shot));
+  // 范围外的关键语义是"这次没看"，不是"没落实"；整册验收会核对，这里只交代清楚。
+  if (summary.uncovered?.length) console.log('  本次未覆盖的关键语义（在未装配的页上，整册验收时才核对）：' + summary.uncovered.join('、'));
   const list = (title, items) => {
     if (!items.length) return;
     console.log(title + '（' + items.length + '）：');

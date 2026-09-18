@@ -169,7 +169,7 @@ const svg = kit.waterfall({width:740,height:330,items:[
 - 各函数的锚点 id：`dumbbell`/`slope` 用 `start:类别`／`end:类别`；`bullet` 用 `value:类别`／`target:类别`；`waterfall` 用 `bar:类别`；`mekko`/`stacked` 用 `seg:列|系列`；`heatmap` 用 `cell:行|列`。`AnnotationLayer.collect(svg)` 可从任意已生成 SVG（含自绘或 ECharts 产物）取回锚点。
 - 九种配方（`recipe.*`）同样带锚点，id 与 kit 同风格：`rankedBar` 用 `bar:类别`（类别取排序后的名字）；`groupedBar` 用 `bar:类别|系列`；`timeSeries` 用 `point:期间|系列`；`composition` 用 `seg:列|系列`；`histogram` 用 `bin:箱`；`scatter` 用 `point:标签`；`heatmap` 用 `cell:行|列`；`sankey` 用 `node:名称`／`flow:源→目标`；`tree` 用 `node:标签`。**配方页写 `annotations` 的方式与 kit 页完全一样**（`render({recipe,spec,annotations})`），锚点由渲染期从真实图元几何生成，不需要另写一套。
 - **旁解读只出现在成稿。** 锚点的身份通道（`ecmeta_*`）只在 SSR 渲染时写入，`render_echarts_svg.cjs` 出的内联 SVG 才有；`deck_engine.html` 里的实时预览跑的是非 SSR 渲染，那棵 DOM 里没有锚点也没有旁解读。看预览时不要据此判断标注丢了，以成稿为准。
-- 配方的几处边界：`scatter` 的锚点原值只有一个字段，取**纵轴值**，横轴与规模留在标签里；`rankedBar` 的基准线画成 `ec-line`，不是数据图元，因此没有锚点，要标注"高于／低于基准"请落在柱子上；`timeSeries` 期间数超过 8 时默认不画数据点，**没有点就没有锚点**，需要标注就显式给 `showSymbol:true`（否则渲染会直接报错并点出这根杠杆）。
+- 配方的几处边界：`scatter` 的锚点原值只有一个字段，取**纵轴值**，横轴与规模留在标签里；`rankedBar` 的基准线画成 `ec-line`，不是数据图元，因此没有锚点，要标注"高于／低于基准"请落在柱子上；`timeSeries` 期间数超过 8 时默认不画数据点，**没有点就没有锚点**，需要标注就显式给 `showSymbol:true`（否则渲染会直接报错并点出这根杠杆）。纵轴范围用 `min`／`max` 收窄、用 `zeroBaseline` 强制含零，两者都生效且**必须覆盖全部取值**，切掉数据会当场报错；锚点 id 里的期号取自 `periods` 原文，写进 `annotations` 时少写或多写空白都还能对上，改写期号本身则会报错并列出本图可用的锚点。
 
 **已经踩过的坑（改这条链路前先读）。** 下面四个缺陷**都通过了生成期的自查**，只有"独立读取真实渲染结果"才暴露出来；它们的共同点是**声明与真实对象用了两套约定**。
 

@@ -152,7 +152,9 @@ function verifyDeck(doc, slides) {
     try { forms.get(slide.form); } catch (error) { errors.push('第 ' + slide.page + ' 页 ' + error.message); return; }
     if (slide.form !== declared.form) errors.push('第 ' + slide.page + ' 页 data-form="' + slide.form + '" 与 pages.json 的 ' + declared.form + ' 不一致');
     if (declared.visual !== undefined && norm(slide.visual) !== norm(declared.visual)) errors.push('第 ' + slide.page + ' 页 data-visual 缺失或与 pages.json 不一致');
-    if (norm(slide.proves) && norm(slide.proves) !== norm(declared.proves)) errors.push('第 ' + slide.page + ' 页 data-proves 与 pages.json 的 proves 不一致');
+    // 同一句话存在成稿与 pages.json 两处，逐字相同才认。报错要把两句都摊开——
+    // 只说"不一致"等于让作者回去逐字比对，页数一多就是纯耗时。
+    if (norm(slide.proves) && norm(slide.proves) !== norm(declared.proves)) errors.push('第 ' + slide.page + ' 页 data-proves 与 pages.json 的 proves 不一致：成稿写「' + norm(slide.proves) + '」，pages.json 写「' + norm(declared.proves) + '」；两处必须逐字相同，改完一处要同步另一处');
   });
   return errors;
 }

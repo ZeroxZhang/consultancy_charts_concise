@@ -28,6 +28,15 @@ function verifyDeclared(contract, rows) {
   for (const c of objects) if (!c.visible || !normalize(c.text) || !c.targetVisible) errors.push('关键语义不可见或关联对象缺失：' + c.id);
   return errors;
 }
+/* 只核对本次真正检查到的页：范围外的关键语义不算失败，单独列出来。
+   逐页迭代时成稿只装到当前页，其余页的关键语义本来就不在 DOM 里——把它们报成阻塞，
+   会让"阻塞"这个词在制作期失去意义，真阻塞也就没人看了。整册验收仍走 verifyDeclared。 */
+function verifyScoped(contract, rows) {
+  const found = new Set(rows.flatMap(r => (r.critical || []).map(c => c.id)));
+  const errors = verifyDeclared({critical: (contract?.critical || []).filter(c => found.has(c.id))}, rows);
+  const uncovered = (contract?.critical || []).filter(c => !found.has(c.id)).map(c => c.id);
+  return {errors, uncovered};
+}
 function verifyPrint(screen, printed) {
   const errors = [];
   for (const c of screen) {
@@ -45,4 +54,4 @@ function verifyPdf(critical, words) {
   }
   return errors;
 }
-module.exports = {inspectSlide, verifyDeclared, verifyPrint, verifyPdf};
+module.exports = {inspectSlide, verifyDeclared, verifyScoped, verifyPrint, verifyPdf};

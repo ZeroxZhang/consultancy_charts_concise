@@ -85,7 +85,7 @@
 | 章节分隔 | 过渡、导航、主题预告 | 允许有意的低密度和留白，不套正文的密度要求 |
 | 附录 | 补充核对、方法、明细 | 按内容使用上述结构，保留与正文的对应和原尺寸可读性 |
 
-已有样式在 `assets/consulting-layouts.css` 与 `assets/deck-geometry.css`，装配时自动内联。可用的页面级结构：`.evidence-grid`、`.layout-split`、`.layout-three`、`.layout-paired`、`.layout-stack`；展品容器 `.exhibit`（含 h2、.unit、.graphic）；文字结构 `.evidence-note`、`.annotation`、`.decision-strip`、`.matrix-note`；表格 `.data-table`（.num、.group、.selected）、`.analytical-table`；状态 `.status-label` 与 `.status-good/.status-risk/.status-caution`；数值轨道 `.precision-table`、`.precision-row`、`.precision-bar-track`；版式 `.proof-layout`、`.plot-stack`。名称表示的是一种可选结构，不是固定配方；相邻页面可以有完全不同的构思。
+已有样式在 `assets/consulting-layouts.css` 与 `assets/deck-geometry.css`，装配时自动内联。上面几行的结构要在具体页面上选型时，读[单页布局选型](layouts.md)：按读者任务分族给出阅读路径、取舍、什么时候不该用，以及可直接粘贴的 `regions`；配套的可浏览图谱在 `assets/layout-atlas.html`（双击即开，离线）。可用的页面级结构：`.evidence-grid`、`.layout-split`、`.layout-three`、`.layout-paired`、`.layout-stack`；展品容器 `.exhibit`（含 h2、.unit、.graphic）；文字结构 `.evidence-note`、`.annotation`、`.decision-strip`、`.matrix-note`；表格 `.data-table`（.num、.group、.selected）、`.analytical-table`；状态 `.status-label` 与 `.status-good/.status-risk/.status-caution`；数值轨道 `.precision-table`、`.precision-row`、`.precision-bar-track`；版式 `.proof-layout`、`.plot-stack`。名称表示的是一种可选结构，不是固定配方；相邻页面可以有完全不同的构思。
 
 ## 整页成立才进入交付
 

@@ -47,7 +47,9 @@ function parseArgs(argv){
  await fontAudit.attach(p);
  await p.goto(pathToFileURL(input).href,{waitUntil:'networkidle'});await p.evaluate(()=>window.deckReady||document.fonts.ready);
  const total=await p.locator('.slide').count(),rows=[];if(!total)throw Error('没有幻灯片');
- const documentContract=await p.evaluate(()=>({kind:document.documentElement.dataset.deckKind,reliability:document.documentElement.dataset.reliabilityVersion}));
+ const documentContract=await p.evaluate(()=>({kind:document.documentElement.dataset.deckKind,reliability:document.documentElement.dataset.reliabilityVersion,partial:document.documentElement.dataset.assemblyPartial||null}));
+ // 切片稿（assemble --upto）只服务于逐页迭代，永远不是交付物；冒烟/验收档拿它跑等于用半个稿子出证据。
+ if(documentContract.partial){if(tier==='iteration')warnings.push('这份成稿只装了前 '+documentContract.partial+' 页正文（制作期切片），结论只覆盖已装的页');else errors.push('这份成稿是只装了前 '+documentContract.partial+' 页正文的制作期切片，不能作为'+tier+'档证据；整册装配后再跑');}
  const modern=documentContract.reliability==='2';let taskContract=null;
  if(modern){
   try{taskContract=taskContracts.read(initialHtml.toString());if(!taskContract)throw Error('reliability 2 缺少任务合同');
@@ -71,7 +73,9 @@ function parseArgs(argv){
    warnings.push(...result.visualPolicy.warnings.map(e=>'第'+pageNumber+'页视觉诊断：'+JSON.stringify(e)));
   }
   errors.push(...result.relations.errors.map(e=>'第'+pageNumber+'页几何关系：'+JSON.stringify(e)));
-  if(result.fonts.identity==='FAIL')errors.push('第'+pageNumber+'页字体未就绪或出现系统回退');
+  // 图被 CSS 缩放在预览里看不见，但它改的是图内每一个字号与偏移，必须当错误报。
+  for(const item of result.scaledSvg||[]){const line='第'+pageNumber+'页图形被缩放：按 '+item.source+' '+item.intrinsic.join('×')+' 渲染，实际占位 '+item.rendered.join('×')+'（缩放 '+item.scale+'）';if(item.source==='data-actual-size')errors.push(line+'——配方图不能靠 CSS 缩放；改 exhibits 的 width/height 或版位比例');else warnings.push(line+'——请确认是有意的');}
+  if(result.fonts.identity==='FAIL')errors.push('第'+pageNumber+'页'+fontAudit.describe(result.fonts));
   const titleFit=await p.locator('.slide.active .slide__title').evaluateAll(es=>es.map(e=>{const cs=getComputedStyle(e);return {text:e.textContent,lines:e.offsetHeight/parseFloat(cs.lineHeight)};}));if(titleFit.some(t=>t.lines>2.1))warnings.push('第'+pageNumber+'页标题超过两行建议，请目视判断');
   if(result.tinyText.length||result.smallDataText.length)warnings.push('第'+pageNumber+'页部分文字低于建议字号，请按实际可读性复核');
   // 声明"没有静默默认值"就必须真的拦住：新稿缺 boundary 直接失败；老稿保持提示，不追溯返工。

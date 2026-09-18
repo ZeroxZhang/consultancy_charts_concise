@@ -10,7 +10,7 @@ const fontAudit = require('./browser_font_audit.cjs');
 
 /* 在真实页面上执行的 DOM 测量。自包含（不闭包外部变量），供 Playwright 序列化。 */
 function inspectDom(s) {
-  const box = s.getBoundingClientRect(), bad = [], tiny = [], smallData = [], unreadable = [], logicalScale = box.width / s.offsetWidth;
+  const box = s.getBoundingClientRect(), bad = [], tiny = [], smallData = [], unreadable = [], scaledSvg = [], logicalScale = box.width / s.offsetWidth;
   for (const e of s.querySelectorAll('*')) {
     const r = e.getBoundingClientRect(), cs = getComputedStyle(e); if (!r.width || !r.height || cs.visibility === 'hidden') continue;
     if (r.left < box.left - 1 || r.top < box.top - 1 || r.right > box.right + 1 || r.bottom > box.bottom + 1) bad.push({tag: e.tagName, text: (e.textContent || '').slice(0, 80)});
@@ -19,6 +19,20 @@ function inspectDom(s) {
     if (e.children.length === 0 && (e.textContent || '').trim() && effective < 10 && !e.closest('[data-decorative="true"]')) unreadable.push({text: e.textContent.slice(0, 40), effectiveFont: effective});
     if (e.tagName.toLowerCase() === 'text' && e.getScreenCTM) { const m = e.getScreenCTM(), effective = parseFloat(cs.fontSize) * Math.hypot(m.c, m.d) / logicalScale; if (effective < 13.5) smallData.push({text: e.textContent.slice(0, 40), effectiveFont: effective}); }
     if (['TD', 'TH'].includes(e.tagName) && (e.scrollHeight > e.clientHeight + 1 || e.scrollWidth > e.clientWidth + 1)) bad.push({tag: e.tagName, text: e.textContent.slice(0, 80), type: 'cell-overflow'});
+  }
+  /* 图表按真实逻辑像素渲染，靠 CSS 缩放它等于改掉内部每一个字号与偏移。
+     配方图的渲染器会写下 data-actual-size，可以直接逐像素对账；手绘 SVG 没有这个属性，退回 viewBox。
+     preserveAspectRatio 默认等比，决定字号的是较小的那一维，所以取两维缩放比的较小值。 */
+  for (const e of s.querySelectorAll('.slide__body svg, .slide__body canvas')) {
+    if (e.classList.contains('table-bar') || e.closest('[data-decorative="true"]')) continue;
+    const r = e.getBoundingClientRect(); if (!r.width || !r.height) continue;
+    const declared = /^(\d+(?:\.\d+)?)\s*[×x]\s*(\d+(?:\.\d+)?)$/.exec(e.getAttribute('data-actual-size') || '');
+    const view = (e.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+    const intrinsic = declared ? [Number(declared[1]), Number(declared[2])] : (view.length === 4 && view.every(Number.isFinite) ? [view[2], view[3]] : null);
+    if (!intrinsic || !intrinsic[0] || !intrinsic[1]) continue;
+    const rendered = [r.width / logicalScale, r.height / logicalScale];
+    const scale = Math.min(rendered[0] / intrinsic[0], rendered[1] / intrinsic[1]);
+    if (Math.abs(scale - 1) > 0.01) scaledSvg.push({source: declared ? 'data-actual-size' : 'viewBox', intrinsic: intrinsic.map(v => Math.round(v * 10) / 10), rendered: rendered.map(v => Math.round(v * 10) / 10), scale: Math.round(scale * 1000) / 1000});
   }
   const exhibits = [...s.querySelectorAll('svg,canvas,img,table')].filter(e => {
     const r = e.getBoundingClientRect(); return r.width && r.height && getComputedStyle(e).visibility !== 'hidden' && !e.closest('[data-decorative="true"]');
@@ -63,7 +77,7 @@ function inspectDom(s) {
   return {
     exhibits, textEvidence, unreadableText: unreadable, form: s.dataset.form || null, visual: s.dataset.visual || '', proves: s.dataset.proves || '',
     title: s.querySelector('.slide__title,.cover-title,.divider-name')?.textContent || '',
-    overflow: bad, tinyText: tiny, smallDataText: smallData,
+    overflow: bad, tinyText: tiny, smallDataText: smallData, scaledSvg,
     charts: [...s.querySelectorAll('.chart')].map(e => ({width: e.clientWidth, height: e.clientHeight, rendered: !!e.querySelector('svg,canvas'), error: e.dataset.chartError || null, risks: e.dataset.chartRisks || null})),
     // 表格内的数据条 sparkline 也是 svg；不排除它，"整页图被换成带数据条的表"就会漏判。
     shapes: {svg: s.querySelectorAll('.slide__body svg:not(.table-bar)').length, sparklines: s.querySelectorAll('.slide__body svg.table-bar').length, tables: s.querySelectorAll('.slide__body table').length},
@@ -110,8 +124,17 @@ function summarize(row) {
   for (const item of row.visualPolicy?.errors || []) errors.push({code: item.code || 'VISUAL', ...item});
   for (const item of row.visualPolicy?.warnings || []) warnings.push({code: item.code || 'VISUAL-WARN', ...item});
   for (const item of row.tinyText || []) warnings.push({code: 'TINY-TEXT', ...item});
+  // 配方图是按真实逻辑像素渲染的，缩放它等于偷偷改字号；手绘图缩不缩是作者的选择，只提示。
+  for (const item of row.scaledSvg || []) {
+    const detail = '按 ' + item.source + ' ' + item.intrinsic.join('×') + ' 渲染，实际占位 ' + item.rendered.join('×') + '（缩放 ' + item.scale + '）';
+    const advice = item.source === 'data-actual-size'
+      ? '：配方图不能靠 CSS 缩放，缩放会改掉内部所有字号与偏移。改 exhibits 的 width/height，或改版位比例'
+      : '：手绘 SVG 缩放会连带改变内部文字的实际字号，确认是有意的';
+    const item2 = {code: 'SVG-SCALED', source: item.source, scale: item.scale, message: detail + advice};
+    if (item.source === 'data-actual-size') errors.push(item2); else warnings.push(item2);
+  }
   for (const item of row.smallDataText || []) warnings.push({code: 'SMALL-DATA-TEXT', ...item});
-  if (row.fonts?.identity === 'FAIL') errors.push({code: 'FONT-IDENTITY', message: '字体未就绪或出现系统回退'});
+  if (row.fonts?.identity === 'FAIL') errors.push({code: 'FONT-IDENTITY', message: fontAudit.describe(row.fonts)});
   if (!row.frame?.boundary) errors.push({code: 'FRAME-BOUNDARY-MISSING', message: '未显式声明 data-frame-boundary'});
   if (row.frame?.ruleVisible && row.frame.doubleBorder.length) warnings.push({code: 'DOUBLE-BORDER', cls: row.frame.doubleBorder[0], message: '标题区隔线与正文首排顶线可能并存'});
   // 需要人工确认的路径原样带出：它们不是通过，也不该在摘要里被压成一句"已检查"。

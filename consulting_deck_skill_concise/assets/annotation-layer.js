@@ -47,6 +47,29 @@
     return { x: x, y: y, width: width, height: height };
   }
 
+  /* 锚点 id 是拿图形标签拼出来的（point:<期号>|<系列>），作者在 pages.json 里手写时多一个空格、
+     改一次全半角，整条标注就落空——而"改显示文案顺手拆掉标注"是最难自查的一类回归。
+     所以精确匹配优先，退一步按"去掉全部空白"再比一次；只在唯一命中时才认，
+     两个 id 归一化后撞车仍按未命中处理，避免悄悄指到另一条数据上。
+     每次现扫 scene.anchors，不另建索引：锚点既可能来自 addAnchor，也可能整份来自 collect，
+     维护第二份索引迟早会和它漂移。单图锚点是几十条量级，这点开销不值得换一份可能错的状态。 */
+  function normAnchorId(id) { return String(id).replace(/\s+/g, ''); }
+
+  function lookupAnchor(scene, id) {
+    if (id === undefined || id === null) return null;
+    var anchors = scene.anchors || {};
+    if (anchors[id]) return anchors[id];
+    var key = normAnchorId(id), hits = [];
+    Object.keys(anchors).forEach(function (k) { if (normAnchorId(k) === key) hits.push(k); });
+    return hits.length === 1 ? anchors[hits[0]] : null;
+  }
+
+  /* 未命中时补一句：是"根本没有"还是"归一化后撞车"。后者按未知报会让作者去查一个确实存在的 id。 */
+  function anchorMissNote(scene, id) {
+    var key = normAnchorId(id), clashes = Object.keys(scene.anchors || {}).filter(function (k) { return normAnchorId(k) === key; });
+    return clashes.length > 1 ? '——去掉空白后同时匹配 ' + clashes.join('、') + '，无法确定用哪一个' : '';
+  }
+
   function addAnchor(scene, anchor) {
     if (!anchor || typeof anchor.id !== 'string' || !anchor.id.trim()) throw new Error('锚点需要非空 id');
     if (scene.anchors[anchor.id]) throw new Error('锚点 id 重复: ' + anchor.id);
@@ -243,7 +266,7 @@
   function resolveText(scene, request, options) {
     var o = options || {}, kind = request.kind || 'value';
     var fmt = Object.assign({}, o.format || {}, request.format || {});
-    var need = function (id) { var v = scene.anchors[id]; if (!v) throw new Error('未知标注端点: ' + id); return v; };
+    var need = function (id) { var v = lookupAnchor(scene, id); if (!v) throw new Error('未知标注端点: ' + id + anchorMissNote(scene, id)); return v; };
     var self = need(request.on), derived = null, value;
     if (kind === 'note') {
       if (!request.text) throw new Error('note 标注需要 text');
@@ -291,8 +314,8 @@
   function place(scene, request, options) {
     var o = options || {};
     if (!request || !request.on) throw new Error('标注需要 on');
-    var anchor = scene.anchors[request.on];
-    if (!anchor) throw new Error('未知标注锚点: ' + request.on);
+    var anchor = lookupAnchor(scene, request.on);
+    if (!anchor) throw new Error('未知标注锚点: ' + request.on + anchorMissNote(scene, request.on));
     var text = request.resolvedText === undefined ? resolveText(scene, request, o) : request.resolvedText;
     var id = request.id === undefined ? ('annotation-' + scene.labels.length) : String(request.id);
     var placeOptions = Object.assign({}, o, request.place || {}, { owner: id });
@@ -333,7 +356,7 @@
     if (requests === undefined) return { items: [], issues: [] };
     if (!Array.isArray(requests)) throw new Error('annotations 须为数组');
     var prepared = requests.map(function (r, i) {
-      var anchor = scene.anchors[r.on];
+      var anchor = lookupAnchor(scene, r.on);
       var area = anchor && anchor.box ? anchor.box.width * anchor.box.height : 0;
       return { request: r, index: i, area: area };
     });
@@ -543,6 +566,7 @@
     attrKeys: ATTR_KEYS.slice(),
     estimateMeasure: estimateMeasure,
     createScene: createScene,
+    lookupAnchor: lookupAnchor,
     addAnchor: addAnchor,
     addObstacle: addObstacle,
     addRoute: addRoute,

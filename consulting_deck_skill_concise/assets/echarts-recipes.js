@@ -60,7 +60,15 @@
     // 每个期间都必须出现：交给 axisLabel.interval 自动抽稀会静默丢掉期号，实测验收看不出被丢的是哪一期。
     // 点数一多默认不画数据点；但没画点就没有图元可锚，旁解读会整条落空——所以这里留一个显式开关（spec 或单系列都认）。
     const symbolOn=s=>s.showSymbol!==undefined?s.showSymbol:(spec.showSymbol!==undefined?spec.showSymbol:periods.length<=8);
-    return {animation:false,tooltip:{show:false},grid:grid({right:92}),xAxis:categoryAxis(periods,{boundaryGap:false,axisLabel:{color:'@gray-2',interval:0}}),yAxis:valueAxis(spec,{min:spec.zeroBaseline?Math.min(0,...values):undefined,max:spec.zeroBaseline?Math.max(0,...values):undefined}),series:series.map((s,i)=>({name:s.name,type:'line',connectNulls:false,showSymbol:symbolOn(s),symbolSize:5,lineStyle:{width:s.selected?3:2,color:roleColor(s.role,i)},itemStyle:{color:roleColor(s.role,i)},endLabel:{show:true,formatter:s.name,color:roleColor(s.role,i),fontWeight:s.selected?700:400},labelLayout:{moveOverlap:'shiftY'},data:s.values}))};
+    // 纵向范围写了就必须生效：以前只有 zeroBaseline 管轴，spec.min/max 被静默忽略——
+    // 作者以为收窄了轴，图却照旧，是这一层里最难被看出来的一类错。
+    // 收窄可以，但不能把数据切掉，所以范围仍须覆盖全部取值；与热力图的"范围必须覆盖全部数据"同一立场。
+    const lo=spec.min===undefined?undefined:num(spec.min,'min'),hi=spec.max===undefined?undefined:num(spec.max,'max');
+    if(lo!==undefined&&values.length&&lo>Math.min(...values))fail('timeSeries.min 高于最小数据 '+decimals(Math.min(...values))+'，折线会被裁掉；收窄纵轴不能丢数据');
+    if(hi!==undefined&&values.length&&hi<Math.max(...values))fail('timeSeries.max 低于最大数据 '+decimals(Math.max(...values))+'，折线会被裁掉；收窄纵轴不能丢数据');
+    if(lo!==undefined&&hi!==undefined&&!(hi>lo))fail('timeSeries 的 min 必须小于 max');
+    const yRange={min:lo===undefined?(spec.zeroBaseline?Math.min(0,...values):undefined):lo,max:hi===undefined?(spec.zeroBaseline?Math.max(0,...values):undefined):hi};
+    return {animation:false,tooltip:{show:false},grid:grid({right:92}),xAxis:categoryAxis(periods,{boundaryGap:false,axisLabel:{color:'@gray-2',interval:0}}),yAxis:valueAxis(spec,yRange),series:series.map((s,i)=>({name:s.name,type:'line',connectNulls:false,showSymbol:symbolOn(s),symbolSize:5,lineStyle:{width:s.selected?3:2,color:roleColor(s.role,i)},itemStyle:{color:roleColor(s.role,i)},endLabel:{show:true,formatter:s.name,color:roleColor(s.role,i),fontWeight:s.selected?700:400},labelLayout:{moveOverlap:'shiftY'},data:s.values}))};
   }
 
   function composition(spec={}){
