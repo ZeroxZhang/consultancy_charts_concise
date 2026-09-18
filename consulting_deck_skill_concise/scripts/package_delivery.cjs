@@ -45,6 +45,9 @@ function validateAudit(file,{inputHtml,inputPdf,html,pdf,htmlPages,pdfPages,pdfS
   if(!fs.statSync(file,{throwIfNoEntry:false})?.isFile())fail('缺少 S7 audit.json，不能确认 HTML 与 PDF 来自同一次验收');
   let audit;try{audit=JSON.parse(fs.readFileSync(file,'utf8'))}catch(error){fail('无法读取 S7 audit.json：'+error.message)}
   if(audit.geometryStatus!=='PASS'||audit.errors?.length)fail('S7 工程验收未通过，拒绝打包');
+  // 迭代/冒烟档的 audit 是"这一轮跑到哪"的记录，缺打印、PDF、断网等结论，不能当交付依据。
+  const tier=audit.tier??'acceptance';
+  if(tier!=='acceptance'||audit.acceptance?.complete===false)fail('audit.json 来自 '+tier+' 档（未跑完的检查：'+((audit.acceptance?.missingStages||[]).join('、')||'不完整')+'），只有验收档 audit 能作为交付依据；请补跑 node scripts/qa_deck.cjs deck.html renders');
   // 从当前HTML读契约，不能因audit遗漏字段就跳过V11覆盖核对。
   const root=html.match(/<html\b[^>]*>/i)?.[0]||'';
   const attr=name=>root.match(new RegExp('\\b'+name+'\\s*=\\s*([\"\'])'+'([^\"\']*)'+'\\1','i'))?.[2];

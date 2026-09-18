@@ -33,7 +33,7 @@ function inspectCoverage(review,{htmlSha256,pdfSha256,pages,requireIndependent=f
  return errors;
 }
 function aggregateCurrent(audit,inputs,{baseDir=process.cwd(),auditDir=baseDir,inputDirs=[]}={}){
- const errors=[],coverage=[],issues=[],values={analysis:[],evidence:[],visual:[]};
+ const errors=[],coverage=[],issues=[],dispositions=[],values={analysis:[],evidence:[],visual:[]};
  for(const [i,raw] of inputs.entries()){
   let result=raw;
   if(typeof raw==='string')try{result=JSON.parse(raw.replace(/^```(?:json)?\s*|\s*```$/g,''));}catch{errors.push('结果'+i+'为未解析自然语言，须解析核对或补查');continue;}
@@ -50,6 +50,8 @@ function aggregateCurrent(audit,inputs,{baseDir=process.cwd(),auditDir=baseDir,i
    coverage.push(copy);
   }
   issues.push(...(Array.isArray(result.issues)?result.issues:[]));
+  // 告警处置是逐份输入各自提供的，聚合时并集；覆盖不全会由审查合同点名。
+  dispositions.push(...(Array.isArray(result.warningReview)?result.warningReview:[]));
   for(const key of Object.keys(values))if(result.checks?.[key])values[key].push(result.checks[key]);
  }
  const checks={};
@@ -58,7 +60,9 @@ function aggregateCurrent(audit,inputs,{baseDir=process.cwd(),auditDir=baseDir,i
   checks[key]={status:items.length&&items.every(c=>allowed.includes(c.status))?(items.some(c=>c.status==='pass')?'pass':'not_applicable'):'not_reviewed',basis:[...new Set(items.map(c=>c.basis).filter(v=>typeof v==='string'&&v.trim()))].sort().join('\n')};
  }
  const sorted=items=>items.sort((a,b)=>contract.stable(a).localeCompare(contract.stable(b)));
- const review={schemaVersion:3,status:'complete',reviewer:[...new Set(coverage.map(c=>c.reviewer).filter(v=>typeof v==='string'))].sort().join('; '),independence:coverage.some(c=>c.independence==='independent')?'independent':'author',htmlSha256:audit.htmlArtifact?.sha256,pdfSha256:audit.pdfArtifact?.sha256,auditSha256:contract.hash(contract.stable(audit)),coverage:sorted(coverage),checks,issues:sorted(issues)};
+ const review={schemaVersion:3,status:'complete',reviewer:[...new Set(coverage.map(c=>c.reviewer).filter(v=>typeof v==='string'))].sort().join('; '),independence:coverage.some(c=>c.independence==='independent')?'independent':'author',htmlSha256:audit.htmlArtifact?.sha256,pdfSha256:audit.pdfArtifact?.sha256,auditSha256:contract.hash(contract.stable(audit)),coverage:sorted(coverage),warningReview:sorted([...new Map(dispositions.filter(w=>w&&typeof w.warning==='string').map(w=>[w.warning,w])).values()]),checks,issues:sorted(issues)};
+ // 迭代/冒烟档的 audit 没有证据清单，聚不出可交付的 review；这里点名说清，避免只看到"缺证据"。
+ if((audit.tier??'acceptance')!=='acceptance'||audit.acceptance?.complete===false)errors.push('audit 来自 '+(audit.tier??'acceptance')+' 档（未跑完的检查：'+((audit.acceptance?.missingStages||[]).join('、')||'不完整')+'），只有验收档能作为审查与交付依据');
  try{errors.push(...reviewContract.validate(review,audit,{baseDir,auditDir}));}catch(e){errors.push('审查合同无效：'+e.message);}
  review.aggregationErrors=[...new Set(errors)].sort();review.status=errors.length?'incomplete':'complete';return review;
 }

@@ -15,6 +15,17 @@ function validate(review, audit, {baseDir = process.cwd(), auditDir = baseDir, p
   if (!Array.isArray(review.issues)) fail('缺少issues');
   for (const i of review.issues || []) if (!i || !['minor', 'major', 'blocking'].includes(i.severity) || !['open', 'resolved'].includes(i.status) || !i.description?.trim() || i.severity !== 'minor' && i.status !== 'resolved') fail('问题未解决或格式无效');
   if (review.aggregationErrors?.length) fail('聚合仍有错误');
+  // 旧稿没有 tier 字段，按验收档处理；迭代/冒烟档缺打印、PDF、断网等结论，不能进入审查。
+  if ((audit.tier ?? 'acceptance') !== 'acceptance' || audit.acceptance?.complete === false) fail('audit 不是验收档（tier=' + (audit.tier ?? 'acceptance') + '，未跑完：' + ((audit.acceptance?.missingStages || []).join('、') || '不完整') + '），只有验收档能作为审查与交付依据');
+  // audit 的告警是"需目视判断"的清单，不是自动通过项。审查者可以判它不构成问题，但不能不处置：
+  // 不处置的告警等于被无声丢掉，而制稿里最贵的漏项恰恰是这类没有被任何人看过的软发现。
+  const dispositions = new Map();
+  for (const entry of Array.isArray(review.warningReview) ? review.warningReview : []) {
+    if (!entry || typeof entry.warning !== 'string' || !['accepted', 'fixed'].includes(entry.status) || typeof entry.note !== 'string' || !entry.note.trim()) {fail('告警处置格式无效：每条须为 {warning, status: accepted|fixed, note}'); continue;}
+    dispositions.set(entry.warning, entry);
+  }
+  // 逐份输入的校验不强求覆盖全集（多位审查者各处置一部分）；聚合后的最终 review 才必须逐条对上。
+  if (!partial) for (const warning of Array.isArray(audit.warnings) ? audit.warnings : []) if (!dispositions.has(warning)) fail('audit 告警未处置（须写明接受理由或修复位置）：' + warning);
   const manifest = audit.evidenceManifest?.entries;
   if (!Array.isArray(manifest) || !manifest.length) return [...errors, 'audit缺少真实渲染证据清单'];
   const ids = new Set(), slots = new Set(), pageIds = new Map(), verified = new Map();
@@ -26,7 +37,8 @@ function validate(review, audit, {baseDir = process.cwd(), auditDir = baseDir, p
     slots.add(slot);
     if(pageIds.has(e.page)&&pageIds.get(e.page)!==e.pageId)fail('audit同页身份不一致：'+e.page);
     pageIds.set(e.page,e.pageId);
-    if (e.sourceSha256 !== audit[e.medium + 'Artifact']?.sha256 || !/^[a-f0-9]{64}$/.test(e.pageSha256 || '') || e.dependenciesSha256 !== audit.evidenceManifest.dependenciesSha256) fail('audit证据来源/依赖错配：' + e.id);
+    // 旧稿没有 pageStyleSha256；缺失按"不可判"处理（只会更容易要求重审），有值必须是摘要。
+    if (e.sourceSha256 !== audit[e.medium + 'Artifact']?.sha256 || !/^[a-f0-9]{64}$/.test(e.pageSha256 || '') || e.pageStyleSha256 && !/^[a-f0-9]{64}$/.test(e.pageStyleSha256) || e.dependenciesSha256 !== audit.evidenceManifest.dependenciesSha256) fail('audit证据来源/依赖错配：' + e.id);
     try { if (!fs.statSync(path.resolve(auditDir, e.path)).isFile() || fileHash(path.resolve(auditDir, e.path)) !== e.sha256) throw Error(); verified.set(e.id, e); }
     catch { fail('当前渲染图缺失/已改变：' + e.id); }
   }
@@ -56,12 +68,15 @@ function validate(review, audit, {baseDir = process.cwd(), auditDir = baseDir, p
         if (fileHash(auditFile) !== old.audit.sha256 || fileHash(reviewFile) !== old.review.sha256) throw Error('旧审查/audit摘要不符');
         const oa = JSON.parse(fs.readFileSync(auditFile)), or = JSON.parse(fs.readFileSync(reviewFile));
         if (oa.geometryStatus !== 'PASS' || oa.errors?.length) throw Error('旧工程检查未通过');
+        // 只有验收档的 audit 才能作为继承来源：迭代/冒烟档本来就缺打印、PDF、断网等结论。
+        if ((oa.tier ?? 'acceptance') !== 'acceptance' || oa.acceptance?.complete === false) throw Error('旧audit不是验收档（tier=' + (oa.tier ?? 'acceptance') + '），未跑完的检查不能继承');
         for (const medium of ['html', 'pdf']) if (fileHash(path.resolve(path.dirname(auditFile), oa[medium + 'Artifact'].path)) !== oa[medium + 'Artifact'].sha256) throw Error('旧产物缺失/已修改');
         const oldErrors = validate(or, oa, {baseDir: path.dirname(reviewFile), auditDir: path.dirname(auditFile), trail: [...trail, reviewFile]});
         if (oldErrors.length) throw Error(oldErrors.join('；'));
         for (const id of refs) {
           const current = verified.get(id), previous = oa.evidenceManifest.entries.find(e => e.id === id);
-          if (!current || !previous || ['pageSha256', 'dependenciesSha256', 'sha256', 'page'].some(k => current[k] !== previous[k])) throw Error('页面/字体样式/图像/页序已变，须重新审查：' + id);
+          // pageStyleSha256 只覆盖本页能命中的样式；别的页面改样式不再连带作废这一页。
+          if (!current || !previous || ['pageSha256', 'pageStyleSha256', 'dependenciesSha256', 'sha256', 'page'].some(k => current[k] !== previous[k])) throw Error('页面/字体样式/图像/页序已变，须重新审查：' + id);
           if (!or.coverage.some(oc => oc.reviewer === c.reviewer && oc.independence === c.independence && oc.evidence?.some(e => e.id === id))) throw Error('旧审查者未覆盖此证据：' + id);
         }
         for (const issue of or.issues.filter(i => i.status === 'open')) if (!review.issues.some(i => i.description === issue.description)) throw Error('继承时丢失旧未决问题');

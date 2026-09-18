@@ -147,7 +147,7 @@ API：`await assemble({pagesFile, outputFile, contractFile?, cssFile?, title?, k
 链式的，断任何一环都不能正式交付：
 
 1. **装配**——`assemble_deck.cjs` 把任务合同写进 HTML，并声明 `data-reliability-version="2"` 与 `data-deck-kind`。传了合同时逐页 `data-form` 必须存在、取值合法，并与 `pages.json` 一一对应；缺 `pages` 或缺声明直接失败。
-2. **工程与证据**——`node scripts/qa_deck.cjs /任务/deck.html /任务/renders` 生成 `audit.json` 与真实的双媒介逐页证据。audit 必须 `geometryStatus === "PASS"` 且 `errors` 为空；缺少任一媒介的任一页证据都会失败。audit 同时给出 `pagesCheck` 与 `pagesInventory`（全篇形式与族的分布、最长连续段）。
+2. **工程与证据**——`node scripts/qa_deck.cjs /任务/deck.html /任务/renders` 生成 `audit.json` 与真实的双媒介逐页证据。audit 必须 `geometryStatus === "PASS"` 且 `errors` 为空；缺少任一媒介的任一页证据都会失败。audit 同时给出 `pagesCheck` 与 `pagesInventory`（全篇形式与族的分布、最长连续段）。**只有 `tier` 为 `acceptance` 的 audit 能进入这条链**：迭代档（`--tier iteration --pages <页>`，必须点名页码）与冒烟档（`--tier smoke`）是制作期的自查工具，`acceptance.complete` 为 `false` 并列出没跑的检查，`package_delivery` 与有限继承都会拒绝它们。
 3. **审查归属**——`review` 必须 `status: "complete"`，证据 id 取自本次 `audit.evidenceManifest.entries`，并绑定当前 HTML、PDF 与 audit 的摘要。审查者要读 `pagesInventory`，对"全篇是否重复同一弱结构"给出具体判断。
 4. **打包**——`package_delivery.cjs` 复核页数、SHA-256、任务合同与证据归属；`pagesCheck` 不是 `PASS` 时拒绝正式打包，只能用 `--preview`。内嵌 PDF 的字节必须等于独立 PDF。
 
@@ -170,6 +170,7 @@ API：`await assemble({pagesFile, outputFile, contractFile?, cssFile?, title?, k
     "visual": {"status": "not_reviewed", "basis": ""}
   },
   "coverage": [],
+  "warningReview": [],
   "issues": []
 }
 ```
@@ -196,6 +197,19 @@ API：`await assemble({pagesFile, outputFile, contractFile?, cssFile?, title?, k
 - 复杂任务由作者与独立角色**各自覆盖全页、两种媒介**；简单任务由作者覆盖全页、两种媒介。**作者结果不能填补独立结果的缺失。**
 - 同一角色内部可以合并分工结果，但作者与独立审查者的身份不能重叠。
 
+### warningReview
+
+`audit.warnings` 里的每一条"需目视判断"都要在这里被处置过：
+
+```json
+"warningReview": [{"warning": "audit.warnings 里的原文", "status": "accepted|fixed", "note": "接受的理由，或改在哪一页"}]
+```
+
+- `warning` 取 `audit.warnings` 的**原文**，逐条对应；少一条就会被点名拒绝，多一条没有意义。
+- `accepted` 表示看过之后判断它不构成问题，`note` 要写清凭什么这样判断（例如"已按实际尺寸看过，两行是该页标题的必要断行"）；`fixed` 表示已修，写清改在哪里并已重跑验收档。
+- 多位审查者可以各处置一部分，聚合时取并集；覆盖不全会由审查合同拦住。
+- 这不是新的通过项：告警本身仍不阻塞交付，**被拦住的是"没人处置"**。audit 没有告警时留空数组即可。
+
 ### issues
 
 每项形如 `{"severity": "minor|major|blocking", "status": "open|resolved", "description": "..."}`。**major 与 blocking 必须 resolved 才能交付。** 没有问题也要给出空数组，明确表示检查过。
@@ -204,11 +218,15 @@ API：`await assemble({pagesFile, outputFile, contractFile?, cssFile?, title?, k
 
 局部修改之后，只有同时满足全部条件的未变范围才可以引用旧审查：
 
-- 页面内容、依赖数据、字体与公共样式、渲染图像和页序经核对均未变；
-- 旧 audit、旧 review 与两份产物文件的摘要仍然一致，且旧 audit 的工程检查通过；
+- 该页的页面内容、命中该页的样式作用域、公共依赖（字体、脚本、按引擎比）、渲染图像和页序经核对均未变；
+- 旧 audit、旧 review 与两份产物文件的摘要仍然一致，且旧 audit 的工程检查通过、**`tier` 是 `acceptance`**；
 - 旧审查者本人覆盖过该条证据；旧的未决问题被本次完整保留。
 
-任一条不能证明，就复验该页。**共享样式变化不能因为"源文字没改"而跳过。** 旧 major 的"已修"还需要本次证据，不能只把状态改成 resolved。不得给旧截图换上当前哈希来冒认本次看图。
+**失效半径按页算。** `evidenceManifest` 里每条证据带三个逐页摘要：`pageSha256`（该页 DOM 内容）、`pageStyleSha256`（能命中该页的样式规则）和 `sha256`（该页实际渲染图字节），共同的 `dependenciesSha256` 只覆盖 deck 级身份、字体、脚本与**判不出作用域的样式**。所以改第 5 页的样式只作废第 5 页，其他页照常继承。
+
+这条半径的边界要说清：`pageStyleSha256` 由浏览器逐条选择器判定——只有当一条规则**能证明**命中的元素全部落在某张幻灯片内时才归该页。`:root`、`body`、`*`、伪元素、任何非普通样式规则（`@media`、`@font-face`、`@keyframes`、`@page` 等）、读不到 `cssRules` 的外部样式表，以及当前匹配不到任何元素的规则，一律归公共依赖，一改就全篇失效。判不准时宁可多失效，不会漏失效。
+
+任一条不能证明，就复验该页。**公共样式或共享依赖变化不能因为"源文字没改"而跳过。** 旧 major 的"已修"还需要本次证据，不能只把状态改成 resolved。不得给旧截图换上当前哈希来冒认本次看图。
 
 ### 聚合与打包
 
@@ -234,4 +252,4 @@ node scripts/package_delivery.cjs /任务/deck.html /任务/renders/deck.pdf /�
 
 打包会核对当前 HTML/PDF 的路径、页数、SHA-256、audit 与 review；内嵌 PDF 必须逐字节等于独立 PDF，且不更改正文。修改文字、数据、主题、字体或页序之后，重建受影响的产物并复核；只有满足有限继承的未变范围可以引用旧审查。后续反馈推翻旧验收时，保留原记录并明确撤回范围，不继续引用旧结论。
 
-交付给两个可打开的文件、页数、验证状态和实际限制。下载按钮提供已验收的 PDF，浏览器打印只是临时用途。交付层改动跑 `test_delivery.cjs`，QA 规则改动跑 `test_qa_policy.cjs`；常规制稿只做受影响成稿检查与实际复核。
+交付给两个可打开的文件、页数、验证状态和实际限制。下载按钮提供已验收的 PDF，浏览器打印只是临时用途。交付层改动跑 `test_delivery.cjs`，QA 规则改动跑 `test_qa_policy.cjs`，证据归属或失效半径改动跑 `test_review_inheritance.cjs` 与 `test_evidence_scope.cjs`；常规制稿只做受影响成稿检查与实际复核。

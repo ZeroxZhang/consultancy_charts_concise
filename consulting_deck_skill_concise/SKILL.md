@@ -66,6 +66,7 @@ description: >-
 
 **S3 逐页构思视觉论证。** 先读[图表选型](references/charts.md)：覆盖 13 类关系的丰富候选，按内容、数据前提和静态媒介选择，不以组件目录限制图型。准确且丰富地使用图表与图示是质量目标；有表达价值的关系要主动展开，不能因省事退回重复柱图或摘要。制作前先回答"这页要让人看懂什么关系"，把关系变成可见结构，再决定用什么工具。不要从空白模板逐格填摘要，也不要把几个独立完成的组件拼起来算作一页。
 *做完的标志*：**内容和它的组织形式都定了**——逐页把 `proves`、`form`（通用 SVG 补 `visual`，必要时 `regions`、`annotations`）写进 `pages.json` 并在 `task.json` 绑定，成稿每页带上对应的 `data-form`；笔记里记下本页证明什么、哪些关系如何可见、主次与阅读顺序、空间与对齐的关键取舍。简单页不必建坐标台账。`form` 只标记实现入口，现成组件外可走 `svg.custom` 并声明实际图型 `visual`／`data-visual`；相同表达重复到第 3 次写理由。
+逐页实现时**做完一页就看一页**：改片段 → 装配 → `node scripts/preview_page.cjs deck.html <页码>` 出图并自己看过，再往下做。装配是无浏览器的纯构建，秒级；**视觉问题要在做这一页时就发现**，不要攒到 S5。
 读[整页创作](references/page_design.md)：
 
 - **主动找视觉表达机会。** 数字适合比较、组成和变化；文本也可以呈现机制、主体与资金路径、层级、反馈、时间、条件与权衡。图表、表格、机制图、信息图和矢量元素可在同页协作，分别承担证据、解释、识别和导航。
@@ -75,15 +76,15 @@ description: >-
 - **不做过度约束。** 低密度、表格或文字页只要适合本页任务就成立；没有图型配额、固定填充率或逐页审批。简洁来自分析取舍和组织，不能靠删掉分析、收缩展品或把关键解释移进脚注获得。
 
 **S4 实现。** 主题沿用已有选择，无选择且允许自主决定时用 mckinsey；颜色只来自 `assets/deck-themes.js`，字体只来自 `assets/deck-typography.js`（新 reading 默认 serif-report-bold，正文 Noto Sans SC／Inter）。数值与文本适配读[证据与表达](references/exhibits.md)；共享几何、复杂标注与关键语义声明读[精度与标注](references/precision.md)；母版、字体角色与字号读[母版与排印](references/type_frame.md)。实现入口与容量可用 `node scripts/sweep_forms.cjs` 查询；没有封装时用原生 ECharts 或自定义 SVG，不因此降低选型质量。常规流程不加载独立 planner。
-*做完的标志*：页面片段与样式写定，每页显式声明边界，无外部依赖。
+*做完的标志*：页面片段与样式写定，每页显式声明边界，无外部依赖；每页都用 `preview_page.cjs` 出过图并实际看过，阻塞项已改掉——**只剩"必须实际看图"那类主观判断留给 S5**。
 
-**S5 装配并亲眼验收。** 先以读者身份判断整份报告是否实现简报目标，再检查展品、标注、排印和工程。看原尺寸与关键局部；打印 DOM 不能替代最终 PDF。
+**S5 装配并亲眼验收。** 先以读者身份判断整份报告是否实现简报目标，再检查展品、标注、排印和工程。看原尺寸与关键局部；打印 DOM 不能替代最终 PDF。**这一档才导 PDF**：中间轮次用迭代档看单页，整册定型用冒烟档总览，只有确认要交付时才跑验收档。
 *做完的标志*：能逐页回答——主证据是否先被看见；标题里的关系是否真的展开；说明是否贴近对象；全页及模块内部空白是否有用途；同层文字基线、比较轨道与实际绘图区是否对齐；来源空间是否安全；是否出现禁用色条模块；全篇是否重复同一弱结构。判断要落到具体页和可见结果。
 读[验收](references/qa.md)。明确要求未兑现、关键关系未表达或页面重心失衡就要返工，即使文件可用、字都能读。返工先回到分析取舍和整页构思，再处理局部排印。
 
 任务需要拆给多个执行者时，用[分派契约](references/handoff.md)中的单页制作契约与独立复核契约：每份任务要有明确输入、输出和完成判据，结论由主会话汇总并验证。
 
-**S6 同版交付。** 按 task 合同的复杂度与重大结论风险安排未参与制作的独立复核，如实记录实际独立性。把真实检查与未决问题写成 review，绑定当前 HTML/PDF 与 audit；现行 schemaVersion 3 覆盖四层与每页证据，独立审查直接返回同结构 JSON。
+**S6 同版交付。** 按 task 合同的复杂度与重大结论风险安排未参与制作的独立复核，如实记录实际独立性。把真实检查与未决问题写成 review，绑定当前 HTML/PDF 与 audit；现行 schemaVersion 3 覆盖四层与每页证据，独立审查直接返回同结构 JSON。audit 里的每一条告警也要在 review 的 `warningReview` 里处置：判它不构成问题就写明理由，要改就改完重跑——**没被任何人处置的告警等于被无声丢掉**。
 *做完的标志*：审查 status 为 complete，无未解决的 major/blocking，交付 HTML 内嵌的 PDF 与独立 PDF 逐字节一致。
 读[交付契约](references/delivery.md)。未做完就只能用 `--preview`，不能称正式通过。
 
@@ -98,7 +99,8 @@ description: >-
 - 正文保留 `.slide__header` 与 `.slide__frame`；首排模块已有必要结构分隔线时用 integrated。
 - **报告禁止装饰性色条模块**：注释/判断块的侧边条、数字卡片的顶部色条，以及换类名、伪元素、阴影、渐变或 SVG 绘制的同类外观均禁用。数据条、坐标轴、关系线、必要分隔线和 quiet 母版不在禁令内。去掉边条后要重排内容，不能留下同样大的空框。
 - 逐页视觉均衡、有效内容对齐、来源安全区和合理留白是硬性完成要求，不是可选美化；但也不靠拉高表格行、撑大背景、重复结论或堆无关图标填空。
-- 交付门禁是链式的：`qa_deck` 生成的 audit 必须 `geometryStatus === "PASS"` 且 errors 为空 → 聚合出的 review 必须 status complete 且证据 id 取自本次 audit 的 evidenceManifest → `package_delivery` 会核对页数、SHA-256 与证据归属。断链任何一环都不能正式交付。
+- 交付门禁是链式的：`qa_deck` 生成的 audit 必须 `geometryStatus === "PASS"`、errors 为空，**且 `tier` 为 `acceptance`** → 聚合出的 review 必须 status complete 且证据 id 取自本次 audit 的 evidenceManifest → `package_delivery` 会核对页数、SHA-256 与证据归属。断链任何一环都不能正式交付。迭代档（`--tier iteration --pages <页>`，必须点名页码）与冒烟档（`--tier smoke`）是制作期自查，不进这条链。
+- **返工只作废受影响的那一页。** 修完一页重跑验收档，`evidenceManifest` 里只有该页的摘要会变；其他页可以继续引用旧审查。改到公共样式、字体、脚本或判不出作用域的样式（`:root`、`body`、`*`、`@media` 等）时半径就是全篇——这不是误报，那些页确实要复看。
 
 ## 命令
 
@@ -106,6 +108,10 @@ description: >-
 
 ```sh
 node scripts/assemble_deck.cjs /任务/pages.html /任务/deck.html --css /任务/page.css --title "报告标题" --contract /任务/task.json
+# 制作期逐页自查：出图 + 便宜检查，不产出 audit 或证据清单
+node scripts/preview_page.cjs /任务/deck.html 3
+node scripts/qa_deck.cjs /任务/deck.html /任务/renders-iter --tier iteration --pages 3
+# 交付前：必须跑默认的验收档，只有它产出可交付的证据清单
 node scripts/qa_deck.cjs /任务/deck.html /任务/renders
 node scripts/aggregate_reviews.cjs /任务/renders/audit.json /任务/renders/review.json /任务/renders/author.json
 # 派生为 independent 的任务再追加 /任务/renders/independent.json。简单任务不传这一项——
