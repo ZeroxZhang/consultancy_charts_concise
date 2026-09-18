@@ -7,6 +7,7 @@ const kit = require('../assets/exhibit-kit.js');
 const recipes = require('../assets/echarts-recipes.js');
 const precision = require('./render_precision_exhibit.cjs');
 const diagram = require('./render_diagram.cjs');
+const recipeRender = require('./render_echarts_svg.cjs').render;
 const palette = require('../assets/deck-themes.js').palette('mckinsey');
 const results = {};
 
@@ -42,6 +43,18 @@ results.enum_matches_implementation = true;
 // 3. annotation='layer' 的形式必须真的能出引线标注，不能只是声明。
 const annotated = [];
 const base = { palette, typography_id: 'serif-report-bold', width: 720, height: 400 };
+// 配方样例：与 test_echarts_recipes.cjs 同一组，保证测的是真实可跑的输入。
+const cases = {
+  rankedBar: { items: [{ label: '乙', value: 2 }, { label: '甲', value: 5 }], baseline: 3 },
+  groupedBar: { categories: ['甲', '乙'], series: [{ name: '本期', values: [8, -2] }, { name: '上期', values: [6, 1] }] },
+  timeSeries: { periods: ['2024', '2025'], series: [{ name: '收入', values: [10, 12] }] },
+  composition: { mode: 'percent', items: [{ label: '甲', segments: [{ label: '核心', value: 80 }, { label: '新业务', value: 20 }] }] },
+  histogram: { bins: [{ label: '0–10', value: 3 }, { label: '10–20', value: 7 }, { label: '20–30', value: 2 }] },
+  scatter: { items: [{ label: '甲', x: 1, y: 2, size: 100 }, { label: '乙', x: 2, y: 1, size: 25 }] },
+  heatmap: { rows: ['市场'], columns: ['规模', '增长'], values: [[4, 5]], min: 1, max: 5 },
+  sankey: { nodes: ['入口', '成交'], links: [{ source: '入口', target: '成交', value: 8 }] },
+  tree: { root: { label: '利润', value: 888, children: [{ label: '收入', value: 999 }, { label: '成本', value: 111 }] } }
+};
 const kitCases = {
   'kit.waterfall': ['waterfall', { items: [{ label: '期初', type: 'total', value: 10 }, { label: '变化', type: 'delta', value: -3 }, { label: '期末', type: 'total', value: 7 }], annotations: [{ on: 'bar:变化', kind: 'delta', text: '主要拖累 {value}' }] }],
   'kit.dumbbell': ['dumbbell', { items: [{ label: '甲', start: 6, end: 5 }, { label: '乙', start: 2, end: 3 }], annotations: [{ on: 'end:甲', kind: 'delta', from: 'start:甲', text: '{label} {delta}（{rate}）' }] }],
@@ -51,12 +64,35 @@ const kitCases = {
   'kit.mekko': ['mekko', { items: [{ label: '东区', segments: [{ label: '核心', value: 60 }, { label: '新业务', value: 40 }] }, { label: '南区', segments: [{ label: '核心', value: 30 }, { label: '新业务', value: 70 }] }], annotations: [{ on: 'seg:南区|新业务', kind: 'share', text: '{label} 占该区 {value}' }] }],
   'kit.stacked': ['stacked', { items: [{ label: '东区', segments: [{ label: '核心', value: 60 }, { label: '新业务', value: 40 }] }, { label: '南区', segments: [{ label: '核心', value: 30 }, { label: '新业务', value: 70 }] }], annotations: [{ on: 'seg:东区|核心', kind: 'share', text: '{label} {value}' }] }]
 };
+// 配方走 ECharts 出图 + 标注层：锚点 id 由配方自己定义，这里逐条点名，顺带把 id 约定钉进测试。
+const recipeCases = {
+  'recipe.rankedBar': [cases.rankedBar, 'bar:甲'],
+  'recipe.groupedBar': [cases.groupedBar, 'bar:甲|本期'],
+  'recipe.timeSeries': [cases.timeSeries, 'point:2024|收入'],
+  'recipe.composition': [cases.composition, 'seg:甲|核心'],
+  'recipe.histogram': [cases.histogram, 'bin:0–10'],
+  'recipe.scatter': [cases.scatter, 'point:甲'],
+  'recipe.heatmap': [cases.heatmap, 'cell:市场|规模'],
+  'recipe.sankey': [cases.sankey, 'node:入口'],
+  'recipe.tree': [cases.tree, 'node:利润']
+};
 for (const form of forms.list().filter(f => forms.annotationEntry(f) === 'layer')) {
   if (kitCases[form]) {
     const [fn, spec] = kitCases[form];
     const svg = kit[fn](Object.assign({}, base, spec));
     assert.match(svg, /data-role="annotation"/, form + ' 声明可标注却没有输出标注文字');
     assert.match(svg, /data-role="leader"/, form + ' 外置标注必须带引线');
+    assert.match(svg, /data-requested-size="\d+×\d+" data-actual-size="\d+×\d+"/, form + ' 缺少 requested/actual 尺寸回传');
+    assert.match(svg, /data-anchor-id=/, form + ' 缺少统一锚点契约');
+  } else if (recipeCases[form]) {
+    const [spec, on] = recipeCases[form];
+    const plan = recipeRender({ recipe: forms.get(form).export, spec, width: 720, height: 400, padding: 48, theme_id: 'mckinsey', typography_id: 'serif-report-bold', annotations: [{ on, kind: 'value', text: '读数 {value}' }] });
+    const svg = plan.pages[0].svg;
+    assert.equal(plan.annotations, 1, form + ' 声明的标注没有落到图上');
+    assert.match(svg, /data-role="annotation"/, form + ' 声明可标注却没有输出标注文字');
+    // 配方图有实心图元，标注可能落在图元内（此时本就不该有引线）；外置的必须带引线。
+    const count = re => (svg.match(re) || []).length;
+    assert.equal(count(/data-role="leader"/g) + count(/data-placement="inside"/g), count(/data-role="annotation"/g), form + ' 的标注既不在图元内也没有引线');
     assert.match(svg, /data-requested-size="\d+×\d+" data-actual-size="\d+×\d+"/, form + ' 缺少 requested/actual 尺寸回传');
     assert.match(svg, /data-anchor-id=/, form + ' 缺少统一锚点契约');
   } else {

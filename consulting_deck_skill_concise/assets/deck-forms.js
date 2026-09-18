@@ -17,15 +17,15 @@ const FORMS = {
   'kit.comparisonTable': { family: 'table', label: '比较表（HTML）', kind: 'html', module: 'exhibit-kit', export: 'comparisonTable', annotation: null, capacity: '高度由内容决定，须自行分页' },
 
   // —— ECharts 配方（assets/echarts-recipes.js，构建期 SSR 成内联 SVG）——
-  'recipe.rankedBar': { family: 'comparison', label: '排序条形', kind: 'svg', module: 'echarts-recipes', export: 'rankedBar', annotation: null, capacity: '≤ 24 项，正文宜更少' },
-  'recipe.groupedBar': { family: 'comparison', label: '分组柱状', kind: 'svg', module: 'echarts-recipes', export: 'groupedBar', annotation: null, capacity: '≤ 12 类 × 4 系列' },
-  'recipe.timeSeries': { family: 'trend', label: '时间序列折线', kind: 'svg', module: 'echarts-recipes', export: 'timeSeries', annotation: null, capacity: '≤ 36 期 × 5 系列，更多分面' },
-  'recipe.composition': { family: 'composition', label: '堆积／100% 堆积', kind: 'svg', module: 'echarts-recipes', export: 'composition', annotation: null, capacity: '≤ 12 类 × 6 系列' },
-  'recipe.histogram': { family: 'distribution', label: '直方图', kind: 'svg', module: 'echarts-recipes', export: 'histogram', annotation: null, capacity: '须已正确分箱，不从均值伪造' },
-  'recipe.scatter': { family: 'correlation', label: '散点／气泡', kind: 'svg', module: 'echarts-recipes', export: 'scatter', annotation: null, capacity: '> 15 点只标关键点' },
-  'recipe.heatmap': { family: 'correlation', label: '连续矩阵热力', kind: 'svg', module: 'echarts-recipes', export: 'heatmap', annotation: null, capacity: '≤ 160 格；只接受有限数值，未观察／缺失用自定义 SVG 或 HTML 单独编码' },
-  'recipe.sankey': { family: 'flow', label: '桑基图', kind: 'svg', module: 'echarts-recipes', export: 'sankey', annotation: null, capacity: '≤ 30 节点 / 60 边；须守恒无环' },
-  'recipe.tree': { family: 'hierarchy', label: '层级树（ECharts）', kind: 'svg', module: 'echarts-recipes', export: 'tree', annotation: null, capacity: '≤ 48 节点' },
+  'recipe.rankedBar': { family: 'comparison', label: '排序条形', kind: 'svg', module: 'echarts-recipes', export: 'rankedBar', annotation: 'layer', capacity: '≤ 24 项，正文宜更少' },
+  'recipe.groupedBar': { family: 'comparison', label: '分组柱状', kind: 'svg', module: 'echarts-recipes', export: 'groupedBar', annotation: 'layer', capacity: '≤ 12 类 × 4 系列' },
+  'recipe.timeSeries': { family: 'trend', label: '时间序列折线', kind: 'svg', module: 'echarts-recipes', export: 'timeSeries', annotation: 'layer', capacity: '≤ 36 期 × 5 系列，更多分面' },
+  'recipe.composition': { family: 'composition', label: '堆积／100% 堆积', kind: 'svg', module: 'echarts-recipes', export: 'composition', annotation: 'layer', capacity: '≤ 12 类 × 6 系列' },
+  'recipe.histogram': { family: 'distribution', label: '直方图', kind: 'svg', module: 'echarts-recipes', export: 'histogram', annotation: 'layer', capacity: '须已正确分箱，不从均值伪造' },
+  'recipe.scatter': { family: 'correlation', label: '散点／气泡', kind: 'svg', module: 'echarts-recipes', export: 'scatter', annotation: 'layer', capacity: '> 15 点只标关键点' },
+  'recipe.heatmap': { family: 'correlation', label: '连续矩阵热力', kind: 'svg', module: 'echarts-recipes', export: 'heatmap', annotation: 'layer', capacity: '≤ 160 格；只接受有限数值，未观察／缺失用自定义 SVG 或 HTML 单独编码' },
+  'recipe.sankey': { family: 'flow', label: '桑基图', kind: 'svg', module: 'echarts-recipes', export: 'sankey', annotation: 'layer', capacity: '≤ 30 节点 / 60 边；须守恒无环' },
+  'recipe.tree': { family: 'hierarchy', label: '层级树（ECharts）', kind: 'svg', module: 'echarts-recipes', export: 'tree', annotation: 'layer', capacity: '≤ 48 节点' },
 
   // —— 专业标注入口（scripts/render_precision_exhibit.cjs）——
   'precision.columns': { family: 'comparison', label: '数值柱（含小计／断轴／Δ）', kind: 'svg', module: 'precision', type: 'columns', annotation: 'layer', capacity: '≥ 400×260；类别 ≤ 4 行' },

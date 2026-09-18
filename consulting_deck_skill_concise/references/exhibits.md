@@ -167,6 +167,9 @@ const svg = kit.waterfall({width:740,height:330,items:[
 - `data-anchor-x/y` 是图元**参考点**（通常是中心），`data-anchor-box` 必须等于图元**真实几何包围盒**（不含描边），`data-anchor-side` 是首选出引线方向。
 - 引线接在 `box` 的边界上，**不从中心穿出来**；标注框贴在边界外侧，装不下就沿候选环后退。
 - 各函数的锚点 id：`dumbbell`/`slope` 用 `start:类别`／`end:类别`；`bullet` 用 `value:类别`／`target:类别`；`waterfall` 用 `bar:类别`；`mekko`/`stacked` 用 `seg:列|系列`；`heatmap` 用 `cell:行|列`。`AnnotationLayer.collect(svg)` 可从任意已生成 SVG（含自绘或 ECharts 产物）取回锚点。
+- 九种配方（`recipe.*`）同样带锚点，id 与 kit 同风格：`rankedBar` 用 `bar:类别`（类别取排序后的名字）；`groupedBar` 用 `bar:类别|系列`；`timeSeries` 用 `point:期间|系列`；`composition` 用 `seg:列|系列`；`histogram` 用 `bin:箱`；`scatter` 用 `point:标签`；`heatmap` 用 `cell:行|列`；`sankey` 用 `node:名称`／`flow:源→目标`；`tree` 用 `node:标签`。**配方页写 `annotations` 的方式与 kit 页完全一样**（`render({recipe,spec,annotations})`），锚点由渲染期从真实图元几何生成，不需要另写一套。
+- **旁解读只出现在成稿。** 锚点的身份通道（`ecmeta_*`）只在 SSR 渲染时写入，`render_echarts_svg.cjs` 出的内联 SVG 才有；`deck_engine.html` 里的实时预览跑的是非 SSR 渲染，那棵 DOM 里没有锚点也没有旁解读。看预览时不要据此判断标注丢了，以成稿为准。
+- 配方的几处边界：`scatter` 的锚点原值只有一个字段，取**纵轴值**，横轴与规模留在标签里；`rankedBar` 的基准线画成 `ec-line`，不是数据图元，因此没有锚点，要标注"高于／低于基准"请落在柱子上；`timeSeries` 期间数超过 8 时默认不画数据点，**没有点就没有锚点**，需要标注就显式给 `showSymbol:true`（否则渲染会直接报错并点出这根杠杆）。
 
 **已经踩过的坑（改这条链路前先读）。** 下面四个缺陷**都通过了生成期的自查**，只有"独立读取真实渲染结果"才暴露出来；它们的共同点是**声明与真实对象用了两套约定**。
 
@@ -174,6 +177,7 @@ const svg = kit.waterfall({width:740,height:330,items:[
 |---|---|---|
 | 标注整段压在别的文字上，引线接到空处 | 内部 audit 用的是引擎自己算的框，而绘制原点用了另一套约定，两边都"自洽" | 框一律以**左缘**起算；`text-anchor` 只是绘制原点——`start` 用左缘、`middle` 用中心、`end` 用右缘——**只在序列化那一处换算**，其他代码不许再算一遍 |
 | 锚点声明框与图元真实包围盒对不上 | 生成期只看自己的 `box` 字段，从不与真实对象对照 | `data-anchor-box` 必须**等于图元真实几何包围盒**：不含描边、阴影和渐变。为"视觉厚度"把描边算进声明，就是让声明开始说谎 |
+| 同上，换成引擎后整批偏差 | 两次都"自洽"：一次是 zrender 的 `getBoundingRect()` 把描边算了进去（有填充按 `lineWidth` 外扩半宽，无填充还会按 `strokeContainThreshold` 再放大），一次是核对时错拿了 `getBBox()` | 声明框取**纯几何**：zrender 在同一个调用里把不含描边的框留在 `_rect` 上，取它；并且声明框是**根坐标**——`getBBox()` 给的是元素**自己坐标系**里的框，既不含元素自身的 `transform`，也不含祖先 `<g>` 的位移，核对时必须经 `getCTM()`／`getScreenCTM()` 换算到 viewBox 空间再比 |
 | 从成稿 SVG 读回锚点时拿不到原值，自动旁注一条也提不出来 | 写入端只序列化了一部分字段，读取端却假设值在 `data-value` 上 | 锚点契约必须**自足**：`collect()` 只能依赖 `data-anchor-*`，不许假设图元上恰好还有别的属性；**写什么读什么要能往返**，并为往返写测试 |
 | 某个语义分支不做模板替换，`{delta}` 原样印在图上 | 产生文字的地方各写了一遍解析 | 产生文字**只有一个入口**；新增 kind 走同一个解析器，不另开分支 |
 

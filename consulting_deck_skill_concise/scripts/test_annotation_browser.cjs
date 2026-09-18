@@ -11,17 +11,22 @@ async function audit(page){return page.evaluate(()=>{
   for(const svg of document.querySelectorAll('svg[data-exhibit-type],svg[data-typography]')){
     const section=svg.closest('.card')||svg.parentElement,name=(section.querySelector('h2')||{}).textContent||'exhibit';
     const vb=svg.viewBox.baseVal,issues=[];
-    const texts=[...svg.querySelectorAll('text')].map(el=>({el,id:el.dataset.annotationId||el.dataset.labelId||el.textContent.slice(0,12),annotation:el.dataset.role==='annotation',box:el.getBBox()}));
+    // getBBox() 给的是元素自己坐标系里的框：既不含元素自身的 transform，也不含祖先 <g> 的位移。
+    // 声明框是根坐标（引线与标注就画在根上），所以量到的几何一律换算到根空间再比；
+    // 对没有 transform、也不在 <g> 里的图元，这个换算是恒等变换。
+    const toRoot=(el,p)=>new DOMPoint(p.x,p.y).matrixTransform(el.getScreenCTM()).matrixTransform(svg.getScreenCTM().inverse());
+    const rootBox=el=>{const b=el.getBBox(),a=toRoot(el,{x:b.x,y:b.y}),z=toRoot(el,{x:b.x+b.width,y:b.y+b.height});return {x:a.x,y:a.y,width:z.x-a.x,height:z.y-a.y};};
+    const texts=[...svg.querySelectorAll('text')].map(el=>({el,id:el.dataset.annotationId||el.dataset.labelId||el.textContent.slice(0,12),annotation:el.dataset.role==='annotation',box:rootBox(el)}));
     const anchorEls=[...svg.querySelectorAll('[data-anchor-id]')];
     // 1. 锚点声明必须等于真实图元几何，不能只写不实。
     for(const el of anchorEls){
       const declared=(el.dataset.anchorBox||'').split(',').map(Number);
       if(declared.length!==4||!declared.every(Number.isFinite)){issues.push({code:'anchor-box-missing',anchor:el.dataset.anchorId});continue;}
-      const real=el.getBBox();
+      const real=rootBox(el);
       if(!close(declared[0],real.x,.5)||!close(declared[1],real.y,.5)||!close(declared[2],real.width,.5)||!close(declared[3],real.height,.5))
         issues.push({code:'anchor-box-untrue',anchor:el.dataset.anchorId,declared,real:{x:real.x,y:real.y,width:real.width,height:real.height}});
     }
-    const anchors={};for(const el of anchorEls)anchors[el.dataset.anchorId]={el,x:+el.dataset.anchorX,y:+el.dataset.anchorY,side:el.dataset.anchorSide,box:el.getBBox()};
+    const anchors={};for(const el of anchorEls)anchors[el.dataset.anchorId]={el,x:+el.dataset.anchorX,y:+el.dataset.anchorY,side:el.dataset.anchorSide,box:rootBox(el)};
     // 2. 标注文字必须落在画布内、互不遮挡、不压住外置图元。
     const anns=texts.filter(t=>t.annotation);
     for(const t of anns){
@@ -38,7 +43,7 @@ async function audit(page){return page.evaluate(()=>{
       for(const other of texts)if(other.el!==t.el&&overlap(t.box,other.box,.5))issues.push({code:'annotation-text-collision',annotation:t.id,against:other.id});
       const placement=t.el.dataset.placement;
       for(const el of anchorEls){
-        const real=el.getBBox();
+        const real=rootBox(el);
         if(!overlap(t.box,real,0))continue;
         const isOwner=el.dataset.anchorId===t.el.dataset.anchorRef;
         if(placement!=='inside'||!isOwner)issues.push({code:'annotation-over-mark',annotation:t.id,mark:el.dataset.anchorId});
@@ -60,7 +65,7 @@ async function audit(page){return page.evaluate(()=>{
     // 4. 声明尺寸必须等于实际 viewBox。
     if(svg.dataset.actualSize){const [aw,ah]=svg.dataset.actualSize.split('×').map(Number);
       if(!close(aw,vb.width,.5)||!close(ah,vb.height,.5))issues.push({code:'declared-size-mismatch',declared:svg.dataset.actualSize,viewBox:[vb.width,vb.height]});}
-    findings.push({name,ok:issues.length===0,anchors:anchorEls.length,annotations:anns.length,leaders:svg.querySelectorAll('path[data-role="leader"]').length,issues});
+    findings.push({name,recipe:section.dataset.recipe||null,ok:issues.length===0,anchors:anchorEls.length,annotations:anns.length,leaders:svg.querySelectorAll('path[data-role="leader"]').length,issues});
   }
   return {ok:findings.length>0&&findings.every(v=>v.ok),findings};
 });}
@@ -79,6 +84,10 @@ async function audit(page){return page.evaluate(()=>{
     assert.ok(clean.ok,'干净样张必须通过：'+JSON.stringify(clean.findings.filter(v=>!v.ok)));
     const covered=clean.findings.filter(v=>v.annotations>0&&v.leaders>0);
     assert.ok(covered.length>=5,'至少五个图型必须带引线标注');
+    // 配方卡一个锚点都没有时，干净样张看起来和通过一模一样；这里点名要它们真有锚点。
+    const recipes=clean.findings.filter(v=>v.recipe);
+    assert.ok(recipes.length>=4,'样张必须覆盖至少四个 ECharts 配方');
+    for(const card of recipes)assert.ok(card.anchors>0,card.recipe+' 卡一个锚点都没有，旁解读无处可挂');
     const mutations=[];
     async function mutate(label,setup,expected){
       const codes=[].concat(expected);

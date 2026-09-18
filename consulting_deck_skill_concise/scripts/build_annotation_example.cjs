@@ -92,8 +92,54 @@ const heatmap = attempt('heatmap', () => build('heatmap', {
   ]
 }));
 
+/* ECharts 配方页：锚点由渲染期从真实图元几何生成，标注走的是同一套引擎。
+   这几张卡必须留在 kit 卡之后——浏览器用例里的几何突变挑的是"第一个 rect 锚点"，那是 kit 的。 */
+const recipe = (name, spec, annotations) => attempt(name, () => require('./render_echarts_svg.cjs').render({
+  recipe: name, spec, width: 620, height: 340, padding: 48, theme_id: themeId, typography_id: profile, annotations
+}).pages[0].svg);
+
+const rankedBar = recipe('rankedBar', {
+  unit: '亿元', baseline: 35, baselineLabel: '目标',
+  items: [{ label: '商超', value: 42, selected: true }, { label: '电商', value: 31 }, { label: '经销', value: 24 }, { label: '直营', value: 18 }]
+}, [
+  /* 不要再写"最大 42"这种：柱子自己就有数值标签，旁边再复述一遍等于同一句话说两遍。
+     旁解读该给的是图上没有的数——这里是差距和目标线的关系。 */
+  { id: 'r-商超', on: 'bar:商超', from: 'bar:电商', kind: 'delta', text: '领先 {delta}', weight: 600 },
+  { id: 'r-直营', on: 'bar:直营', kind: 'note', text: '距目标最远' }
+]);
+
+const timeSeries = recipe('timeSeries', {
+  unit: '亿元',
+  periods: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月'],
+  series: [{ name: '收入', values: [10, 12, 11, 14, 13, 15, 16, 20], selected: true }, { name: '成本', values: [7, 8, 7, 9, 8, 9, 10, 11] }]
+}, [
+  { id: 't-8月', on: 'point:8月|收入', kind: 'value', text: '峰值 {value}', weight: 600 }
+]);
+
+const sankey = recipe('sankey', {
+  nodes: ['访问', '注册', '试用', '成交', '流失', '放弃'],
+  links: [
+    { source: '访问', target: '注册', value: 1000 },
+    { source: '注册', target: '试用', value: 380 },
+    { source: '注册', target: '流失', value: 620 },
+    { source: '试用', target: '成交', value: 120 },
+    { source: '试用', target: '放弃', value: 260 }
+  ]
+}, [
+  { id: 's-注册', on: 'node:注册', kind: 'value', text: '进入 {value}', weight: 600 }
+]);
+
+const scatter = recipe('scatter', {
+  items: [
+    { label: '商超', x: 42, y: 8, size: 100 }, { label: '电商', x: 31, y: 21, size: 64 },
+    { label: '经销', x: 24, y: 4, size: 49 }, { label: '直营', x: 18, y: 13, size: 36 }
+  ]
+}, [
+  { id: 'c-电商', on: 'point:电商', kind: 'value', text: '{label} 增速 {value}', weight: 600 }
+]);
+
 const panels = [
-  ['非柱状图上的 think-cell 式旁解读', '哑铃差额、Mekko 份额、子弹缺口、瀑布贡献、热力极值——同一套标注引擎，引线从真实图元边界出发。'],
+  ['非柱状图上的 think-cell 式旁解读', '哑铃差额、Mekko 份额、子弹缺口、瀑布贡献、热力极值，以及 ECharts 配方出的排序条形、折线、桑基、散点——同一套标注引擎，引线从真实图元边界出发。'],
   [dumbbell, mekko], [bullet, waterfall], [heatmap]
 ];
 
@@ -110,6 +156,9 @@ const html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><tit
   + [['哑铃图 · 差额与增长率', dumbbell], ['Mekko · 份额与结构', mekko], ['子弹图 · 目标缺口', bullet], ['瀑布图 · 贡献归因', waterfall]]
     .map(([t, svg]) => '<div class="card"><h2>' + t + '</h2>' + svg + '</div>').join('')
   + '<div class="card wide"><h2>热力图 · 极值与异常</h2>' + heatmap + '</div>'
+  + [['排序条形（ECharts）· 与目标比', 'rankedBar', rankedBar], ['折线（ECharts）· 峰值', 'timeSeries', timeSeries], ['散点（ECharts）· 增速', 'scatter', scatter]]
+    .map(([t, name, svg]) => '<div class="card" data-recipe="' + name + '"><h2>' + t + '</h2>' + svg + '</div>').join('')
+  + '<div class="card wide" data-recipe="sankey"><h2>桑基（ECharts）· 节点读数</h2>' + sankey + '</div>'
   + '</div></div></body></html>';
 
 async function rasterize(target, outDir) {

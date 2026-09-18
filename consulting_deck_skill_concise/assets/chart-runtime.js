@@ -160,7 +160,8 @@
       }
       boxes.push(item);
     }
-    return {problems,texts:boxes.map(b=>b.text)};
+    // boxes 一并返回：旁解读要把图上已有的文字登记成静态标签来避让，重推一遍会和这里算出的框对不上。
+    return {problems,texts:boxes.map(b=>b.text),boxes};
   }
   const FIX={bounds:'标签超出画布：调整绘图区边距、换行、标签位置或引线；仍放不下就扩大模块或拆分视图。',overlap:'标签相互遮挡：调整方向、顺序、间距或引线位置，或改用分面与局部细节；不能靠缩小字号或删掉必要标签解决。',font:'实际字号小于 14px：扩大模块或减少同屏对象，不缩字号。',missing:'声明的类目或期间没有出现在图上：查是否被自动抽稀、截断或隐藏，改到每个都画出来或改成明确的分面。',covered:'有数值被后画的图形盖住：把标签移到带内、空白处或加引线，必要时调整节点尺寸与间距。'};
   /* 报告实测问题：越界、遮挡、字号，以及声明了却没画出来的类目。通过前必须据此返修，不能换成别的表达。 */
@@ -168,7 +169,7 @@
     const inspection=audit(chart,plan.fontSize||14),seen=new Set(inspection.texts);
     const problems=inspection.problems.map(p=>({...p,fix:FIX[p.type]}));
     for(const label of plan.axes||[])if(!seen.has(String(label)))problems.push({type:'missing',text:String(label),fix:FIX.missing});
-    return {status:problems.length?'needs-repair':'ok',problems};
+    return {status:problems.length?'needs-repair':'ok',problems,boxes:inspection.boxes};
   }
   return {version:'3.0.0',prepare,check,audit,options,theme,resolve,contrast,textColor,interpolate,widthOf};
 });

@@ -11,13 +11,15 @@ function render(spec) {
   const merged = Object.assign({ palette, typography_id, width: 900, height: 420 }, inner);
   if (renderer === 'kit') return kit[type](merged);
   if (renderer === 'precision') return require('./render_precision_exhibit.cjs').render(Object.assign({ type, theme, typography_id }, inner));
-  throw new Error('renderer 须为 kit 或 precision');
+  // 配方同样带锚点，候选该照提；这里的 type 是配方名（rankedBar 等），inner 是配方 spec。
+  if (renderer === 'recipe') return require('./render_echarts_svg.cjs').render({ recipe: type, spec: inner, width: 900, height: 420, theme_id: theme, typography_id }).pages[0].svg;
+  throw new Error('renderer 须为 kit、precision 或 recipe');
 }
 
 function main(argv) {
   const file = argv.find(v => !v.startsWith('--'));
   if (!file) { console.log('用法: node scripts/propose_annotations.cjs <spec.json> [--json]\n' +
-    'spec.json: {"renderer":"kit|precision","type":"dumbbell","spec":{...}}（spec 里不要写 annotations）'); process.exitCode = 1; return; }
+    'spec.json: {"renderer":"kit|precision|recipe","type":"dumbbell","spec":{...}}（spec 里不要写 annotations；recipe 的 type 写配方名）'); process.exitCode = 1; return; }
   const input = JSON.parse(fs.readFileSync(path.resolve(file), 'utf8'));
   const svg = render(input);
   const anchors = A.collect(svg);

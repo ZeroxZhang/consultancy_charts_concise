@@ -58,7 +58,9 @@
     series.forEach((s,i)=>{text(s.name,'series['+i+'].name');if(!Array.isArray(s.values)||s.values.length!==periods.length)fail('series['+i+'].values 与 periods 长度不一致');s.values.forEach((v,j)=>{if(v!==null)num(v,'series['+i+'].values['+j+']');});});
     const values=series.flatMap(s=>s.values).filter(v=>v!==null);
     // 每个期间都必须出现：交给 axisLabel.interval 自动抽稀会静默丢掉期号，实测验收看不出被丢的是哪一期。
-    return {animation:false,tooltip:{show:false},grid:grid({right:92}),xAxis:categoryAxis(periods,{boundaryGap:false,axisLabel:{color:'@gray-2',interval:0}}),yAxis:valueAxis(spec,{min:spec.zeroBaseline?Math.min(0,...values):undefined,max:spec.zeroBaseline?Math.max(0,...values):undefined}),series:series.map((s,i)=>({name:s.name,type:'line',connectNulls:false,showSymbol:periods.length<=8,symbolSize:5,lineStyle:{width:s.selected?3:2,color:roleColor(s.role,i)},itemStyle:{color:roleColor(s.role,i)},endLabel:{show:true,formatter:s.name,color:roleColor(s.role,i),fontWeight:s.selected?700:400},labelLayout:{moveOverlap:'shiftY'},data:s.values}))};
+    // 点数一多默认不画数据点；但没画点就没有图元可锚，旁解读会整条落空——所以这里留一个显式开关（spec 或单系列都认）。
+    const symbolOn=s=>s.showSymbol!==undefined?s.showSymbol:(spec.showSymbol!==undefined?spec.showSymbol:periods.length<=8);
+    return {animation:false,tooltip:{show:false},grid:grid({right:92}),xAxis:categoryAxis(periods,{boundaryGap:false,axisLabel:{color:'@gray-2',interval:0}}),yAxis:valueAxis(spec,{min:spec.zeroBaseline?Math.min(0,...values):undefined,max:spec.zeroBaseline?Math.max(0,...values):undefined}),series:series.map((s,i)=>({name:s.name,type:'line',connectNulls:false,showSymbol:symbolOn(s),symbolSize:5,lineStyle:{width:s.selected?3:2,color:roleColor(s.role,i)},itemStyle:{color:roleColor(s.role,i)},endLabel:{show:true,formatter:s.name,color:roleColor(s.role,i),fontWeight:s.selected?700:400},labelLayout:{moveOverlap:'shiftY'},data:s.values}))};
   }
 
   function composition(spec={}){
