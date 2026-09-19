@@ -59,6 +59,26 @@ function main(argv) {
     for (const file of [oldAuditFile, oldReviewFile]) if (!fs.existsSync(file)) throw Error('继承来源不存在：' + file);
     const oldAudit = JSON.parse(fs.readFileSync(oldAuditFile, 'utf8'));
     const oldReview = JSON.parse(fs.readFileSync(oldReviewFile, 'utf8'));
+    /* 继承要求旧 audit 记录的产物**仍然可核**。就地重建 deck.html/deck.pdf 会让这项立刻失败，
+       而那是所有人的默认做法——所以在这里先拦，把"要去留档快照"这句话讲在前面，
+       而不是让人写完一份复核才在 review_contract 里收到"旧产物缺失/已修改"。 */
+    const stale = [];
+    for (const medium of ['html', 'pdf']) {
+      const artifact = oldAudit[medium + 'Artifact'];
+      if (!artifact?.path) { stale.push(medium + '（旧 audit 未记录产物）'); continue; }
+      const file = path.resolve(path.dirname(oldAuditFile), artifact.path);
+      if (!fs.existsSync(file)) stale.push(medium + ' 产物已不在：' + file);
+      else if (contract.fileHash(file) !== artifact.sha256) stale.push(medium + ' 产物已改变：' + file);
+    }
+    if (stale.length) throw Error('不能从这次审查继承：' + stale.join('；') +
+      '。\n继承核的是"旧审查当时看的那份产物"，就地重建 deck 会让它失效，而就地重建是默认做法。' +
+      '注意 audit 记录的是**绝对路径**，所以即便把 audit 与产物一起留档，校验器仍会 `path.resolve(归档目录, 绝对路径)` 回到原位置核原件——' +
+      '留档副本不会被核到。要用继承，归档件必须是在留档时**重写过产物路径并重新记录摘要**的那一份，技能目前不产出这样的归档件。' +
+      '所以本轮的可行做法是按完整覆盖重做复核；继承留给"归档件从这一轮起被正确产出"之后的轮次。');
+    // 旧审查会被递归校验，且不按 partial 放行：它必须是绑在同一份留档 audit 上的两角色齐全件。
+    const oldRoles = new Set((Array.isArray(oldReview.coverage) ? oldReview.coverage : []).map(c => c.independence));
+    if (!['author', 'independent'].every(role => oldRoles.has(role))) throw Error('不能从这次审查继承：旧审查只覆盖了 ' + [...oldRoles].join('、') +
+      '，而继承会递归校验它、并像终稿一样要求两个角色齐全。请改用绑在同一份留档 audit 上的两角色齐全聚合件。');
     const oldEntries = new Map((oldAudit.evidenceManifest?.entries || []).map(e => [e.id, e]));
     // 能不能继承由摘要决定，不由说明决定：四个逐页摘要与页号全等才算未变。
     const keys = ['pageSha256', 'pageStyleSha256', 'dependenciesSha256', 'sha256', 'page'];
