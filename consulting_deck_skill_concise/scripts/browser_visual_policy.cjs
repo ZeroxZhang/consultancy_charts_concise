@@ -78,10 +78,27 @@ function inspectSlide(slide, policy) {
   for(const el of nodes.filter(el=>el.matches('svg,canvas,img,video,object,iframe'))) add(findings,'V-RASTER-VECTOR-MANUAL',el,'SVG、位图及嵌入内容的装饰边条与视觉均衡须结合整页和实际 PDF 人工检查；此检查器不证明其合规。');
   const body=slide.querySelector('.slide__body');
   if(body&&shown(body)){
+    /* 展品区实际内容的下边界。文字必须按**文本节点**量，不能只看"没有子元素的元素"：
+       一段以行内标签开头的多行说明（常见写法 <strong>口径提示</strong>后面接正文）里，
+       标签后面的裸文本不是元素，于是底边停在标签那一行，凭空多出一段空置；
+       实测同一段文字包进 <span> 与否，虚报量正好是标签之后的行高，页越长虚报越多。
+       本文件里 V-EMPTY-MODULE 那段一直是用文本节点量的，这里对齐同一种量法。 */
+    const contentBottom=()=>{
+      let bottom=-Infinity;
+      for(const el of body.querySelectorAll('svg,canvas,img,table'))if(shown(el)&&!el.closest('.source')){const b=bounds(el);bottom=Math.max(bottom,b.y+b.height);}
+      const walker=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);let node;
+      while((node=walker.nextNode())){
+        if(!node.nodeValue.trim()||!node.parentElement||!shown(node.parentElement)||node.parentElement.closest('.source'))continue;
+        const range=document.createRange();range.selectNodeContents(node);
+        for(const rect of range.getClientRects())bottom=Math.max(bottom,(rect.bottom-sr.top)/scale);
+      }
+      return bottom;
+    };
     const leaves=[...body.querySelectorAll('*')].filter(el=>shown(el)&&!el.closest('.source')&&(el.matches('svg,canvas,img,table')||(!el.children.length&&(el.textContent||'').trim())));
     const br=bounds(body);
-    if(leaves.length){
-      const bottom=Math.max(...leaves.map(el=>{const b=bounds(el);return b.y+b.height;})),gap=br.y+br.height-bottom;
+    const lastBottom=contentBottom();
+    if(leaves.length&&lastBottom>-Infinity){
+      const bottom=lastBottom,gap=br.y+br.height-bottom;
       if(gap>120){
         const message=`正文实际对象下方约 ${Math.round(gap)}px 剩余空间（占展品区 ${Math.round(gap/br.height*100)}%），需在整页检查其分组、强调或节奏用途。`;
         // 上一条只量"最后一个对象下方"，把空白推进模块之间就能躲开；所以档位从"占比"判，不只看绝对值。

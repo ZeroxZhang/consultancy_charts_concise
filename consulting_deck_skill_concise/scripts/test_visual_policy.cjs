@@ -47,5 +47,16 @@ let pw;try{pw=require('playwright')}catch{pw=require(process.env.PLAYWRIGHT_MODU
   assert.ok(divider.warnings.some(x=>x.code==='V-PAGE-VOID'),'无展品区的页仍要被量到，否则它永远是盲区');
   assert.equal(divider.warnings.find(x=>x.code==='V-PAGE-VOID').role,'divider');
  }
+ // 空置量的是页面，不是写法：同一段文字，标签后面的正文是裸文本节点还是被 <span> 包住，
+ // 量到的底边必须一样。曾经只看"没有子元素的元素"，行内标签后面的多行正文因此量不到，
+ // 凭空多出一段空置（实测同一版面差一整行高，页越长差越多），作者只好改 HTML 去迎合检查器。
+ {
+  const txt='表 1 是供给口径、表 2 是需求口径，两者之间没有节点对应关系，谁的支出给了谁在材料里未知，因此本稿不画任何流向图。'.repeat(2);
+  const page=wrap=>`<div class="slide__body" style="height:400px;padding:16px"><div style="font-size:15px;line-height:24px"><strong style="display:block">口径提示</strong>${wrap?`<span>${txt}</span>`:txt}</div></div>`;
+  const read=async html=>{const r=await checkPolicy(html,{density:'normal'});const m=[...r.warnings,...r.errors].find(x=>x.code==='V-BODY-REMAINDER');return m?m.gap:null;};
+  const bare=await read(page(false)), wrapped=await read(page(true));
+  assert.ok(bare!==null,'这段版面本来就该报出底部余量');
+  assert.equal(bare,wrapped,'同样的版面，正文是不是裸文本节点不该改变空置量');
+ }
  console.log('PASS visual policy: decorative borders/shadow/pseudo/strip, whitespace diagnostics (module gaps, no-body pages), density tiers, legal lines, SVG coverage and default natural heights');
 }finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});
