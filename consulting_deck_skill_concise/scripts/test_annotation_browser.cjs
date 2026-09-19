@@ -73,8 +73,20 @@ async function audit(page){return page.evaluate(()=>{
 (async()=>{
   const dir=path.resolve(process.argv[2]||path.join(os.tmpdir(),'deck-annotation-gallery'));
   const html=path.join(dir,'annotation-gallery.html');
-  // 夹具不随仓库发布，缺失时自己造；克隆后可直接跑，不必先手动执行构建脚本。
-  if(!fs.existsSync(html))execFileSync(process.execPath,[path.join(__dirname,'build_annotation_example.cjs'),'--no-raster',dir],{stdio:'inherit'});
+  /* 夹具不随仓库发布，缺失时自己造；克隆后可直接跑，不必先手动执行构建脚本。
+     **但只判"存在"会留下陈旧夹具**：构建脚本加了新卡片之后，缓存里的旧样张不会重建，
+     测试就一直红着——而红灯被人学会忽略，比不红更糟。所以按依赖的修改时间判失效。 */
+  const builder=path.join(__dirname,'build_annotation_example.cjs');
+  const deps=[builder,
+    path.join(__dirname,'render_echarts_svg.cjs'),path.join(__dirname,'render_precision_exhibit.cjs'),
+    path.join(__dirname,'render_diagram.cjs'),path.join(__dirname,'font_metrics.cjs'),
+    ...fs.readdirSync(path.join(__dirname,'..','assets')).map(f=>path.join(__dirname,'..','assets',f)).filter(f=>fs.statSync(f).isFile())];
+  const mtime=file=>{try{return fs.statSync(file).mtimeMs}catch{return 0}};
+  const newest=Math.max(...deps.map(mtime));
+  if(!fs.existsSync(html)||mtime(html)<newest){
+    if(fs.existsSync(html))fs.rmSync(html);
+    execFileSync(process.execPath,[builder,'--no-raster',dir],{stdio:'inherit'});
+  }
   const browser=await pw.chromium.launch({channel:process.env.CHROME_CHANNEL||'chrome',headless:true});
   const page=await browser.newPage({viewport:{width:1360,height:1200},deviceScaleFactor:1});
   try{
