@@ -142,7 +142,7 @@ const svg = kit.waterfall({width:740,height:330,items:[
 | 函数 | 专用数据字段 |
 |---|---|
 | waterfall | items:[{label,type:'total'/'delta'/'subtotal',value}] |
-| dumbbell / slope | items:[{label,start,end}], startLabel, endLabel |
+| dumbbell / slope | items:[{label,start,end}], startLabel, endLabel | 哑铃的两个数值标签会随行距自适应：行距宽裕时放点的上／下方，行距紧时改为水平贴点，避免相邻两行的数字叠在同一列上 |
 | bullet | items:[{label,value,target,max,ranges:[递增阈值]}] |
 | heatmap | rows:[标签], columns:[标签], values:[[数值]] |
 | mekko / stacked | items:[{label,segments:[{label,value}]}]；stacked 另有 mode |

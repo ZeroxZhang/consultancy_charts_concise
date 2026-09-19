@@ -50,3 +50,27 @@ assert.throws(()=>kit.dumbbell({items:[{start:1,end:2}]}),/文字标签/);
  assert.throws(()=>lane(2,0),/只支持相邻阶段/,'跨阶段连线必须当场拒绝，而不是画一条穿过节点框的线');
 }
 console.log('ExhibitKit swimlane edge direction and adjacent-stage limit passed.');
+
+/* 哑铃的数值标签：行距紧时必须换摆法，不能把相邻两行的标签叠在同一列上。
+   曾经固定放在点的上方(y−13)与下方(y+25)，两者共需 dy≥fs*2+28；`rows()` 的守卫只要求
+   dy≥fs+12，于是在 1200×288、5 行（dy≈40）时静默画出互相压住的两行数字。
+   同一条根因还会让标注层无处落位：585×330 下给每个端点挂标注会报"68 个候选全被拒"，
+   作者只能放弃这个图型改自绘——那才是真正的代价。 */
+{
+ const pal=(require('../assets/deck-themes.js')).palette('mckinsey');
+ // 刻意让相邻两行的点落在同一列（这一行的终点就是下一行的起点）：链式区间在真实材料里很常见，
+ // 也正是标签会叠住的那种排布；用不共列的数据测这条等于没测。
+ const rows=[{label:'甲',start:10,end:30},{label:'乙',start:30,end:45},{label:'丙',start:45,end:52},{label:'丁',start:52,end:70},{label:'戊',start:70,end:88}];
+ const nums=svg=>[...svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)" text-anchor="(?:middle|end|start)"[^>]*>([\d.,]+)<\/text>/g)].map(m=>({x:+m[1],y:+m[2],t:m[3]}));
+ for(const h of [288,300,330,380,400]){
+  const labels=nums(kit.dumbbell({palette:pal,typography_id:'serif-report-bold',width:1200,height:h,items:rows}));
+  assert.equal(labels.length,rows.length*2,'高 '+h+'：每行的起始值与结束值都必须画出来，不能靠丢标签避让');
+  for(let i=0;i<labels.length;i++)for(let j=i+1;j<labels.length;j++)
+   assert.ok(!(Math.abs(labels[i].x-labels[j].x)<26&&Math.abs(labels[i].y-labels[j].y)<20),
+     '高 '+h+'：'+labels[i].t+' 与 '+labels[j].t+' 同列且垂直间距不足，会叠在一起');
+ }
+ assert.doesNotThrow(()=>kit.dumbbell({palette:pal,typography_id:'serif-report-bold',width:585,height:330,items:rows,
+  annotations:rows.map(d=>({on:'end:'+d.label,kind:'delta',from:'start:'+d.label,text:d.label+' {delta}'}))}),
+  '紧行距下端点标注仍要摆得下：摆不下会让作者放弃这个图型');
+}
+console.log('ExhibitKit dumbbell label spacing across row heights passed.');
