@@ -5,7 +5,9 @@ const {inspectSlide}=require('./browser_visual_policy.cjs');
 let pw;try{pw=require('playwright')}catch{pw=require(process.env.PLAYWRIGHT_MODULE||process.env.PLAYWRIGHT_PATH)}
 (async()=>{const browser=await pw.chromium.launch({channel:'chrome',headless:true});try{
  const page=await browser.newPage({viewport:{width:1400,height:900}});
- const check=async html=>{await page.setContent(`<style>*{box-sizing:border-box} .slide{width:1280px;height:720px} .box{width:300px;min-height:80px;padding:12px;position:relative} </style><section class="slide">${html}</section>`);return page.locator('.slide').evaluate(inspectSlide);};
+ const shell=attrs=>`<style>*{box-sizing:border-box} .slide{width:1280px;height:720px} .box{width:300px;min-height:80px;padding:12px;position:relative} </style><section class="slide"${attrs}>`;
+ const check=async html=>{await page.setContent(shell('')+html+'</section>');return page.locator('.slide').evaluate(inspectSlide);};
+ const checkPolicy=async(html,policy,attrs='')=>{await page.setContent(shell(attrs)+html+'</section>');return page.locator('.slide').evaluate(inspectSlide,policy);};
  for(const style of ['border-left:3px solid teal','border-top:4px solid navy','border-right:2px solid #888','border-bottom:1px solid purple','box-shadow:inset 4px 0 0 navy']){
   const r=await check(`<div class="box" style="${style}">关键限定不能删除</div>`);assert.ok(r.errors.length,style);
  }
@@ -23,5 +25,27 @@ let pw;try{pw=require('playwright')}catch{pw=require(process.env.PLAYWRIGHT_MODU
  const layouts=fs.readFileSync(path.join(__dirname,'../assets/consulting-layouts.css'),'utf8');
  await page.setContent(`<style>${styles}\n${layouts}\n.slide{display:flex;position:relative;width:1280px;height:720px}</style><section class="slide reading"><div class="slide__body layout-paired"><div class="exhibit"><h2>展品标题</h2><div class="annotation">关键限定</div></div><div class="kpi-grid"><div class="kpi-card"><span class="kpi-val">38</span><span class="kpi-name">样本数量</span></div></div></div><div class="takeaway">保留判断</div></section>`);
  r=await page.locator('.slide').evaluate(inspectSlide);assert.equal(r.errors.length,0);const borders=await page.locator('.exhibit h2,.annotation,.takeaway,.kpi-card').evaluateAll(es=>es.map(e=>{const s=getComputedStyle(e);return ['Top','Right','Bottom','Left'].map(side=>parseFloat(s['border'+side+'Width']));}));assert.equal(borders.length,4);assert.ok(borders.flat().every(width=>width===0),JSON.stringify(borders));const heights=await page.locator('.annotation,.takeaway,.kpi-grid').evaluateAll(es=>es.map(e=>e.getBoundingClientRect().height));assert.ok(heights.every(h=>h<160),JSON.stringify(heights));
- console.log('PASS visual policy: decorative borders/shadow/pseudo/strip, whitespace diagnostics, legal lines, SVG coverage and default natural heights');
+ // 密度档位：判据一样，只有"由谁说"随档位变。compact 把展品区的空白升级为错误，功能页仍按设计豁免。
+ {
+  const tail='<div class="slide__body" style="height:500px"><p>正文只有上方一行</p></div>';
+  const normal=await checkPolicy(tail,null);
+  assert.ok(normal.warnings.some(x=>x.code==='V-BODY-REMAINDER'),'未启用档位时只报诊断');
+  assert.equal(normal.errors.length,0,'未启用档位时不得阻塞');
+  const compact=await checkPolicy(tail,{density:'compact'});
+  assert.ok(compact.errors.some(x=>x.code==='V-BODY-REMAINDER'),JSON.stringify(compact.errors));
+  assert.equal(compact.errors[0].bodyShare>0.2,true,'升级条件看占比，报错要带实测值');
+  const cover=await checkPolicy(tail,{density:'compact'},' data-page-role="cover"');
+  assert.equal(cover.errors.length,0,'封面留白是设计，不进密度门禁');
+  assert.ok(cover.warnings.some(x=>x.code==='V-BODY-REMAINDER'),'豁免不等于不测量：诊断照报，供人判断');
+  // 只量"末对象下方"的话，space-between 把空白挪到模块之间就能规避——所以模块间隙要单独量。
+  const split='<div class="slide__body" style="height:600px;display:flex;flex-direction:column;justify-content:space-between"><div class="box">上模块</div><div class="box">下模块</div></div>';
+  const spaced=await checkPolicy(split,{density:'compact'});
+  assert.equal(spaced.warnings.some(x=>x.code==='V-BODY-REMAINDER'),false,'末对象贴着底部，脚部余量这条抓不到它');
+  assert.ok(spaced.errors.some(x=>x.code==='V-MODULE-GAP'),JSON.stringify(spaced.errors));
+  // 没有展品区的页（分隔页/封面）过去落在盲区：所有基于 .slide__body 的检查都落空。
+  const divider=await checkPolicy('<header class="slide__header"><h1 class="slide__title">章节</h1></header><p>一句话</p>',{density:'compact'},' data-page-role="divider"');
+  assert.ok(divider.warnings.some(x=>x.code==='V-PAGE-VOID'),'无展品区的页仍要被量到，否则它永远是盲区');
+  assert.equal(divider.warnings.find(x=>x.code==='V-PAGE-VOID').role,'divider');
+ }
+ console.log('PASS visual policy: decorative borders/shadow/pseudo/strip, whitespace diagnostics (module gaps, no-body pages), density tiers, legal lines, SVG coverage and default natural heights');
 }finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});

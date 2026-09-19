@@ -7,7 +7,8 @@ const contracts=require('./report_contract.cjs');
  const pages=path.join(dir,'pages.html'),deck=path.join(dir,'deck.html'),taskFile=path.join(dir,'task.json');
  const pagesContract=path.join(dir,'pages.json');
  fs.writeFileSync(pagesContract,JSON.stringify({version:1,pages:[{page:1,proves:'样本比例不能被读成最终收入比',form:'html.text'}]}));
- const task={workMode:'editorial',complexity:'simple',critical:[{id:'limit',text:'不是最终收入比',target:'value'}],pages:{record:'pages.json'}};
+ // 密度档位写 normal：这份夹具的正文区只有一行结论，考的是集成链而不是版式密度。
+ const task={workMode:'editorial',complexity:'simple',densityPolicy:'normal',critical:[{id:'limit',text:'不是最终收入比',target:'value'}],pages:{record:'pages.json'}};
  fs.writeFileSync(taskFile,JSON.stringify(task));
  fs.writeFileSync(pages,'<section class="slide reading" data-page-id="evidence" data-frame-boundary="space" data-form="html.text" data-proves="样本比例不能被读成最终收入比"><header class="slide__header"><h1 class="slide__title">关键限定完整性</h1></header><div class="slide__body" style="align-content:start"><div id="value">样本比例 38%</div><p data-critical-id="limit" data-critical-for="value">不是最终收入比</p></div><div class="source">合成验证材料</div><div class="slide__page">1</div></section>');
  await assemble({pagesFile:pages,outputFile:deck,contractFile:taskFile});const source=fs.readFileSync(deck,'utf8');
@@ -22,7 +23,7 @@ const contracts=require('./report_contract.cjs');
  // 声明为图却只给表格：不带数据条的替代表要失败，带数据条 sparkline 的替代表也要失败。
  const svgPages=path.join(dir,'svg-pages.html'),svgDeck=path.join(dir,'svg-deck.html'),svgTask=path.join(dir,'svg-task.json'),svgRecord=path.join(dir,'svg-pages.json');
  fs.writeFileSync(svgRecord,JSON.stringify({version:1,pages:[{page:1,proves:'两条渠道的差额与量级',form:'kit.dumbbell'}]}));
- fs.writeFileSync(svgTask,JSON.stringify({workMode:'editorial',complexity:'simple',planner:{mode:'direct'},pages:{record:'svg-pages.json'},critical:[]}));
+ fs.writeFileSync(svgTask,JSON.stringify({workMode:'editorial',complexity:'simple',densityPolicy: 'normal', planner:{mode:'direct'},pages:{record:'svg-pages.json'},critical:[]}));
  const body=table=>`<section class="slide reading" data-frame-boundary="space" data-form="kit.dumbbell" data-proves="两条渠道的差额与量级"><header class="slide__header"><h1 class="slide__title">渠道差额</h1></header><div class="slide__body">${table}</div><div class="source">合成验证材料</div><div class="slide__page">1</div></section>`;
  fs.writeFileSync(svgPages,body('<table class="data-table"><thead><tr><th>渠道</th><th>差额</th></tr></thead><tbody><tr><td>商超</td><td>−1.1</td></tr></tbody></table>'));
  await assemble({pagesFile:svgPages,outputFile:svgDeck,contractFile:svgTask});

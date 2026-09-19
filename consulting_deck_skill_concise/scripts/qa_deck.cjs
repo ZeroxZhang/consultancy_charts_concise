@@ -66,7 +66,7 @@ function parseArgs(argv){
  const targets=partial?requested.filter(n=>n<=total).sort((a,b)=>a-b):Array.from({length:total},(_,i)=>i+1);
  if(!targets.length)throw Error('没有可检查的页码；本稿共 '+total+' 页');
  for(const pageNumber of targets){
-  const result=await pageProbe.collect(p,pageNumber-1,{modern});
+  const result=await pageProbe.collect(p,pageNumber-1,{modern,policy:visualPolicy.policyFor(taskContract)});
   result.page=pageNumber;result.screenshot=pageProbe.screenshotName(pageNumber);
   if(modern){
    errors.push(...result.visualPolicy.errors.map(e=>'第'+pageNumber+'页视觉禁令：'+JSON.stringify(e)));
@@ -83,6 +83,13 @@ function parseArgs(argv){
   if(result.frame.ruleVisible&&result.frame.doubleBorder.length)warnings.push('第'+pageNumber+'页标题区隔线与正文首排顶线可能并存（'+result.frame.doubleBorder[0]+'）：首排模块已有顶线时建议 data-frame-boundary="integrated"');
   if(!modern&&result.notePad.length)warnings.push('第'+pageNumber+'页有文字贴近左侧边条（padding-left<6px）：'+result.notePad.slice(0,4).map(x=>(x.text||x.cls||'?')+'('+x.pad+')').join('；'));
   await p.locator('.slide.active').screenshot({path:path.join(out,result.screenshot)});rows.push(result);
+ }
+ // 逐页截图两两不同：这是"证据真的覆盖了每一页"的最低断言。真实跑批出现过正文页被分隔页
+ // 覆盖、前十几张截图字节完全相同，而工程门禁全绿、证据照发——缺陷最后由人工复核才发现，代价是一整轮返工。
+ if(rows.length>1){
+  const byHash=new Map();
+  for(const row of rows){const file=path.join(out,row.screenshot);if(!fs.existsSync(file))continue;const h=crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');if(!byHash.has(h))byHash.set(h,[]);byHash.get(h).push(row.page);}
+  for(const pages of byHash.values())if(pages.length>1)errors.push('第 '+pages.join('、')+' 页的 HTML 截图字节完全相同：证据没有覆盖到每一页，先查是不是页面被别页覆盖（分隔页/全出血页的 display 规则最容易漏限定），再查截图是否拍到了同一屏');
  }
  // 证据快照必须在翻页刚结束时取：后面的打印模拟与导航会改视口与页码，不能拿来当截图时点的页面状态。
  const evidenceSnapshot=acceptance&&modern?await p.evaluate(auditEvidence.captureDocument):null;
@@ -112,7 +119,7 @@ function parseArgs(argv){
    const record=path.resolve(path.dirname(input),taskContract.pages.record);
    if(!fs.existsSync(record)||taskContracts.fileHash(record)!==taskContract.pages.sha256)throw Error('pages记录缺失或sha256与任务合同不符');
    const doc=JSON.parse(fs.readFileSync(record,'utf8')),checked=pagesApi.check(doc);
-   const mismatches=pagesApi.verifyDeck(doc,rows.map(r=>({page:r.page,form:r.form,visual:r.visual,proves:r.proves,role:r.bookends?.role})));
+   const mismatches=pagesApi.verifyDeck(doc,rows.map(r=>({page:r.page,form:r.form,visual:r.visual,proves:r.proves,role:r.bookends?.role,annotationIds:r.annotationIds,pageRefs:r.pageRefs})));
    const all=[...checked.errors,...mismatches];
    pagesCheck={status:all.length?'FAIL':'PASS',errors:all,record,sha256:taskContract.pages.sha256,inventory:checked.inventory};
    all.forEach(e=>errors.push('pages合同：'+e));
@@ -132,7 +139,7 @@ function parseArgs(argv){
   const printMissing=await p.evaluate(expected=>expected.filter(item=>{const e=document.querySelector('[data-deck-exhibit-id="'+item.id+'"]');if(!e)return true;const r=e.getBoundingClientRect();if(!r.width||!r.height)return true;for(let n=e;n&&n.nodeType===1;n=n.parentElement){const s=getComputedStyle(n);if(s.display==='none'||s.visibility==='hidden'||s.visibility==='collapse'||Number(s.opacity)===0)return true;}return false;}),expected);
   printMissing.forEach(e=>errors.push('打印缺少第'+e.page+'页展品 '+e.id));
   printCheck={expected:expected.length,missing:printMissing};
-  if(modern){await geometry.settle(p);for(const row of rows){const slide=p.locator('.slide').nth(row.page-1);row.printCritical=await slide.evaluate(criticalContent.inspectSlide);errors.push(...criticalContent.verifyPrint(row.critical,row.printCritical).map(e=>'第'+row.page+'页：'+e));row.printVisualPolicy=await slide.evaluate(visualPolicy.inspectSlide);errors.push(...row.printVisualPolicy.errors.map(e=>'第'+row.page+'页打印视觉禁令：'+JSON.stringify(e)));warnings.push(...row.printVisualPolicy.warnings.map(e=>'第'+row.page+'页打印视觉诊断：'+JSON.stringify(e)));}}
+  if(modern){await geometry.settle(p);for(const row of rows){const slide=p.locator('.slide').nth(row.page-1);row.printCritical=await slide.evaluate(criticalContent.inspectSlide);errors.push(...criticalContent.verifyPrint(row.critical,row.printCritical).map(e=>'第'+row.page+'页：'+e));row.printVisualPolicy=await slide.evaluate(visualPolicy.inspectSlide,visualPolicy.policyFor(taskContract));errors.push(...row.printVisualPolicy.errors.map(e=>'第'+row.page+'页打印视觉禁令：'+JSON.stringify(e)));warnings.push(...row.printVisualPolicy.warnings.map(e=>'第'+row.page+'页打印视觉诊断：'+JSON.stringify(e)));}}
   if(!acceptance)await p.emulateMedia({media:'screen'});
  }
  if(acceptance){

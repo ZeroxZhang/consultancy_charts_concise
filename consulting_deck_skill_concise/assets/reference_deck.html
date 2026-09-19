@@ -524,6 +524,8 @@ b,strong,.data-table th,.row-label,.status-label,.evidence-note strong,.analytic
     try{
       if(el.id==='waterfall-demo'){ initWaterfall(el); return; }
       var raw,opt,plan=null;
+      // 注意：这里是实时（非 SSR）渲染，zrender 只在 SSR 时才写 ecmeta_*，所以这棵 DOM 里没有锚点，
+      // 也就没有旁解读——旁解读只出现在成稿：render_echarts_svg.cjs 出的内联 SVG。别把预览里的缺标注当成丢标注。
       if(el.getAttribute('data-recipe')){
         if(!window.ChartRuntime) throw new Error('ChartRuntime未加载');
         plan=ChartRuntime.prepare(el.getAttribute('data-recipe'),JSON.parse(el.getAttribute('data-spec')||'{}'),{width:el.clientWidth,height:el.clientHeight,tokens:runtimeTokens(),typography_id:document.documentElement.dataset.typography});

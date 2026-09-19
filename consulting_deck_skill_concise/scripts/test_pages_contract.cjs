@@ -111,12 +111,17 @@ for (const form of forms.list().filter(f => forms.annotationEntry(f) === 'layer'
 }
 results.annotation_entries_work = annotated.length;
 
-// 4. 未接入标注层的形式必须被明确拒绝，不能静默忽略。
+// 4. 未接入标注层的形式不能静默接受，但也不再一律拒绝：声明手摆即可写，责任转到目视验收。
+//    一律拒绝会把作者逼回少数可标注形式，反而压低编码族多样性。
 {
-  const refused = C.check({ version: 1, pages: [page({ form: 'kit.tree', annotations: [{ on: 'x', kind: 'value' }] })] });
-  assert.equal(refused.status, 'FAIL');
-  assert.ok(refused.errors.some(e => /尚未接入通用标注层/.test(e)), JSON.stringify(refused.errors));
-  results.unannotatable_refused = true;
+  const silent = C.check({ version: 1, pages: [page({ form: 'kit.tree', annotations: [{ id: 'x1', on: 'x', kind: 'value' }] })] });
+  assert.equal(silent.status, 'FAIL', '不声明就是一个静默默认，必须拦住');
+  assert.ok(silent.errors.some(e => /未接入通用标注层/.test(e) && /annotationMode/.test(e)), JSON.stringify(silent.errors));
+  const declared = C.check({ version: 1, pages: [page({ form: 'kit.tree', annotationMode: 'manual', annotations: [{ id: 'x1', on: 'x', kind: 'value' }] })] });
+  assert.equal(declared.status, 'PASS', JSON.stringify(declared.errors));
+  const compared = C.check({ version: 1, pages: [page({ form: 'kit.bullet', annotations: [{ id: 'x1', on: 'x', kind: 'value' }] })] });
+  assert.equal(compared.status, 'PASS', '接入通用层的形式照常直接写');
+  results.annotation_admission_explicit = true;
 }
 
 // 5. 结构与语义校验。
@@ -129,10 +134,10 @@ results.annotation_entries_work = annotated.length;
     [{ version: 1, pages: [page({ form: 'kit.donut' })] }, /未知图示形式/],
     [{ version: 1, pages: [page({ page: 1 }), page({ page: 1 })] }, /序号重复/],
     [{ version: 1, pages: [page({ page: 2 })] }, /不连续/],
-    [{ version: 1, pages: [page({ form: 'kit.bullet', annotations: [{ on: 'a', kind: 'note' }] })] }, /必须给 text/],
-    [{ version: 1, pages: [page({ form: 'kit.bullet', annotations: [{ on: 'a', kind: 'bracket' }] })] }, /必须给 from/],
-    [{ version: 1, pages: [page({ form: 'kit.bullet', annotations: [{ on: 'a', kind: 'nope' }] })] }, /kind 须为/],
-    [{ version: 1, pages: [page({ form: 'kit.bullet', annotations: [{ kind: 'value' }] })] }, /缺少 on/],
+    [{ version: 1, pages: [page({ form: 'kit.bullet', annotations: [{ id: 'n1', on: 'a', kind: 'note' }] })] }, /必须给 text/],
+    [{ version: 1, pages: [page({ form: 'kit.bullet', annotations: [{ id: 'b1', on: 'a', kind: 'bracket' }] })] }, /必须给 from/],
+    [{ version: 1, pages: [page({ form: 'kit.bullet', annotations: [{ id: 'x1', on: 'a', kind: 'nope' }] })] }, /kind 须为/],
+    [{ version: 1, pages: [page({ form: 'kit.bullet', annotations: [{ id: 'v1', kind: 'value' }] })] }, /缺少 on/],
     [{ version: 1, pages: [page({ regions: [{ slot: 'left', span: 5, form: 'kit.mekko', role: 'support' }] })] }, /恰好有一个 role="primary"/],
     [{ version: 1, pages: [page({ regions: [{ slot: 'left', span: 5, form: 'kit.mekko', role: 'primary' }] })] }, /主区形式与 page.form 不一致/],
     [{ version: 1, pages: [page({ fallback: { if: '容量不足' } })] }, /fallback/]
@@ -166,6 +171,66 @@ results.annotation_entries_work = annotated.length;
   results.inventory = true;
 }
 
+// 7b. 族分布：按编码族计数，并强制交代整族缺席——两条都是按名计数抓不到的。
+{
+  // 七页长度编码散在五个 form 名下：按名一次都不触发，按族却是最大单族。这正是 09-18 跑批的形态。
+  const collapse = { version: 1, pages: [
+    page({ page: 1, form: 'recipe.rankedBar' }), page({ page: 2, form: 'recipe.rankedBar' }),
+    page({ page: 3, form: 'recipe.groupedBar' }), page({ page: 4, form: 'recipe.groupedBar' }),
+    page({ page: 5, form: 'kit.dumbbell' }), page({ page: 6, form: 'kit.waterfall' }),
+    page({ page: 7, form: 'kit.slope' }),
+    page({ page: 8, form: 'html.text' }), page({ page: 9, form: 'html.table' }),
+    page({ page: 10, form: 'kit.stacked' })
+  ] };
+  assert.equal(C.repetitionErrors(collapse).length, 0, '按名计数对分散命名确实一次都不触发——这正是它失效的原因');
+  const out = C.check(collapse);
+  assert.equal(out.status, 'FAIL');
+  assert.ok(out.errors.some(e => /最大单族/.test(e) && /familyDiversityReason/.test(e)), JSON.stringify(out.errors));
+  // 占比以展品页为分母：那一页结构化文字是兜底，不参与稀释。
+  assert.equal(out.inventory.exhibits, 9);
+  assert.equal(out.inventory.largestFamily.family, 'comparison');
+  assert.equal(out.inventory.largestFamily.pages, 7);
+  assert.equal(out.inventory.largestFamily.share, 0.778);
+  assert.ok(out.errors.some(e => /unusedFamilies/.test(e)), '整族缺席必须被交代');
+  assert.deepEqual(out.inventory.absentFamilies, ['trend', 'distribution', 'correlation', 'flow', 'hierarchy', 'kpi', 'diagram']);
+  // 只补族集中度的理由还不够：缺席族那条仍然要答。
+  const half = { ...collapse, familyDiversityReason: '本稿主线是同一批对象在同一量尺上的排序变迁，七页共用长度编码' };
+  assert.ok(C.check(half).errors.some(e => /unusedFamilies/.test(e)));
+  const reasons = Object.fromEntries(out.inventory.absentFamilies.map((f, i) => [f, '材料里没有支撑这一族的' + ['多期序列', '原始观测', '两变量配对', '守恒流量', '层级拆分', '目标线', '机制边'][i] || '依据']));
+  const explained = { ...half, unusedFamilies: reasons };
+  assert.equal(C.check(explained).status, 'PASS', JSON.stringify(C.check(explained).errors));
+  // 理由不许与事实打架：声明某族没用上，但稿子里明明有。
+  assert.ok(C.check({ ...explained, unusedFamilies: { ...reasons, table: '没有逐格查数需求' } }).errors.some(e => /已有 1 页属这一族/.test(e)));
+  // 缺席族没列全也要拦。
+  const partial = { ...reasons }; delete partial.trend;
+  assert.ok(C.check({ ...half, unusedFamilies: partial }).errors.some(e => /没有覆盖全部缺席族/.test(e)));
+  // 小稿不触发：两个下限一起把它挡在外面，避免把规则变成配额。
+  const small = { version: 1, pages: [page({ page: 1, form: 'kit.bullet' }), page({ page: 2, form: 'kit.bullet', repetitionReason: '同一指标的分组复核' }), page({ page: 3, form: 'kit.bullet', repetitionReason: '同一指标的分组复核' })] };
+  assert.equal(C.check(small).errors.some(e => /最大单族|unusedFamilies/.test(e)), false, JSON.stringify(C.check(small).errors));
+  // 展品只有 7 页时不到缺席族的下限，最大族 3 页也不到集中度下限。
+  const wide = { version: 1, pages: Array.from({ length: 40 }, (_, i) => page({ page: i + 1, form: i < 3 ? 'recipe.rankedBar' : ['kit.mekko', 'kit.heatmap', 'recipe.timeSeries', 'html.table'][i - 3] || 'html.text' })) };
+  assert.equal(C.check(wide).errors.some(e => /最大单族|unusedFamilies/.test(e)), false, JSON.stringify(C.check(wide).errors));
+  results.family_diversity = true;
+}
+
+// 7c. 未登记入口必须自报编码族，否则族分布对 svg.custom 全部失明。
+{
+  assert.equal(C.check({ version: 1, pages: [page({ form: 'svg.custom', visual: 'ecdf' })] }).errors.some(e => /encodingFamily/.test(e)), true);
+  assert.equal(C.check({ version: 1, pages: [page({ form: 'svg.custom', visual: 'ecdf', encodingFamily: 'custom' })] }).errors.some(e => /自定义族|未登记/.test(e)), true);
+  assert.equal(C.check({ version: 1, pages: [page({ form: 'svg.custom', visual: 'ecdf', encodingFamily: 'distribution' })] }).status, 'PASS');
+  assert.equal(C.check({ version: 1, pages: [page({ form: 'kit.mekko', encodingFamily: 'distribution' })] }).errors.some(e => /只用于 svg.custom/.test(e)), true);
+  results.encoding_family_declared = true;
+}
+
+// 7d. 标注准入：不再按形式族拒绝，改按"谁负责摆位"。
+{
+  const manual = { version: 1, pages: [page({ form: 'html.table', annotationMode: 'manual', annotations: [{ id: 'a1', on: 'a1', kind: 'note', text: '合计口径见 P22' }] })] };
+  assert.equal(C.check(manual).status, 'PASS', JSON.stringify(C.check(manual).errors));
+  assert.equal(C.check({ version: 1, pages: [page({ form: 'html.table', annotations: [{ id: 'a1', on: 'a1', kind: 'note', text: 'x' }] })] }).errors.some(e => /annotationMode/.test(e)), true, '手摆必须显式声明，不能默认');
+  assert.equal(C.check({ version: 1, pages: [page({ form: 'kit.bullet', annotationMode: 'manual', annotations: [{ id: 'a1', on: 'a1', kind: 'note', text: 'x' }] })] }).errors.some(e => /已接入通用标注层/.test(e)), true, '自动摆位的形式不该声明手摆');
+  results.annotation_admission = true;
+}
+
 // 8. 与成稿对账：页数、顺序、逐页 form，以及可选的 data-proves。
 {
   const doc = { version: 1, pages: [page({ page: 1, form: 'kit.dumbbell', proves: '甲下降最多' }), page({ page: 2, form: 'html.text', proves: '边界说明' })] };
@@ -177,6 +242,26 @@ results.annotation_entries_work = annotated.length;
   assert.ok(C.verifyDeck(doc, [slides[0], { ...slides[1], proves: '别的说法' }]).some(e => /data-proves/.test(e)));
   assert.deepEqual(C.verifyDeck(doc, [...slides, { page: 3, form: null, proves: '', role: 'cover' }]), [], '封面不承担证明责任，不参与对账');
   results.deck_reconciliation = true;
+}
+
+// 8b. 成稿对账的扩展：旁解读要真的画出来，跨页引用要跟着页序走。
+//     这两类过去都没有对账入口——声明写了没人查，页序一动引用就悄悄失准。
+{
+  const doc = { version: 1, pages: [
+    page({ page: 1, form: 'kit.bullet', annotations: [{ id: 'a1', on: 'value:甲', kind: 'value' }] }),
+    page({ page: 2, form: 'html.text' })
+  ] };
+  const base = [{ page: 1, form: 'kit.bullet', proves: '本页要让读者看出的关系', role: null, annotationIds: ['a1'] },
+    { page: 2, form: 'html.text', proves: '本页要让读者看出的关系', role: null }];
+  assert.deepEqual(C.verifyDeck(doc, base), []);
+  assert.ok(C.verifyDeck(doc, [{ ...base[0], annotationIds: [] }, base[1]]).some(e => /声明了旁解读 a1/.test(e)), '声明了却没画出来');
+  assert.ok(C.verifyDeck(doc, [{ ...base[0], annotationIds: ['a1', 'a9'] }, base[1]]).some(e => /未在 pages.json 声明/.test(e)), '画了却没声明');
+  const refs = [{ ...base[0], pageRefs: ['body:3'] }, { ...base[1], pageRefs: ['p:7'] }];
+  const out = C.verifyDeck(doc, refs);
+  assert.ok(out.some(e => /写「3 页正文」，实际正文是 2 页/.test(e)), JSON.stringify(out));
+  assert.ok(out.some(e => /引用「P7」超出正文范围/.test(e)), JSON.stringify(out));
+  assert.deepEqual(C.verifyDeck(doc, [{ ...base[0], pageRefs: ['body:2'] }, { ...base[1], pageRefs: ['p:1'] }]), [], '对得上就不报');
+  results.deck_reconciliation_extended = true;
 }
 
 // 9. 文件往返与摘要绑定。
@@ -221,13 +306,18 @@ results.annotation_entries_work = annotated.length;
 
 // 12. 三种自定义图不算重复，同种图换实现入口仍算重复；不能由能力映射挡住真实 SVG 实现。
 {
-  const custom = (pageNumber, visual, extra = {}) => page({ page: pageNumber, form: 'svg.custom', visual, ...extra });
+  const custom = (pageNumber, visual, extra = {}) => page({ page: pageNumber, form: 'svg.custom', visual, encodingFamily: 'correlation', ...extra });
   const mixed = { version: 1, pages: [custom(1, 'ecdf'), custom(2, 'forest'), custom(3, 'adjacency-matrix', { planner: { capability_id: 'heatmap.matrix' } })] };
   assert.equal(C.check(mixed).status, 'PASS');
   assert.equal(C.inventory(mixed).distinctVisuals, 3);
   assert.equal(C.inventory(mixed).longestRun, 1);
-  assert.equal(C.inventory(mixed).families.custom, 3);
-  const repeated = { version: 1, pages: [custom(1, 'waterfall'), custom(2, 'waterfall', {form:'kit.waterfall'}), custom(3, 'waterfall', {form:'precision.waterfall'})] };
+  // svg.custom 按声明的 encodingFamily 记账；记成 custom 的话族分布就对这一族失明。
+  assert.equal(C.inventory(mixed).families.correlation, 3);
+  assert.equal(C.inventory(mixed).unclassifiedCustom, 0);
+  // 同一种表达，三种实现入口：已登记形式的族由 form 决定，不该再带 encodingFamily。
+  const repeated = { version: 1, pages: [custom(1, 'waterfall'),
+    page({ page: 2, form: 'kit.waterfall', visual: 'waterfall' }),
+    page({ page: 3, form: 'precision.waterfall', visual: 'waterfall' })] };
   assert.equal(C.check(repeated).status, 'FAIL');
   repeated.pages[2].repetitionReason = '三个业务单元统一量尺核对同一种贡献分解';
   assert.equal(C.check(repeated).status, 'PASS');

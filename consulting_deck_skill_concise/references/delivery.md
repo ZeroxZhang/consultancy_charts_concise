@@ -44,6 +44,7 @@
 | `planner` | `{mode, record?, sha256?, reason?}` | 不采用外部专家可省略，默认为 direct；使用时见下 |
 | `pages` | `{record, sha256?}` | S3 的逐页形式声明（pages.json）。`record` 相对 `task.json` 解析；给了 `sha256` 就要与文件实际摘要一致。**传了合同的装配缺这一项直接失败**，见下 |
 | `critical` | 数组，可为空 | 少量会改变判断的关键语义声明，见下 |
+| `densityPolicy` | 否 | `compact`（默认）／`normal`。**紧凑是本技能的默认交付形态**：`compact` 下，展品区底部余量与模块间空白按占比升级为错误（见[验收](qa.md)），封面、封底、参考资料按设计豁免。要松排版的稿子必须显式写 `normal`，不能靠不写来默认松 |
 
 **派生规则**：`complexity === "complex"` 或 `majorConclusion === true` 时，复核要求派生为 independent，否则为 author。不要手填与风险冲突的 `reviewPolicy`——填了且冲突会被直接拒绝。
 
@@ -68,6 +69,11 @@
 ```json
 {
   "version": 1,
+  "familyDiversityReason": "本稿主线是同一批对象在同一量尺上的排序变迁，多数页共用长度编码；只有三家平台有可比的季度序列，已单独成页。",
+  "unusedFamilies": {
+    "distribution": "公开材料只有均值与总量，没有原始观测，不从均值伪造分布",
+    "hierarchy": "本稿没有需要逐层拆分的总体"
+  },
   "pages": [
     {
       "page": 3,
@@ -77,7 +83,7 @@
         {"slot": "main", "span": 7, "form": "kit.waterfall", "role": "primary"},
         {"slot": "aside", "span": 5, "form": "kit.dumbbell", "role": "support"}
       ],
-      "annotations": [{"on": "bar:商超", "kind": "delta", "text": "主要拖累 {value}"}]
+      "annotations": [{"id": "a-sc", "on": "bar:商超", "kind": "delta", "text": "主要拖累 {value}"}]
     }
   ]
 }
@@ -90,14 +96,23 @@
 | `form` | 是 | 本页主实现入口，取自 `assets/deck-forms.js`；未封装的 ECharts 或手写 SVG 用 svg.custom，不限制实际图型 |
 | `visual` | 通用 SVG 时填写 | 实际表达名称，如 ecdf、forest、adjacency-matrix；相同图型跨页同名。可用于其他入口，regions 也可填写。成稿对应 data-visual |
 | `regions` | 否 | 一页多展品时写明分区；必须恰好一个 `role:"primary"` 且与 `form` 一致；主区写了 visual 时须与 page.visual 相同。它不生成布局，只做声明——写法与分区规则见[单页布局选型](layouts.md) |
-| `annotations` | 否 | 图上的旁解读，见[证据与表达](exhibits.md)的"旁解读"一节；**只有 `annotation:'layer'` 的形式能声明**，其余会被明确拒绝而不是静默忽略 |
+| `encodingFamily` | svg.custom 时是 | 这一页**实际**落在哪个编码族（`comparison`/`trend`/`composition`/`distribution`/`correlation`/`flow`/`hierarchy`/`kpi`/`diagram`/`table`）。`visual` 是表达名称，这个是分布记账的族——不填就会被记成 `custom`，那一族在丰富度账面上等于不存在。只用于 `svg.custom`；已登记形式的族由 `form` 决定，重复声明会被拒绝 |
+| `annotations` | 否 | 图上的旁解读，见[证据与表达](exhibits.md)的"旁解读"一节。每项需要 `id`（成稿对账与复核引用都靠它）。声明了就必须在成稿里真的出现同名 `data-annotation-id`，画了没声明同样报错 |
+| `annotationMode` | 手摆时写 | 取 `"manual"`。`annotation:'layer'` 的形式由通用标注层自动摆位，不写；其余形式要写旁解读必须显式声明手摆并承担目视验收——**不再按形式族一律拒绝**，那样会把作者推回少数可标注形式，反而压低了编码族多样性。已接入通用层的形式写它会被拒绝 |
 | `repetitionReason` | 视情况 | 同一表达第 3 次起、或连续 3 页相同表达时写；有 visual 按 visual，否则按 form |
+
+**族分布的两条交代。** 它们不是图型配额，是"你注意到了并说得出为什么"：
+
+- `familyDiversityReason`（顶层）：**单族占展品页 30% 以上且至少 4 页**时必填。占比以展品页为分母——结构化文字页是兜底，不算展品。按名称计数抓不住"七页长度编码散在五个 form 名下"，所以这一条按族算。
+- `unusedFamilies`（顶层）：**展品页达到 8 页**时必填，逐族说明每个缺席的展品族为什么整族没出现。缺席在计数表里是看不见的，而"有数据却没画"恰恰是最容易漏的一类——真实跑批中出现过"手上已有季度序列却没做时间序列"。理由要写依据（没有多期序列／没有守恒流量／没有原始观测等）；声明某族没用上而稿子里其实有，会被当场拒绝。
 
 **没有降级字段。** 容量不足时改的是布局、分面、模块高度或绘制路径，不是表达类型；写了 `fallback` 会被直接拒绝。装配后的 QA 还会核对声明为图形实现（`kind:'svg'`）的形式在成稿里确实出现了 SVG，只有表格就报错。
 
 成稿每页必须显式声明 `data-form`（封面、参考资料、封底、分隔页除外），取值与 `pages.json` 一致；**没有静默默认值**，缺了或写了枚举以外的名字装配直接失败。`pages.json` 声明 `visual` 时，成稿须声明相同 `data-visual`，否则对账失败。`data-proves` 可选，写了就必须与 `pages.json` 的 `proves` 一致。
 
-**反单调不是图型配额。** 规则只有一条：**重复必须是被解释的决定，不能是默认**。同一表达第 3 次出现、或连续三页相同表达，作者必须写一句 `repetitionReason` 说明为什么这里还是它。它不规定用几种图、不因数量给页面定级，也不替代"这条形式是否真的适合本页证明责任"的判断——那是 S3 的取舍和 S5 的目视验收。
+成稿里出现的每个 `data-annotation-id` 都要在 `pages.json` 有对应声明，反之亦然；正文里的 `P<n>` 与 `<n> 页正文` 会被抽出来核对——**插页、删页或分章调整之后，这类跨页引用最容易悄悄失准，而它本来是可以机械查的**，不该留给人工复核去发现。
+
+**反单调不是图型配额。** 规则只有一条：**重复必须是被解释的决定，不能是默认**。同一表达第 3 次出现、或连续三页相同表达，作者必须写一句 `repetitionReason` 说明为什么这里还是它；族层面的两条交代（`familyDiversityReason`、`unusedFamilies`）同理。它们不规定用几种图、不因数量给页面定级，也不替代"这条形式是否真的适合本页证明责任"的判断——那是 S3 的取舍和 S5 的目视验收。
 
 ### critical：少量关键语义
 
@@ -180,6 +195,8 @@ API：`await assemble({pagesFile, outputFile, contractFile?, cssFile?, title?, k
 - `status` 最终必须是 `complete`。
 - `htmlSha256` 与 `pdfSha256` 取 audit 的产物摘要。`auditSha256` 是对 audit **解析对象**做的规范化摘要，**不是 `audit.json` 的原始字节摘要**；算法由 `scripts/report_contract.cjs` 的 `hash` 与 `stable` 提供。
 - `checks.analysis` 与 `checks.evidence` 为 `pass`，或有实际理由的 `not_applicable`；`checks.visual` **必须是实际看图后的 `pass`**。三项都要有非空 `basis`，写清实际看到什么、依据是什么。
+- **`checks.*.status` 说的是"这一层检查做完了、依据写在 basis 里"，不是"这一层没问题"。** 发现的问题一律进 `issues`，用 severity/status 表达，不要试图用 checks 表达好坏——这里没有 `fail` 取值，硬凑一个只会盖掉问题。`issues` 里的 major/blocking 必须 `resolved` 才能交付，这条由聚合与校验器强制，比 checks 更硬。
+- **`basis` 要写实际做了什么**（看了哪些页、复算了哪些数、核到哪一条），不写"已检查，无问题"。它是复核的取证记录，不是结论摘要。
 - `independence` 为 `author` 或 `independent`。不能由脚本预填通过判断。
 
 ### coverage
@@ -196,6 +213,30 @@ API：`await assemble({pagesFile, outputFile, contractFile?, cssFile?, title?, k
 - 同一份真实图像可以被作者和独立审查者分别引用，不需要重复生成截图。
 - 复杂任务由作者与独立角色**各自覆盖全页、两种媒介**；简单任务由作者覆盖全页、两种媒介。**作者结果不能填补独立结果的缺失。**
 - 同一角色内部可以合并分工结果，但作者与独立审查者的身份不能重叠。
+
+#### 未变页怎么引用旧审查：`inheritedFrom`
+
+修完一页重跑验收档时，不必把没动过的页重新看一遍。做法是**产出一份新的 review**（顶层摘要绑定本次 audit 的新哈希），在 coverage 条目上声明它继承自哪一次审查：
+
+```json
+{
+  "reviewer": "independent-reviewer-5",
+  "independence": "independent",
+  "layers": ["page", "exhibit", "annotation", "typography"],
+  "htmlPages": [1, 2, 3, 5],
+  "pdfPages": [1, 2, 3, 5],
+  "evidence": [{"id": "html:page-1"}, {"id": "html:page-2"}],
+  "inheritedFrom": {
+    "basis": "本轮只改了第 4 页的图注，其余三页的 DOM、命中样式与渲染图摘要经核对未变",
+    "audit": {"path": "renders/audit.json", "sha256": "上一轮 audit 的摘要"},
+    "review": {"path": "renders/independent.json", "sha256": "上一轮 review 的摘要"}
+  }
+}
+```
+
+校验器会逐条比对两轮 audit 里同一证据的 `pageSha256`、`pageStyleSha256`、`dependenciesSha256`、`sha256` 与页号——**任何一项变了就拒绝继承，那一页必须重新看**。旧审查者本人要覆盖过该条证据，旧的未决问题也要被本次完整保留。文案上写"其余页未变"不算数：**能不能继承由摘要决定，不由说明决定**。
+
+页面改造落在哪些页、`pageStyleSha256` 的归页规则、以及"判不准时宁可多失效"的边界，见下面的"有限继承"。**注意 `:root`、`body`、`*`、`@media` 这类判不出作用域的样式一改就是全篇失效**，那时所有页都要重看。
 
 ### warningReview
 
@@ -215,6 +256,8 @@ API：`await assemble({pagesFile, outputFile, contractFile?, cssFile?, title?, k
 每项形如 `{"severity": "minor|major|blocking", "status": "open|resolved", "description": "..."}`。**major 与 blocking 必须 resolved 才能交付。** 没有问题也要给出空数组，明确表示检查过。
 
 ### 有限继承
+
+**怎么把它写出来见上面"未变页怎么引用旧审查：`inheritedFrom`"**——字段结构与最小示例在那里。这一节说的是边界：哪些页算"未变"。
 
 局部修改之后，只有同时满足全部条件的未变范围才可以引用旧审查：
 

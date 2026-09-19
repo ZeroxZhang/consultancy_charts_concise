@@ -15,7 +15,9 @@ const listing = out => fs.readdirSync(out).sort();
   try {
     const pages = path.join(dir, 'pages.html'), deck = path.join(dir, 'deck.html'), task = path.join(dir, 'task.json'), record = path.join(dir, 'pages.json');
     fs.writeFileSync(record, JSON.stringify({version: 1, pages: [{page: 1, proves: '样本比例不能被读成最终收入比', form: 'html.text'}]}));
-    fs.writeFileSync(task, JSON.stringify({workMode: 'editorial', complexity: 'simple', critical: [], pages: {record: 'pages.json'}}));
+    // 密度档位显式写 normal：这份夹具只有一页、正文区只有几十像素内容，考的是分档而不是密度。
+    // 真实报告默认 compact——要松排版必须自己声明，不能靠不写来默认松。
+    fs.writeFileSync(task, JSON.stringify({workMode: 'editorial', complexity: 'simple', critical: [], densityPolicy: 'normal', pages: {record: 'pages.json'}}));
     // 正文里放一个真实展品：打印复检必须对着屏幕上的实际图元核，而不是对着空页自证。
     fs.writeFileSync(pages, '<section class="slide reading" data-page-id="evidence" data-frame-boundary="space" data-form="html.text" data-proves="样本比例不能被读成最终收入比"><header class="slide__header"><h1 class="slide__title">分档验证</h1></header><div class="slide__body" style="align-content:start"><div id="value">样本比例 38%</div><svg viewBox="0 0 120 20" width="120" height="20" role="img"><rect x="0" y="4" width="80" height="12" fill="#123456"/></svg></div><div class="slide__page">1</div></section>');
     await assemble({pagesFile: pages, outputFile: deck, contractFile: task});

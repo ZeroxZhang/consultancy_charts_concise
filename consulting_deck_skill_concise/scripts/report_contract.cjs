@@ -9,9 +9,9 @@ const stable = value => JSON.stringify(value, (_, v) => v && typeof v === 'objec
 function normalize(value = {}, defaults = {}) {
   const c = {version: 1, workMode: 'editorial', complexity: 'complex', majorConclusion: false,
     mode: 'reading', theme: 'mckinsey', typography: 'serif-report-bold', ratio: '16x9', kind: 'fragment',
-    planner: {mode: 'direct'}, critical: [], ...defaults, ...value};
+    planner: {mode: 'direct'}, critical: [], densityPolicy: 'compact', ...defaults, ...value};
   if (c.version !== 1) throw Error('不支持的任务合同版本');
-  for (const [key, allowed] of Object.entries({workMode: ['editorial', 'analytical', 'exploratory'], complexity: ['simple', 'complex'], mode: ['reading', 'presentation'], ratio: ['16x9', '4x3'], kind: ['report', 'fragment', 'collection']})) {
+  for (const [key, allowed] of Object.entries({workMode: ['editorial', 'analytical', 'exploratory'], complexity: ['simple', 'complex'], mode: ['reading', 'presentation'], ratio: ['16x9', '4x3'], kind: ['report', 'fragment', 'collection'], densityPolicy: ['compact', 'normal']})) {
     if (!allowed.includes(c[key])) throw Error('任务合同 ' + key + ' 无效');
   }
   if (typeof c.majorConclusion !== 'boolean') throw Error('majorConclusion 须明确为 boolean');

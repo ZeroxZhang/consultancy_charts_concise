@@ -1,6 +1,13 @@
-/* 在真实浏览器中调用；函数自包含，可由 Playwright 序列化。诊断不作审美 PASS。 */
-function inspectSlide(slide) {
+/* 在真实浏览器中调用；函数自包含，可由 Playwright 序列化。诊断不作审美 PASS。
+   第二参数是本次的密度档位：只有"空"到什么程度、由谁说，随档位变；判据本身不变。
+   封面的留白是设计，正文的留白是成本——所以档位只作用于正文页的展品区。 */
+function inspectSlide(slide, policy) {
   const errors = [], warnings = [], findings = [];
+  const settings = policy && typeof policy === 'object' ? policy : {};
+  const compact = settings.density === 'compact';
+  const role = (slide.dataset && slide.dataset.pageRole) || slide.getAttribute('data-page-role') || '';
+  const exempt = settings.exemptRoles || ['cover', 'back-cover', 'references'];
+  const densityApplies = compact && !exempt.includes(role);
   const sr = slide.getBoundingClientRect(), scale = sr.width / (slide.offsetWidth || sr.width) || 1;
   const bounds = el => { const r = el.getBoundingClientRect(); return { x: (r.left-sr.left)/scale, y: (r.top-sr.top)/scale, width:r.width/scale, height:r.height/scale }; };
   const shown = el => { if (!el.getClientRects().length) return false; for(let n=el;n&&n.nodeType===1;n=n.parentElement){const s=getComputedStyle(n);if(s.display==='none'||s.visibility!=='visible'||+s.opacity===0)return false;}const r=el.getBoundingClientRect();return r.width>0&&r.height>0; };
@@ -42,7 +49,15 @@ function inspectSlide(slide) {
       if(painted(s.backgroundColor)&&!el.querySelector('svg,canvas,img,video,table')){
         const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT), rects=[];let n;
         while((n=walker.nextNode())){if(!n.textContent.trim()||!shown(n.parentElement))continue;const range=document.createRange();range.selectNodeContents(n);rects.push(...range.getClientRects());}
-        if(rects.length){const bottom=Math.max(...rects.map(r=>r.bottom));const gap=(el.getBoundingClientRect().bottom-bottom)/scale;if(gap>72&&b.height>140)add(warnings,'V-EMPTY-MODULE',el,`模块文字下方约 ${Math.round(gap)}px 无内容，需检查是否被轨道伸展成空框。`);}
+        if(rects.length){
+          const bottom=Math.max(...rects.map(r=>r.bottom));const gap=(el.getBoundingClientRect().bottom-bottom)/scale;
+          if(gap>72&&b.height>140){
+            const message=`模块文字下方约 ${Math.round(gap)}px 无内容，需检查是否被轨道伸展成空框。`;
+            // 空到超过模块自身四分之一、且绝对值过百像素，才不像是"上对齐的单元格留白"。
+            if(densityApplies&&gap>120&&gap>b.height*.25)add(errors,'V-EMPTY-MODULE',el,message+`（密度档位 compact：占模块高度 ${Math.round(gap/b.height*100)}%，须重排或给出该留白的功能）`,{gap:Math.round(gap),moduleShare:Number((gap/b.height).toFixed(3))});
+            else add(warnings,'V-EMPTY-MODULE',el,message,{gap:Math.round(gap)});
+          }
+        }
       }
     }
     if(textModule(el)) for(const pseudo of ['::before','::after']) {
@@ -64,10 +79,43 @@ function inspectSlide(slide) {
   const body=slide.querySelector('.slide__body');
   if(body&&shown(body)){
     const leaves=[...body.querySelectorAll('*')].filter(el=>shown(el)&&!el.closest('.source')&&(el.matches('svg,canvas,img,table')||(!el.children.length&&(el.textContent||'').trim())));
-    const br=bounds(body);if(leaves.length){const bottom=Math.max(...leaves.map(el=>{const b=bounds(el);return b.y+b.height;})),gap=br.y+br.height-bottom;if(gap>120)add(warnings,'V-BODY-REMAINDER',body,`正文实际对象下方约 ${Math.round(gap)}px 剩余空间，需在整页检查其分组、强调或节奏用途。`);}
+    const br=bounds(body);
+    if(leaves.length){
+      const bottom=Math.max(...leaves.map(el=>{const b=bounds(el);return b.y+b.height;})),gap=br.y+br.height-bottom;
+      if(gap>120){
+        const message=`正文实际对象下方约 ${Math.round(gap)}px 剩余空间（占展品区 ${Math.round(gap/br.height*100)}%），需在整页检查其分组、强调或节奏用途。`;
+        // 上一条只量"最后一个对象下方"，把空白推进模块之间就能躲开；所以档位从"占比"判，不只看绝对值。
+        if(densityApplies&&gap>br.height*.2)add(errors,'V-BODY-REMAINDER',body,message+`（密度档位 compact：超过展品区 20%，须收短模块或重新分配整页空间）`,{gap:Math.round(gap),bodyShare:Number((gap/br.height).toFixed(3))});
+        else add(warnings,'V-BODY-REMAINDER',body,message,{gap:Math.round(gap),bodyShare:Number((gap/br.height).toFixed(3))});
+      }
+    }
+    // 模块之间的空白：只量末对象下方的话，用 space-between 把空白挪到中间就规避了。
+    const modules=[...body.children].filter(el=>shown(el)&&!el.classList.contains('source'));
+    if(modules.length>1){
+      let largest=0,where=null;
+      for(let i=1;i<modules.length;i++){const prev=bounds(modules[i-1]),cur=bounds(modules[i]);const gap=cur.y-(prev.y+prev.height);if(gap>largest){largest=gap;where=modules[i];}}
+      if(largest>96&&where){
+        const message=`相邻模块之间约有 ${Math.round(largest)}px 空白（占展品区 ${Math.round(largest/br.height*100)}%），需在整页检查是分组节奏还是被撑开的空档。`;
+        if(densityApplies&&largest>br.height*.2)add(errors,'V-MODULE-GAP',where,message+'（密度档位 compact：模块间空白不是留白的正当去处）',{gap:Math.round(largest),bodyShare:Number((largest/br.height).toFixed(3))});
+        else add(warnings,'V-MODULE-GAP',where,message,{gap:Math.round(largest),bodyShare:Number((largest/br.height).toFixed(3))});
+      }
+    }
     const source=slide.querySelector('.source');if(source&&shown(source)){const top=bounds(source).y;for(const el of leaves){const b=bounds(el);if(b.y<top&&b.y+b.height>top+1)add(warnings,'V-SOURCE-COLLISION',el,'正文对象进入来源区域，请检查来源安全区与关键限定。');}}
   }
-  findings.push({code:'V-COVERAGE',message:'自动范围：可见 HTML 模块的典型边框、简单伪元素/窄块、零模糊 inset 阴影，以及局部空置线索。小于70×32px的文字装饰、复杂绘制、未声明对齐关系和整页重心仍须逐页实际审查；无错误不代表视觉通过。'});
+  // 分隔页没有 .slide__body，上面所有检查都落空；它因此长期落在治理盲区里。这里单独量一次。
+  if(!body||!shown(body)){
+    const content=[...slide.querySelectorAll('*')].filter(el=>shown(el)&&!el.closest('.source')&&!structural(el)&&((el.textContent||'').trim().length>0||el.matches('svg,canvas,img')));
+    if(content.length){
+      const top=Math.min(...content.map(el=>bounds(el).y)),bottom=Math.max(...content.map(el=>{const b=bounds(el);return b.y+b.height;}));
+      const used=(bottom-top)/sr.height;
+      if(used<.35)add(warnings,'V-PAGE-VOID',slide,`本页没有展品区，可见内容只占页面高度 ${Math.round(used*100)}%（约 ${Math.round((1-used)*100)}% 为空白）。功能页（封面/封底/参考资料）按设计留白即可；内容页与分隔页要在 warningReview 里说明这段空白承载什么。`,{usedShare:Number(used.toFixed(3)),role:role||'unset'});
+    }
+  }
+  findings.push({code:'V-COVERAGE',message:'自动范围：可见 HTML 模块的典型边框、简单伪元素/窄块、零模糊 inset 阴影，以及空置线索（模块内、末对象下方、模块之间、无展品区页的整页空白）。小于70×32px的文字装饰、复杂绘制、未声明对齐关系和整页重心仍须逐页实际审查；无错误不代表视觉通过。'+(densityApplies?'密度档位 compact 已生效：展品区的上述空白按占比升级为错误，功能页按设计豁免。':'密度档位未启用：空置只作为诊断线索，不阻塞。')});
   return {errors,warnings,findings};
 }
-module.exports={inspectSlide};
+/* 档位只有一个来源：任务合同。缺省按 compact——"紧凑"是本技能的默认交付形态，
+   要松一点的稿子必须显式写 normal，而不是靠不写来默认松。 */
+const DENSITY_DEFAULT='compact';
+const policyFor=taskContract=>({density:(taskContract&&taskContract.densityPolicy)||DENSITY_DEFAULT,exemptRoles:['cover','back-cover','references']});
+module.exports={inspectSlide,policyFor,DENSITY_DEFAULT};

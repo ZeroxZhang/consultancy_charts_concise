@@ -15,7 +15,8 @@ const slide = (page, id, proves, body) => '<section class="slide reading" data-p
   try {
     const pages = path.join(dir, 'pages.html'), deck = path.join(dir, 'deck.html');
     fs.writeFileSync(path.join(dir, 'pages.json'), JSON.stringify({version: 1, pages: [{page: 1, proves: '干净页不应报阻塞', form: 'html.text'}, {page: 2, proves: '过小正文必须被当场拦下', form: 'html.text'}]}));
-    fs.writeFileSync(path.join(dir, 'task.json'), JSON.stringify({workMode: 'editorial', complexity: 'simple', critical: [], pages: {record: 'pages.json'}}));
+    // 密度档位写 normal：这份夹具每页只有一行结论，考的是预览的阻塞与非阻塞判定，不是版式密度。
+    fs.writeFileSync(path.join(dir, 'task.json'), JSON.stringify({workMode: 'editorial', complexity: 'simple', critical: [], densityPolicy: 'normal', pages: {record: 'pages.json'}}));
     fs.writeFileSync(pages, slide(1, 'clean', '干净页不应报阻塞', '<div id="value-clean">样本比例 38%</div>') + slide(2, 'dense', '过小正文必须被当场拦下', '<div id="value-dense">样本比例 38%</div>'));
     await assemble({pagesFile: pages, outputFile: deck, contractFile: path.join(dir, 'task.json')});
     // 只在第 2 页注入一个真实缺陷：把正文压到 8px，低于可读下限。

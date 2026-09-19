@@ -74,8 +74,19 @@ function inspectDom(s) {
     const cs = getComputedStyle(e);
     if (parseFloat(cs.borderLeftWidth) >= 2 && cs.borderLeftStyle !== 'none' && parseFloat(cs.paddingLeft) < 6 && e.getBoundingClientRect().height > 10) { noteSeen.add(e); notePad.push({cls: String(e.className).slice(0, 40), pad: cs.paddingLeft, text: (e.textContent || '').trim().slice(0, 40)}); }
   }
+  /* 旁解读在契约里必须是可见的：成稿写了 data-annotation-id，pages.json 就该有对应声明，
+     否则"这页有没有贴近对象的解读"在交付链上既不能证实也不能证伪。这里只取 id，不搬内容。 */
+  const annotationIds = [...new Set([...s.querySelectorAll('[data-annotation-id]')].map(e => e.getAttribute('data-annotation-id')).filter(Boolean))].sort();
+  /* 跨页引用只抽 token，不搬整页文本：正文改过页序后，"P6""19 页正文"这类写法最容易悄悄失准。 */
+  const pageRefs = [...new Set(textEvidence.flatMap(text => {
+    const found = [];
+    for (const m of text.matchAll(/(?:^|[^A-Za-z0-9])P\s?(\d{1,2})(?![\d])/g)) found.push({kind: 'p', n: Number(m[1])});
+    for (const m of text.matchAll(/(\d{1,2})\s*页正文/g)) found.push({kind: 'body', n: Number(m[1])});
+    return found;
+  }).map(r => r.kind + ':' + r.n))].sort();
   return {
-    exhibits, textEvidence, unreadableText: unreadable, form: s.dataset.form || null, visual: s.dataset.visual || '', proves: s.dataset.proves || '',
+    exhibits, textEvidence, annotationIds, pageRefs,
+    unreadableText: unreadable, form: s.dataset.form || null, visual: s.dataset.visual || '', proves: s.dataset.proves || '',
     title: s.querySelector('.slide__title,.cover-title,.divider-name')?.textContent || '',
     overflow: bad, tinyText: tiny, smallDataText: smallData, scaledSvg,
     charts: [...s.querySelectorAll('.chart')].map(e => ({width: e.clientWidth, height: e.clientHeight, rendered: !!e.querySelector('svg,canvas'), error: e.dataset.chartError || null, risks: e.dataset.chartRisks || null})),
@@ -94,7 +105,7 @@ async function activate(page, index) {
 }
 
 /* 逐页测量。modern 时附带关键内容与视觉禁令检查，与正式审计保持同一判据。 */
-async function collect(page, index, {modern = false} = {}) {
+async function collect(page, index, {modern = false, policy = null} = {}) {
   await activate(page, index);
   const slide = page.locator('.slide.active');
   const result = await slide.evaluate(inspectDom);
@@ -102,7 +113,8 @@ async function collect(page, index, {modern = false} = {}) {
   result.bookends = await slide.evaluate(bookends.inspectPage);
   if (modern) {
     result.critical = await slide.evaluate(criticalContent.inspectSlide);
-    result.visualPolicy = await slide.evaluate(visualPolicy.inspectSlide);
+    // 档位随任务合同走：单页自查与正式审计因此不可能用两套密度判据。
+    result.visualPolicy = await slide.evaluate(visualPolicy.inspectSlide, policy);
   }
   result.relations = await slide.evaluate(geometry.inspectSlide);
   result.fonts = await fontAudit.inspect(page);

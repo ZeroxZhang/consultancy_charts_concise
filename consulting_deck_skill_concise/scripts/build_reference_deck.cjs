@@ -57,5 +57,11 @@ engine=themes.apply(engine,themeId);
 engine=engine.replace("font:16px Arial,'PingFang SC',sans-serif",'font:16px '+typography.get(profile).body);
 engine=pack(frame.apply(engine),{profile});
 const output=path.resolve(args.find(v=>!v.startsWith('--'))||path.join(root,'assets/reference_deck.html'));fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,engine);
-fs.writeFileSync(output.replace(/\.html$/,'')+'.pages.json',JSON.stringify({version:1,pages:pagesContract},null,2));
+// 样稿同样受族分布约束：这里是组件示范稿，按入口逐个演示表单与四个构建期组件，
+// 「精确查数」族因此偏高；缺席族逐条写明为什么这份样稿不承载。真实报告的取值另算。
+const contract={version:1,
+ familyDiversityReason:'这是按入口逐个演示的组件样稿，不是一份报告：它依次展示表单、矩阵与四个构建期组件，所以「精确查数」族占比偏高是示范顺序的结果，不代表真实报告的编码分布。',
+ unusedFamilies:{trend:'样稿不承载时间维度：没有演示序列数据',distribution:'样稿数据是离散类别，没有原始观测可装箱',correlation:'样稿没有成对的两变量观测',flow:'样稿没有守恒可核的流量',hierarchy:'样稿没有需要逐层拆分的总体'},
+ pages:pagesContract};
+fs.writeFileSync(output.replace(/\.html$/,'')+'.pages.json',JSON.stringify(contract,null,2));
 console.log(`${slides.length}页 → ${output}`);

@@ -97,11 +97,17 @@ const CAT = JSON.parse(atlas.match(/<script type="application\/json" id="layout-
    regions 里的 `"<本页 form>"` 是占位，按该条目建议的第一个 form 解析——与图谱 resolveForm 同一条规则。 */
 {
   let checked = 0;
+  /* 首形式是 svg.custom 的条目，合成的页面要补 encodingFamily：契约要求未登记入口自报实际编码族，
+     否则这一族在分布记账里是隐形的。丙-3 是同尺度小多图——多个序列共用一把量尺，编码族是 trend。 */
+  const ENCODING_BY_LAYOUT = {'丙-3': 'trend'};
+  const unresolved = DOC.filter(d => d.forms.length && d.forms[0].name === 'svg.custom' && !ENCODING_BY_LAYOUT[d.id]).map(d => d.id);
+  assert.deepEqual(unresolved, [], '这些条目的首形式是 svg.custom，却没有登记实际编码族：' + unresolved.join('、'));
   for (const d of DOC) {
     const regions = d.regions.map(r => (r.form === '<本页 form>' && d.forms.length ? {...r, form: d.forms[0].name} : r));
     const primary = regions.find(r => r.role === 'primary');
     assert.ok(primary, d.id + '：regions 缺少 primary');
-    const doc = {version: 1, pages: [{page: 1, proves: d.use || '示例', form: primary.form, visual: primary.visual, regions}]};
+    const encoding = primary.form === 'svg.custom' ? {encodingFamily: ENCODING_BY_LAYOUT[d.id]} : {};
+    const doc = {version: 1, pages: [{page: 1, proves: d.use || '示例', form: primary.form, visual: primary.visual, ...encoding, regions}]};
     const res = C.check(doc);
     assert.equal(res.status, 'PASS', d.id + ' 的 regions 没过 pages 校验：' + res.errors.join('；'));
     checked += regions.length;

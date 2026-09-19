@@ -44,8 +44,10 @@ async function preview(options = {}) {
     const targets = requested.filter(n => Number.isInteger(n) && n >= 1 && n <= total).sort((a, b) => a - b);
     if (!targets.length) throw Error('没有可预览的页码；本稿共 ' + total + ' 页');
     const rows = [];
+    // 预览与正式审计共用同一套密度判据，避免"预览看着还行、验收档突然报错"。
+    const previewPolicy = require('./browser_visual_policy.cjs').policyFor(modern ? require('./report_contract.cjs').read(fs.readFileSync(input, 'utf8')) : null);
     for (const number of targets) {
-      const row = await pageProbe.collect(page, number - 1, {modern});
+      const row = await pageProbe.collect(page, number - 1, {modern, policy: previewPolicy});
       row.screenshot = pageProbe.screenshotName(number);
       await page.locator('.slide.active').screenshot({path: path.join(out, row.screenshot)});
       row.review = pageProbe.summarize(row);
