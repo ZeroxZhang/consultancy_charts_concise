@@ -62,6 +62,14 @@ const scene = options => A.createScene(Object.assign({ width: 640, height: 360, 
   // 无 from 时按自身语义：瀑布的 delta 柱直接标注本柱带符号原值，不再要求一组端点。
   assert.equal(A.resolveText(s, { on: 'q', kind: 'delta' }, {}), '+140');
   assert.equal(A.resolveText(s, { on: 'q', kind: 'delta', text: '主要拖累 {value}' }, {}), '主要拖累 +140');
+  // 无 from 时取不到的字段必须当场拦住。文档把六个字段并列成通用能力，
+  // 作者照写 {delta} 会把它原样印在图上——那是成稿里很难被发现的错字。
+  assert.throws(() => A.resolveText(s, { on: 'q', kind: 'delta', text: '主要拖累 {delta}' }, {}), /\{delta\} 取不到值/);
+  assert.throws(() => A.resolveText(s, { on: 'q', kind: 'delta', text: '{rate}' }, {}), /\{rate\} 取不到值/);
+  assert.throws(() => A.resolveText(s, { on: 'q', kind: 'note', text: '{start}→{end}' }, {}), /\{start\} 取不到值/);
+  assert.match(A.resolveText(s, { on: 'q', kind: 'share', text: '占比 {value}' }, {}), /^占比 /, '这一分支能给的字段不能被一起拦掉');
+  // 集合外的花括号是普通文字，不参与校验。
+  assert.equal(A.resolveText(s, { on: 'q', kind: 'note', text: '口径 {见附注}' }, {}), '口径 {见附注}');
   assert.throws(() => A.resolveText(s, { on: 'q', kind: 'bracket' }, {}), /需要 from/);
   assert.throws(() => A.resolveText(s, { on: 'missing' }, {}), /未知标注端点/);
 }

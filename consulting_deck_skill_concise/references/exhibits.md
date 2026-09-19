@@ -106,7 +106,7 @@
 | timeSeries | periods + series:[{name,values}] | 趋势；最多 36 期×5 系列，更多时分面 |
 | composition | items:[{label,segments}], mode | 普通／100% 堆积；最多 12 类×6 系列 |
 | histogram | bins:[{label,value}] | 已正确分箱的分布；不从均值伪造 |
-| scatter | items:[{label,x,y,size?,selected?}], xMin/xMax/yMin/yMax?, xLabel/yLabel/xUnit/yUnit? | 散点／气泡；超过 15 点只标关键点。两轴默认**含零但不越过零**（全正的数据轴从 0 起，不会画出一条负值轴）；要收窄用 `xMin`／`xMax`／`yMin`／`yMax`，**可以收窄但不能把数据切掉**，切了当场报错 |
+| scatter | items:[{label,x,y,size?,selected?}], xMin/xMax/yMin/yMax?, xLabel/yLabel/xUnit/yUnit? | 散点／气泡；超过 15 点只标关键点。两轴默认**含零但不越过零**（全正的数据轴从 0 起，不会画出一条负值轴）；要收窄用 `xMin`／`xMax`／`yMin`／`yMax`，**可以收窄但不能把数据切掉**，切了当场报错。纵轴名字过长时自动折行，不必自己把名字压短、或把单位挪出坐标轴 |
 | heatmap | rows + columns + values | 连续有限数值矩阵；最多 160 格，不接受 null；未观察／缺失用自定义 SVG 或 HTML 单独编码 |
 | sankey | nodes + links:[{source,target,value}] | 真实流量；最多 30 节点／60 边 |
 | tree | root:{label,value?,children} | 层级；最多 48 节点 |
@@ -204,7 +204,7 @@ kit.dumbbell({width:620,height:330,items:[{label:'商超',start:6.4,end:5.3},{la
 | `kind` | value／delta／rate／pp／multiple／share／rank／note | 决定数值语义与格式；`delta` 等**不写 `from` 时按本锚点原值**格式化（瀑布 delta 柱即此用法） |
 | `from`／`to` | 锚点 id | 差额、增长率、倍数、区间标注的两个真实端点 |
 | `of` | 锚点 id | 份额分母；省略时按同 `group` 锚点求和，**分母不明就不给份额** |
-| `text` | 模板 | `{label} {value} {delta} {rate} {start} {end}`；不写则只输出数值 |
+| `text` | 模板 | `{label}` `{value}` 任何标注都能用；`{delta}` `{rate}` `{start}` `{end}` 要比较两个端点，**只有写了 `from` 才有值**。没写 `from` 却用了它，会当场报错说明缺什么——不会把 `{delta}` 原样印在图上。不写 `text` 则只输出数值 |
 | `side`／`weight`／`color`／`place` | — | 覆盖默认朝向、字重、颜色与候选参数 |
 
 **容量与失败。** 标注装不下时组件**自动向右／向下扩容**（图元坐标不动，与原引擎 `fit:'grow'` 同一约定），SVG 上的 `data-requested-size`／`data-actual-size` 回传真实尺寸，宿主必须按实际尺寸排版。扩容仍装不下就**报错并列出候选被拒的原因计数**——那是改规格的信号：加空间、减标注、换分面，不是删掉关键解读，也不是缩小 viewBox。

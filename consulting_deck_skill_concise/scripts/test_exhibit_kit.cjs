@@ -73,4 +73,24 @@ console.log('ExhibitKit swimlane edge direction and adjacent-stage limit passed.
   annotations:rows.map(d=>({on:'end:'+d.label,kind:'delta',from:'start:'+d.label,text:d.label+' {delta}'}))}),
   '紧行距下端点标注仍要摆得下：摆不下会让作者放弃这个图型');
 }
+// 子弹图的 target 锚点过去在行距紧时报「68 个候选全部被拒」，作者据此判定这个图型不能用、
+// 改去自绘。两种行距分别断言：宽裕时要真的摆得下，不足时要说清是行距不够。
+{
+ const pal=(require('../assets/deck-themes.js')).palette('mckinsey');
+ const names=['交付达成率%','留存率%','毛利率%','周转天数','客单价','复购率'];
+ const items=n=>Array.from({length:n},(_,i)=>({label:names[i],value:40+i*6,target:60+i*5,max:100}));
+ const ann=[{on:'target:交付达成率%',kind:'value',text:'目标 {value}'}];
+ assert.doesNotThrow(()=>kit.bullet({palette:pal,typography_id:'serif-report-bold',width:880,height:200,items:items(3),annotations:ann,title:'t'}),
+  '行距 36.7px 时 target 锚点标注要摆得下：这一档过去报「68 个候选全部被拒」');
+ assert.throws(()=>kit.bullet({palette:pal,typography_id:'serif-report-bold',width:880,height:240,items:items(5),annotations:ann,title:'t'}),
+  /行与行之间没有空隙放标注/, '行距等于色带高时必须说清是行距不够，不能只报一串候选');
+ // 不挂标注时行带相接是正常画法，不能被容量守卫误伤。
+ assert.doesNotThrow(()=>kit.bullet({palette:pal,typography_id:'serif-report-bold',width:880,height:240,items:items(5),title:'t'}),
+  '无标注时同一构型必须照常出图');
+ // 目标刻度线与声明框等长，锚点框必须与实画图元一致。
+ const svg=kit.bullet({palette:pal,typography_id:'serif-report-bold',width:880,height:330,items:items(3),title:'t'});
+ const tick=/<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)"[^>]*data-role="target"/.exec(svg);
+ assert.ok(tick,'目标刻度线必须画出来');
+ assert.ok(Math.abs((+tick[4]-+tick[2])-30)<1e-6,'刻度线高度须等于色带高 30px，否则声明框与图元不一致');
+}
 console.log('ExhibitKit dumbbell label spacing across row heights passed.');

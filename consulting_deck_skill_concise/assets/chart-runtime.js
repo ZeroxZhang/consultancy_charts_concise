@@ -8,6 +8,36 @@
   const required=['ink','accent','gray-1','gray-2','gray-3','gray-4','page-bg','on-accent',...Array.from({length:6},(_,i)=>'cat-'+(i+1)),'seq-1','seq-3','seq-5'];
   const fmt=v=>typeof v==='number'?(v!==0&&Math.abs(v)<.0001?String(v):Number(v.toFixed(4)).toLocaleString('zh-CN',{maximumFractionDigits:4})):String(v??'—');
   function widthOf(s,font=14){return [...String(s)].reduce((sum,c)=>sum+(/[ -~]/.test(c)?font*.68:font),0);}
+  /* 把文字均分成 n 行：切点选在累计宽度最接近总宽 n 分之一的位置。
+     直接填满一行再换行会出现"七个字 + 一个字"这种断法，比折行本身更难读。 */
+  function splitBalanced(text,n,font){
+    if(n<=1)return [text];
+    const chars=[...text],target=widthOf(text,font)/n;
+    let acc=0,best=1,bestDiff=Infinity;
+    for(let i=1;i<chars.length;i++){
+      acc+=widthOf(chars[i-1],font);
+      const diff=Math.abs(acc-target);
+      if(diff<bestDiff){bestDiff=diff;best=i;}
+    }
+    return [chars.slice(0,best).join(''),...splitBalanced(chars.slice(best).join(''),n-1,font)];
+  }
+  function splitToFit(text,limit,font){
+    const n=Math.max(1,Math.ceil(widthOf(text,font)/limit));
+    return n===1?[text]:splitBalanced(text,n,font);
+  }
+  /* 值轴名称横排、按中点对齐在网格左缘，可用全宽是"左缘到中点"的两倍。
+     实测 14px 字、grid.left=10 时中点落在 49px，即轴标签区约占 font*2.8。
+     超了就折行：单位括号是天然断点，其余按实际字宽逐字填。
+     折行而不是加宽左边距——后者会让每张带轴名的图的绘图区都变窄。 */
+  function wrapAxisName(name,font,gridLeft){
+    const text=String(name),limit=Math.max((gridLeft+font*2.8)*2,font*4);
+    if(widthOf(text,font)<=limit)return {name:text,lines:1};
+    const chars=[...text],unit=chars.findIndex((c,i)=>i>1&&c==='（');
+    const lines=unit>0
+      ? [...splitToFit(chars.slice(0,unit).join(''),limit,font),...splitToFit(chars.slice(unit).join(''),limit,font)]
+      : splitToFit(text,limit,font);
+    return {name:lines.join('\n'),lines:lines.length};
+  }
   function rgb(c){if(/^#[\da-f]{6}$/i.test(c))return c.slice(1).match(/../g).map(x=>parseInt(x,16));if(/^#[\da-f]{3}$/i.test(c))return [...c.slice(1)].map(x=>parseInt(x+x,16));if(/^rgba?\(/.test(c))return c.match(/[\d.]+/g).slice(0,3).map(Number);throw Error('颜色需先解析为HEX或RGB: '+c);}
   function luminance(c){const a=rgb(c).map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;});return a[0]*.2126+a[1]*.7152+a[2]*.0722;}
   function contrast(a,b){const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
@@ -61,7 +91,12 @@
     const opt=options(recipes.build(name,spec),t,font,ctx.typography_id),plotH=height-100,risks=[];
     const risk=(code,scope,message)=>risks.push({code,scope,message});
     // 值轴名称位于轴端上方：预留名称、nameGap与字体空间，不靠验收失败后每图补坐标。
-    if(opt.grid&&opt.yAxis?.name)opt.grid.top=Math.max(opt.grid.top||0,font*2+(opt.yAxis.nameGap??15)+5);
+    // 名字超宽就折行；短名字仍按两行预留，与原来一致，不动现有版面。
+    if(opt.grid&&opt.yAxis?.name){
+      const wrapped=wrapAxisName(opt.yAxis.name,font,opt.grid.left||0);
+      opt.yAxis.name=wrapped.name;
+      opt.grid.top=Math.max(opt.grid.top||0,font*Math.max(2,wrapped.lines)+(opt.yAxis.nameGap??15)+5);
+    }
     if(name==='rankedBar'){
       const labels=opt.yAxis.data,perLabel=plotH/labels.length,maxWidth=Math.max(...labels.map(s=>widthOf(s,font))),valueWidth=Math.max(...opt.series[0].data.map(d=>widthOf(d.label.formatter,font)));
       if(perLabel<font*1.9)risk('category-space',labels,labels.length+' 个类别在 '+Math.round(plotH)+'px 绘图高度内每项约 '+perLabel.toFixed(1)+'px，低于标签行高；请提高模块高度、分组或拆成小多图。');

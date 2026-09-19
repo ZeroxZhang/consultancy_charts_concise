@@ -93,5 +93,16 @@ for(const theme_id of themes.ids){
   try{c.setOption(option);const bg=c.getModel().getSeriesByIndex(0).getData().getItemVisual(0,'style').fill,fg=option.series[0].data[0].label.color;
     assert.ok(rt.contrast(bg,fg)>=4.5,theme_id+' '+value+' 对比度不足');}finally{c.dispose();}
  }
+ // 纵轴名字是横排、按中点对齐在网格左缘的，超过 7 个字就往画布外跑。
+ // 作者只能把名字压短、把单位挪出坐标轴；这里断言超长名字改为折行而不是越界。
+ const longName='纵轴名称甲乙丙丁',oneItem={items:[{label:'甲',x:1,y:2,size:9}]};
+ assert.doesNotThrow(()=>render({recipe:'scatter',spec:{...oneItem,yLabel:longName},theme_id,width:720,height:360}),
+  '八字纵轴名必须能出图：这一档过去报「标签超出画布」');
+ assert.match(rt.prepare('scatter',{...oneItem,yLabel:longName},settings).pages[0].option.yAxis.name,/\n/,'超长轴名须折行');
+ // 带单位的名字断在括号处，不把单位拆散。
+ assert.equal(rt.prepare('scatter',{...oneItem,yLabel:'交付达成率',yUnit:'万元'},settings).pages[0].option.yAxis.name,'交付达成率\n（万元）');
+ // 短名字维持原样：折行不能顺手改掉现有版面。
+ const shortAxis=rt.prepare('scatter',{...oneItem,yLabel:'销量'},settings).pages[0].option;
+ assert.equal(shortAxis.yAxis.name,'销量');assert.equal(shortAxis.grid.top,48,'短名字的顶部预留不能变');
 }
 console.log('PASS: 9配方×3主题、气泡面积/零值位置标记、画布不足只报问题不退表、Sankey闭合/环/零流量拒绝、303个实际热力色阶反差');

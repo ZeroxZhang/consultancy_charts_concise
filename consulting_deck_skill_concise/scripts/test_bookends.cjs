@@ -13,6 +13,10 @@ const fixtureSources=Array.from({length:12},(_,i)=>({id:'R'+(i+1),author:'Test d
   try{
     const base=read('assets/bookends_example.html');
     assert.equal(bookends.applyStyles(bookends.applyStyles(base)),bookends.applyStyles(base),'样式注入幂等');
+    // 首尾页同样要显式声明边界：data-frame="off" 只关装饰，不是 boundary 的替代字段。
+    // 少了这一项，装配器对每一页都会失败——用它生成的封面到装配那一步必定卡住。
+    for(const [name,frag] of [['封面',bookends.cover({title:'测试报告',date:'2026-09-19'})],['封底',bookends.backCover({title:'测试报告',shortTitle:'测试',date:'2026-09-19'})]])
+      assert.match(frag,/data-frame-boundary="space"/,name+'必须带 data-frame-boundary="space"');
     const source=fixtureSources[0];
     assert.equal(bookends.normalizeSources([source,{...source}]).length,1,'同文献精确重复只列一次');
     assert.equal(bookends.normalizeSources([source,{...source,id:'next',date:'2025'}]).length,2,'同 URL 不同年份不误合并');

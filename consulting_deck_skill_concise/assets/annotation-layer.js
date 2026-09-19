@@ -257,9 +257,18 @@
     return true;
   }
 
+  /* 模板字段是闭合集合，就是文档里承诺的那六个。取不到值时不能原样留下——
+     {delta} 会当成普通文字印在图上，是一处作者很难在成稿里发现的错字。
+     这类字段取不到值只有一个原因：这条标注缺第二个端点。 */
+  var TEMPLATE_KEYS = ['label', 'value', 'delta', 'rate', 'start', 'end'];
   function template(text, values) {
     return String(text).replace(/\{(\w+)\}/g, function (m, key) {
-      return values[key] === undefined || values[key] === null ? m : String(values[key]);
+      if (values[key] !== undefined && values[key] !== null) return String(values[key]);
+      if (TEMPLATE_KEYS.indexOf(key) >= 0) throw new Error('标注模板里的 {' + key + '} 取不到值：'
+        + (['delta', 'rate', 'start', 'end'].indexOf(key) >= 0
+          ? '它要比较两个端点，请补 from（例：from:"target:甲"），或改用 {value}'
+          : '该锚点没有可用的 ' + key));
+      return m;
     });
   }
 

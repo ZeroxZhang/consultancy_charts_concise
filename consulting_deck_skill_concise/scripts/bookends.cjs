@@ -24,7 +24,9 @@ function bookend(meta,{back=false}={}){
   const top=[field('producer',meta.producer,'bookend-producer'),field('access',meta.access,'bookend-access')].filter(Boolean).join('');
   const footer=[field('date',date),field('version',meta.version),field('project',meta.project)].filter(Boolean).join('');
   const kind=back?'back-cover':'cover';
-  return `<section class="slide${back?'':' cover'}" data-page-role="${kind}" data-frame="off">
+  /* data-frame="off" 只关掉装饰，不是边界声明的替代：装配器对每一页都要求
+     data-frame-boundary，缺了当场失败。首尾页按契约用 space。 */
+  return `<section class="slide${back?'':' cover'}" data-page-role="${kind}" data-frame="off" data-frame-boundary="space">
   <div class="slide__frame" aria-hidden="true"></div>
   ${top?`<header class="bookend-top">${top}</header>`:''}
   <div class="bookend-main">
