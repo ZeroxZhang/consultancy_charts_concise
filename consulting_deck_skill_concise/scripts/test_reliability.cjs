@@ -25,7 +25,7 @@ const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
   await p.locator('[data-geo-bar]').first().evaluate(e=>e.style.width='25%');results.badMapping=await measure();assert.ok(results.badMapping.errors.some(e=>e.code==='G-MAPPING'));
   await p.goto(pathToFileURL(file).href);await geometry.settle(p);await p.emulateMedia({media:'print'});results.print=await measure();assert.equal(results.print.status,'PASS');await p.pdf({path:path.join(dir,'representative.pdf'),width:'1280px',height:'720px',printBackground:true});await p.emulateMedia({media:'screen'});
   // 已知4px旧缺陷：只增加观察锚点，不修改其CSS或文本。
-  const known=path.resolve(__dirname,'../../review_visual_reliability_2026-09-08/final-html-audit');
+  const known=path.resolve(__dirname,'../../_local/review_visual_reliability_2026-09-08/final-html-audit');
   for(const [name,source] of [['knownBefore','baseline-evidence/before.html'],['knownAfter','composition-demo.html']])if(fs.existsSync(path.join(known,source))){
    await p.goto(pathToFileURL(path.join(known,source)).href);await p.evaluate(()=>document.fonts.ready);
    await p.evaluate(()=>document.querySelectorAll('.data-row').forEach((r,i)=>{const c=[...r.children];[r.querySelector('.category')||c[0],r.querySelector('.value'),r.querySelector('.cycle')||c[2],r.querySelector('.team')||c[3]].forEach(e=>e.dataset.geoBaseline='known-'+i);}));
