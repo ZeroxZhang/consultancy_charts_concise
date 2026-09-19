@@ -106,7 +106,7 @@
 | timeSeries | periods + series:[{name,values}] | 趋势；最多 36 期×5 系列，更多时分面 |
 | composition | items:[{label,segments}], mode | 普通／100% 堆积；最多 12 类×6 系列 |
 | histogram | bins:[{label,value}] | 已正确分箱的分布；不从均值伪造 |
-| scatter | items:[{label,x,y,size?,selected?}] | 散点／气泡；超过 15 点只标关键点 |
+| scatter | items:[{label,x,y,size?,selected?}], xMin/xMax/yMin/yMax?, xLabel/yLabel/xUnit/yUnit? | 散点／气泡；超过 15 点只标关键点。两轴默认**含零但不越过零**（全正的数据轴从 0 起，不会画出一条负值轴）；要收窄用 `xMin`／`xMax`／`yMin`／`yMax`，**可以收窄但不能把数据切掉**，切了当场报错 |
 | heatmap | rows + columns + values | 连续有限数值矩阵；最多 160 格，不接受 null；未观察／缺失用自定义 SVG 或 HTML 单独编码 |
 | sankey | nodes + links:[{source,target,value}] | 真实流量；最多 30 节点／60 边 |
 | tree | root:{label,value?,children} | 层级；最多 48 节点 |
@@ -149,7 +149,7 @@ const svg = kit.waterfall({width:740,height:330,items:[
 | comparisonTable | columns:[{key,label,type,unit,format,bar,derive}], rows:[{kind,values}]；输出 HTML |
 | processFlow | stages:[{label,owner,output,gate}], transitions:[相邻转换条件] |
 | tree | root:{label,children:[递归节点]} |
-| swimlane | lanes:[标签], stages:[标签], items:[{id,label,lane,stage}], edges:[{from,to}] |
+| swimlane | lanes:[标签], stages:[标签], items:[{id,label,lane,stage}], edges:[{from,to}] | 连线**只支持相邻阶段**：跨阶段的水平段会从中间那些节点框上穿过去，画出来读不出关系，所以当场拒绝并提示拆成逐段 |
 
 另有 `formatNumber(value,{decimals,grouping,signed,suffix})` 与 `difference(start,end,{mode,decimals,suffix,basis,periods})`：`mode` 为 absolute（默认）／relative／pp／cagr，pp 必填 `basis`（fraction 或 percent），cagr 必填实际年数 `periods`，常规 relative 不接受零或负起点，cagr 不接受非正起止值。**这两个函数只格式化显示，不修改几何源值。**
 
@@ -171,7 +171,7 @@ const svg = kit.waterfall({width:740,height:330,items:[
 - 各函数的锚点 id：`dumbbell`/`slope` 用 `start:类别`／`end:类别`；`bullet` 用 `value:类别`／`target:类别`；`waterfall` 用 `bar:类别`；`mekko`/`stacked` 用 `seg:列|系列`；`heatmap` 用 `cell:行|列`。`AnnotationLayer.collect(svg)` 可从任意已生成 SVG（含自绘或 ECharts 产物）取回锚点。
 - 九种配方（`recipe.*`）同样带锚点，id 与 kit 同风格：`rankedBar` 用 `bar:类别`（类别取排序后的名字）；`groupedBar` 用 `bar:类别|系列`；`timeSeries` 用 `point:期间|系列`；`composition` 用 `seg:列|系列`；`histogram` 用 `bin:箱`；`scatter` 用 `point:标签`；`heatmap` 用 `cell:行|列`；`sankey` 用 `node:名称`／`flow:源→目标`；`tree` 用 `node:标签`。**配方页写 `annotations` 的方式与 kit 页完全一样**（`render({recipe,spec,annotations})`），锚点由渲染期从真实图元几何生成，不需要另写一套。
 - **旁解读只出现在成稿。** 锚点的身份通道（`ecmeta_*`）只在 SSR 渲染时写入，`render_echarts_svg.cjs` 出的内联 SVG 才有；`deck_engine.html` 里的实时预览跑的是非 SSR 渲染，那棵 DOM 里没有锚点也没有旁解读。看预览时不要据此判断标注丢了，以成稿为准。
-- 配方的几处边界：`scatter` 的锚点原值只有一个字段，取**纵轴值**，横轴与规模留在标签里；`rankedBar` 的基准线画成 `ec-line`，不是数据图元，因此没有锚点，要标注"高于／低于基准"请落在柱子上；`timeSeries` 期间数超过 8 时默认不画数据点，**没有点就没有锚点**，需要标注就显式给 `showSymbol:true`（否则渲染会直接报错并点出这根杠杆）。纵轴范围用 `min`／`max` 收窄、用 `zeroBaseline` 强制含零，两者都生效且**必须覆盖全部取值**，切掉数据会当场报错；锚点 id 里的期号取自 `periods` 原文，写进 `annotations` 时少写或多写空白都还能对上，改写期号本身则会报错并列出本图可用的锚点。
+- 配方的几处边界：**`scatter` 的两轴范围由 `xMin/xMax/yMin/yMax` 控制，默认含零但不越过零**——以前运行时无条件把轴写成"含零再向两侧留 12% 空白"，全为正的营收会得到一条到 −49 的横轴，作者给的 min/max 也被静默覆写；现在全正的轴从 0 起、全负的到 0 止，跨零的照常两侧留白，显式范围优先且必须覆盖全部取值。`scatter` 的锚点原值只有一个字段，取**纵轴值**，横轴与规模留在标签里；`rankedBar` 的基准线画成 `ec-line`，不是数据图元，因此没有锚点，要标注"高于／低于基准"请落在柱子上；`timeSeries` 期间数超过 8 时默认不画数据点，**没有点就没有锚点**，需要标注就显式给 `showSymbol:true`（否则渲染会直接报错并点出这根杠杆）。纵轴范围用 `min`／`max` 收窄、用 `zeroBaseline` 强制含零，两者都生效且**必须覆盖全部取值**，切掉数据会当场报错；锚点 id 里的期号取自 `periods` 原文，写进 `annotations` 时少写或多写空白都还能对上，改写期号本身则会报错并列出本图可用的锚点。
 
 **已经踩过的坑（改这条链路前先读）。** 下面四个缺陷**都通过了生成期的自查**，只有"独立读取真实渲染结果"才暴露出来；它们的共同点是**声明与真实对象用了两套约定**。
 

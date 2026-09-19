@@ -10,10 +10,28 @@ function inspectSlide(slide) {
     return true;
   };
   const rect = el => { const r = el.getBoundingClientRect(); return {x: (r.left - box.left) / sx, y: (r.top - box.top) / sy, width: r.width / sx, height: r.height / sy}; };
+  /* 可见文字：ECharts 的 SSR SVG 会内嵌 <style>，它的 CSS 文本不是图上看得见的内容。
+     直接取 textContent 会把这些选择器也算进去（实测 357 字符里大半是 .zr…-cls-0:hover{…}），
+     于是"关联对象不完整"这类核对把一份正常页面判成失败。只剥 <style>/<script>，
+     其余拼接方式与 textContent 一致。 */
+  const visibleText = el => {
+    if (!el) return '';
+    const parts = [];
+    (function walk(node) {
+      for (const child of node.childNodes) {
+        if (child.nodeType === 3) { if (child.nodeValue.trim()) parts.push(child.nodeValue); continue; }
+        if (child.nodeType !== 1) continue;
+        const tag = child.tagName.toLowerCase();
+        if (tag === 'style' || tag === 'script') continue;
+        walk(child);
+      }
+    })(el);
+    return parts.join('');
+  };
   return [...slide.querySelectorAll('[data-critical-id]')].map(el => {
     const target = el.getAttribute('data-critical-for'), object = target ? [...slide.querySelectorAll('[id]')].find(e => e.id === target) : null;
-    return {id: el.getAttribute('data-critical-id'), text: el.textContent, visible: shown(el), rect: rect(el), target,
-      targetText: object?.textContent || '', targetVisible: target ? shown(object) : true, targetRect: object ? rect(object) : null};
+    return {id: el.getAttribute('data-critical-id'), text: visibleText(el), visible: shown(el), rect: rect(el), target,
+      targetText: visibleText(object), targetVisible: target ? shown(object) : true, targetRect: object ? rect(object) : null};
   });
 }
 const normalize = text => String(text || '').replace(/\s+/g, '');

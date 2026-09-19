@@ -12,7 +12,7 @@ const FORMS = {
   'kit.mekko': { family: 'composition', label: '百分轴 Mekko', kind: 'svg', module: 'exhibit-kit', export: 'mekko', annotation: 'layer', capacity: '列 ≤ 6；窄列与小片自动改走同侧引线通道，通道放不下时报错' },
   'kit.stacked': { family: 'composition', label: '堆积构成', kind: 'svg', module: 'exhibit-kit', export: 'stacked', annotation: 'layer', capacity: '列 ≤ 12 × 系列 ≤ 6；仅非负组成；小片与零值走引线通道' },
   'kit.tree': { family: 'hierarchy', label: '层级树', kind: 'svg', module: 'exhibit-kit', export: 'tree', annotation: null, capacity: '≤ 48 节点；每层同一拆分逻辑' },
-  'kit.swimlane': { family: 'diagram', label: '泳道图', kind: 'svg', module: 'exhibit-kit', export: 'swimlane', annotation: null, capacity: '单元格仅 1 节点；复杂分支换专门路径' },
+  'kit.swimlane': { family: 'diagram', label: '泳道图', kind: 'svg', module: 'exhibit-kit', export: 'swimlane', annotation: null, capacity: '单元格仅 1 节点；连线只支持相邻阶段；复杂分支换专门路径' },
   'kit.processFlow': { family: 'diagram', label: '阶段流程', kind: 'svg', module: 'exhibit-kit', export: 'processFlow', annotation: null, capacity: '3–6 段线性；等宽不表示等时长' },
   'kit.comparisonTable': { family: 'table', label: '比较表（HTML）', kind: 'html', module: 'exhibit-kit', export: 'comparisonTable', annotation: null, capacity: '高度由内容决定，须自行分页' },
 

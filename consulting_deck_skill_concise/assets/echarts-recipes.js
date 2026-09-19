@@ -94,7 +94,19 @@
     const actualMax=Math.max(0,...items.map(d=>d.size||0));
     const maxSize=spec.sizeDomainMax===undefined?actualMax:num(spec.sizeDomainMax,'sizeDomainMax');
     if(maxSize<actualMax||maxSize<0)fail('sizeDomainMax必须覆盖全部规模');
-    return {animation:false,tooltip:{show:false},grid:grid({right:58,top:46,bottom:60}),xAxis:valueAxis({unit:spec.xUnit||''},{name:(spec.xLabel||'X')+(spec.xUnit?'（'+spec.xUnit+'）':''),nameLocation:'middle',nameGap:28}),yAxis:valueAxis({unit:spec.yUnit||''},{name:(spec.yLabel||'Y')+(spec.yUnit?'（'+spec.yUnit+'）':'')}),series:[{type:'scatter',clip:false,symbolSize:v=>v[2]===null?10:maxSize===0?0:Math.sqrt(v[2]/maxSize)*42,data:items.map((d,i)=>({name:d.label,value:[d.x,d.y,d.size],itemStyle:{color:d.selected?'@accent':roleColor(d.role||'neutral',i),opacity:d.selected?1:.78},label:{show:d.selected||items.length<=15,formatter:d.label,position:'top',color:'@ink',fontWeight:d.selected?700:400}})),markLine:spec.referenceLines?{symbol:'none',silent:true,lineStyle:{color:'@gray-3',type:'dashed'},data:spec.referenceLines}:undefined}]};
+    /* 轴范围：以前两头都不可控——运行时会无条件覆写 min/max 成"含零再向两侧留 12% 空白"，
+       于是 x∈[98,412] 的营收画出一条到 −49.44 的横轴，等于在图上声明负值可能发生。
+       这里只负责校验显式范围（可以收窄，但不能把数据切掉，与 timeSeries 同一立场），
+       默认值交给运行时统一算，避免两处各算一套。 */
+    const axisRange=(values,lo,hi,name)=>{
+      // 范围本身不成立时先报这个：说"400 到 300 不成立"比说"400 高于最小数据"更贴近作者要改的东西。
+      if(lo!==undefined&&hi!==undefined&&!(num(hi,name+'Max')>num(lo,name+'Min')))fail('scatter 的 '+name+'Min 必须小于 '+name+'Max');
+      if(lo!==undefined&&num(lo,name+'Min')>Math.min(...values))fail('scatter.'+name+'Min 高于最小数据 '+decimals(Math.min(...values))+'，散点会被裁掉；收窄轴不能丢数据');
+      if(hi!==undefined&&num(hi,name+'Max')<Math.max(...values))fail('scatter.'+name+'Max 低于最大数据 '+decimals(Math.max(...values))+'，散点会被裁掉；收窄轴不能丢数据');
+      return {min:lo===undefined?undefined:num(lo,name+'Min'),max:hi===undefined?undefined:num(hi,name+'Max')};
+    };
+    const xr=axisRange(items.map(d=>d.x),spec.xMin,spec.xMax,'x'),yr=axisRange(items.map(d=>d.y),spec.yMin,spec.yMax,'y');
+    return {animation:false,tooltip:{show:false},grid:grid({right:58,top:46,bottom:60}),xAxis:valueAxis({unit:spec.xUnit||''},{min:xr.min,max:xr.max,name:(spec.xLabel||'X')+(spec.xUnit?'（'+spec.xUnit+'）':''),nameLocation:'middle',nameGap:28}),yAxis:valueAxis({unit:spec.yUnit||''},{min:yr.min,max:yr.max,name:(spec.yLabel||'Y')+(spec.yUnit?'（'+spec.yUnit+'）':'')}),series:[{type:'scatter',clip:false,symbolSize:v=>v[2]===null?10:maxSize===0?0:Math.sqrt(v[2]/maxSize)*42,data:items.map((d,i)=>({name:d.label,value:[d.x,d.y,d.size],itemStyle:{color:d.selected?'@accent':roleColor(d.role||'neutral',i),opacity:d.selected?1:.78},label:{show:d.selected||items.length<=15,formatter:d.label,position:'top',color:'@ink',fontWeight:d.selected?700:400}})),markLine:spec.referenceLines?{symbol:'none',silent:true,lineStyle:{color:'@gray-3',type:'dashed'},data:spec.referenceLines}:undefined}]};
   }
 
   function heatmap(spec={}){

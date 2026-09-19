@@ -51,6 +51,25 @@ for(const theme_id of themes.ids){
  assert.ok(zeroBubble.risks.some(r=>r.code==='zero-size'));
  assert.deepEqual(zeroBubble.pages[0].option.series[0].data[0].symbolSize,[9,9]);
  assert.match(zeroBubble.pages[0].option.graphic[0].style.text,/零规模的位置标记/);
+ // 散点轴范围：运行时曾无条件写成"含零再向两侧留 12% 空白"，全为正的营收数据因此得到一条
+ // 到 −49.44 的横轴——等于在图上声明负值可能发生；作者给的 min/max 也被静默覆写。
+ {
+  const axes=(spec)=>{const o=rt.prepare('scatter',spec,settings).pages[0].option;return {x:[o.xAxis.min,o.xAxis.max],y:[o.yAxis.min,o.yAxis.max]};};
+  const pos=axes({items:[{label:'甲',x:98,y:18},{label:'乙',x:412,y:10}]});
+  assert.equal(pos.x[0],0,'全正数据的横轴必须从 0 起，不能留出负向空白');
+  assert.equal(pos.y[0],0,'全正数据的纵轴必须从 0 起');
+  assert.ok(pos.x[1]>412,'正向留白仍要给最右标签让位');
+  const neg=axes({items:[{label:'甲',x:-98,y:-18},{label:'乙',x:-412,y:-10}]});
+  assert.equal(neg.x[1],0,'全负数据的横轴必须到 0 止，不能留出正向空白');
+  assert.equal(neg.y[1],0,'全负数据的纵轴必须到 0 止');
+  const span=axes({items:[{label:'甲',x:-98,y:-18},{label:'乙',x:412,y:16}]});
+  assert.ok(span.x[0]<-98&&span.x[1]>412,'跨零数据仍要在两侧各自留白');
+  const fixed=axes({items:[{label:'甲',x:98,y:18},{label:'乙',x:412,y:10}],xMin:90,xMax:420});
+  assert.deepEqual(fixed.x,[90,420],'显式范围必须生效，不能被运行时覆写');
+  assert.throws(()=>r.scatter({items:[{label:'甲',x:98,y:18},{label:'乙',x:412,y:10}],xMax:300}),/散点会被裁掉/,'收窄不能切掉数据');
+  assert.throws(()=>r.scatter({items:[{label:'甲',x:98,y:18}],xMin:400,xMax:300}),/必须小于/);
+  assert.doesNotThrow(()=>r.scatter({items:[{label:'甲',x:98,y:18},{label:'乙',x:412,y:10}],xMax:420}),'覆盖全部取值的收窄本来就该放行');
+ }
  const flow=rt.prepare('sankey',cases.sankey,settings).pages[0].option;
  assert.equal(flow.series[0].data[0].itemStyle.color,t.accent);
  // 期间必须逐个画出来：轴标签被自动抽稀时要报 missing；画下但互相遮挡时报 overlap。两者都不能静默通过。

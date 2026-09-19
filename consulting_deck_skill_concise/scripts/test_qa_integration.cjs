@@ -14,6 +14,10 @@ const contracts=require('./report_contract.cjs');
  await assemble({pagesFile:pages,outputFile:deck,contractFile:taskFile});const source=fs.readFileSync(deck,'utf8');
  const cases=[
   ['baseline',source,true,null],
+  // 关联对象是内嵌 <style> 的 SVG（ECharts SSR 就这样）：CSS 选择器不是图上看得见的内容，
+  // 混进 targetText 会让 PDF 的"关联对象不完整"把一页正常稿子判成失败。
+  ['critical-on-svg',source.replace('<div id="value">样本比例 38%</div>',
+    '<div id="value"><svg width="360" height="120" viewBox="0 0 360 120"><style>.zr123-cls-0:hover{fill:#123456}</style><rect x="4" y="4" width="300" height="16" fill="#8899aa"/><text x="8" y="70">样本比例 38%</text></svg></div>'),true,null],
   ['print-loss',source.replace('</head>','<style>@media print{[data-critical-id]{display:none!important}}</style></head>'),false,/关键语义|关键文字/],
   ['custom-edge',source.replace('</head>','<style>[data-critical-id]{border-left:3px solid teal;padding:12px}</style></head>'),false,/视觉禁令/],
   ['task-mismatch',source.replace('data-ratio="16x9"','data-ratio="4x3"'),false,/ratio不一致/],

@@ -114,8 +114,17 @@
         opt.series[0].data.forEach((d,i)=>{const item=spec.items[i];d.label.show=d.label.show||item.size===max;d.label.formatter=item.label+'\n'+fmt(item.size)+(spec.sizeUnit||'');});
         opt.graphic=[{type:'text',x:12,y:height-18,silent:true,style:{text:'气泡面积与规模成正比；最大圆：'+fmt(max)+(spec.sizeUnit||'（规模单位未提供）')+(zeros.length?'；空心小圈为零规模的位置标记，不代表面积':''),fontSize:font,fontFamily:typography.get(ctx.typography_id).body,fill:t['gray-2']}}];
       }
-      // 数值轴末端留空白给标签，不改变数据点。
-      for(const [axis,key] of [['xAxis','x'],['yAxis','y']]){const vals=spec.items.map(d=>d[key]),lo=Math.min(0,...vals),hi=Math.max(0,...vals),pad=(hi-lo||1)*.12;opt[axis].min=lo-pad;opt[axis].max=hi+pad;}
+      /* 数值轴末端留空白给标签，不改变数据点。但留白不能越过零：
+         `Math.min(0,…)−pad` 会给全为正的数据画出一条负值轴（实测 x∈[98,412] → −49.44），
+         那等于在图上声明负值可能发生。全正的轴从 0 起、全负的到 0 止，跨零的照常两侧留白。
+         作者显式给了范围就照用——配方已校验过它覆盖全部取值。 */
+      for(const [axis,key,loKey,hiKey] of [['xAxis','x','xMin','xMax'],['yAxis','y','yMin','yMax']]){
+        if(spec[loKey]!==undefined||spec[hiKey]!==undefined)continue;
+        const vals=spec.items.map(d=>d[key]),dataLo=Math.min(...vals),dataHi=Math.max(...vals);
+        const lo=Math.min(0,dataLo),hi=Math.max(0,dataHi),pad=(hi-lo||1)*.12;
+        opt[axis].min=dataLo>=0?0:lo-pad;
+        opt[axis].max=dataHi<=0?0:hi+pad;
+      }
     }
     // 逐类目/期间必须出现的坐标轴标签：ECharts 会自动抽稀，静默丢标签不能被当成通过。
     const axes=[];

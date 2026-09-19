@@ -33,3 +33,20 @@ console.log('ExhibitKit core geometry, signed waterfall, area proportionality, e
 
 assert.throws(()=>kit.tree({root:{children:[{label:'child'}]}}),/文字标签/);
 assert.throws(()=>kit.dumbbell({items:[{start:1,end:2}]}),/文字标签/);
+
+/* 泳道连线：箭头必须跟着方向翻。曾经不管目标在左还是在右，箭头一律朝右——
+   线向左走、箭头朝右，把关系画反，而这类图读的就是方向。跨阶段的连线一并拒绝：
+   它的水平段会从中间那些节点框上穿过去，画出来读不出关系。 */
+{
+ const pal=(require('../assets/deck-themes.js')).palette('mckinsey');
+ const lane=(from,to)=>kit.swimlane({palette:pal,typography_id:'serif-report-bold',width:900,height:400,
+  lanes:['甲','乙'],stages:['一','二','三'],
+  items:[{id:'a',label:'起点',lane:0,stage:from},{id:'b',label:'终点',lane:1,stage:to}],edges:[{from:'a',to:'b'}]});
+ const arrow=svg=>{const m=svg.match(/<path d="M ([\d.]+) [\d.]+ L ([\d.]+) [\d.]+ L [\d.]+ [\d.]+"/);return m?{base:+m[1],tip:+m[2]}:null;};
+ const right=arrow(lane(0,1));
+ assert.ok(right&&right.tip>right.base,'向右的连线，箭头必须朝右');
+ const left=arrow(lane(2,1));
+ assert.ok(left&&left.tip<left.base,'向左的连线，箭头必须朝左（原缺陷：箭头恒朝右）');
+ assert.throws(()=>lane(2,0),/只支持相邻阶段/,'跨阶段连线必须当场拒绝，而不是画一条穿过节点框的线');
+}
+console.log('ExhibitKit swimlane edge direction and adjacent-stage limit passed.');
