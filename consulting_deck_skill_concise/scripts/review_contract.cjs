@@ -8,6 +8,12 @@ function validate(review, audit, {baseDir = process.cwd(), auditDir = baseDir, p
   if (review.status !== 'complete') fail('审查未完成');
   if (review.htmlSha256 !== audit.htmlArtifact?.sha256 || review.pdfSha256 !== audit.pdfArtifact?.sha256 || review.auditSha256 !== hash(stable(audit))) fail('审查未绑定当前HTML/PDF/audit');
   if (typeof review.reviewer !== 'string' || !review.reviewer.trim() || !['author', 'independent'].includes(review.independence)) fail('审查身份缺失');
+  /* 独立性不只是"挂了谁的名字"，还包括"它在什么上下文里做的"。
+     真实跑批里出现过：复核是 fork 出来的、继承了作者的全部推理与工具历史，却照样自报 independent。
+     这一条不能机器证明——它是自述。但把沉默的疏漏变成一个必须显式写下的取值，
+     至少让"声称独立"成为一句可以被人追问的具体话，而不是一个默认成立的空洞。 */
+  if (!['fresh-context', 'fork', 'same-session'].includes(review.isolation)) fail('审查须写 isolation：fresh-context（未继承作者推理的独立执行者）／fork（继承了作者上下文）／same-session（作者本人）');
+  else if (review.independence === 'independent' && review.isolation !== 'fresh-context') fail('independence=independent 要求 isolation=fresh-context：实际是 ' + review.isolation + '。继承作者上下文的复核会带着作者的判断去找问题，不是独立复核——改用干净上下文的执行者，或如实把 independence 降为 author');
   for (const k of ['analysis', 'evidence', 'visual']) {
     const c = review.checks?.[k];
     if (!c || !(k === 'visual' ? ['pass'] : ['pass', 'not_applicable']).includes(c.status) || typeof c.basis !== 'string' || !c.basis.trim()) fail(k + '未完成或依据缺失');
@@ -52,6 +58,21 @@ function validate(review, audit, {baseDir = process.cwd(), auditDir = baseDir, p
     if(partial&&(c.reviewer!==review.reviewer||c.independence!==review.independence))fail('原始审查coverage与顶层身份不一致');
     const refs = Array.isArray(c.evidence) ? c.evidence.map(e => e?.id) : [];
     if (!refs.length || new Set(refs).size !== refs.length || refs.some(id => !verified.has(id))) fail('coverage证据不属于当前audit');
+    /* 逐页取证：引用一张哈希正确的图，与真的打开看过它，在校验器眼里原本完全一样。
+       这里要求每一页写一条只能来自实际所见的短记录，且**全篇不得重复**——
+       复制粘贴因此被直接挡住，而编造 28 条互不相同的具体所见，比真看一遍更费劲。
+       它仍是自述，不能机器证明；它把作假的成本抬到"不如真看"，并把可核对的具体断言留在记录里。 */
+    const attestSeen = new Map();
+    for (const item of Array.isArray(c.attestation) ? c.attestation : []) {
+      if (!item || !Number.isInteger(item.page) || typeof item.note !== 'string' || !item.note.trim()) { fail('coverage.attestation 每项须为 {page, note}，note 不能为空'); continue; }
+      const key = item.note.trim();
+      if (attestSeen.has(key)) fail('coverage.attestation 第 ' + item.page + ' 页与第 ' + attestSeen.get(key) + ' 页的所见完全相同：逐页取证要写各页实际看到的东西，不能一条复制到底');
+      else attestSeen.set(key, item.page);
+    }
+    const attested = new Set((Array.isArray(c.attestation) ? c.attestation : []).filter(i => i && Number.isInteger(i.page)).map(i => i.page));
+    const claimed = new Set([...(Array.isArray(c.htmlPages) ? c.htmlPages : []), ...(Array.isArray(c.pdfPages) ? c.pdfPages : [])]);
+    const unattested = [...claimed].filter(n => !attested.has(n));
+    if (claimed.size && unattested.length) fail('coverage 声称看过第 ' + unattested.join('、') + ' 页，却没有对应的 attestation：声明覆盖了哪几页，就要逐页写下看到了什么');
     for (const medium of ['html', 'pdf']) {
       const pages = c[medium + 'Pages'];
       if (!Array.isArray(pages) || new Set(pages).size !== pages.length || pages.some(n => !Number.isInteger(n) || n < 1 || n > audit.pages)) {fail('coverage页集合无效'); continue;}

@@ -85,7 +85,9 @@ description: >-
 
 任务需要拆给多个执行者时，用[分派契约](references/handoff.md)中的单页制作契约与独立复核契约：每份任务要有明确输入、输出和完成判据，结论由主会话汇总并验证。
 
-**S6 同版交付。** 按 task 合同的复杂度与重大结论风险安排未参与制作的独立复核，如实记录实际独立性。把真实检查与未决问题写成 review，绑定当前 HTML/PDF 与 audit；现行 schemaVersion 3 覆盖四层与每页证据，独立审查直接返回同结构 JSON。audit 里的每一条告警也要在 review 的 `warningReview` 里处置：判它不构成问题就写明理由，要改就改完重跑——**没被任何人处置的告警等于被无声丢掉**。
+**S6 同版交付。** 按 task 合同的复杂度与重大结论风险安排未参与制作的独立复核，如实记录实际独立性（`independence` 之外还要写 `isolation`：独立复核必须来自未继承作者推理的干净上下文）。复核记录用 `make_review.cjs` 出骨架——证据 id、告警原文、绑定摘要由工具填，人只填**逐页取证**与四层判断；空白处会被聚合点名。把真实检查与未决问题写成 review，绑定当前 HTML/PDF 与 audit；现行 schemaVersion 3 覆盖四层与每页证据，独立审查直接返回同结构 JSON。audit 里的每一条告警也要在 review 的 `warningReview` 里处置：判它不构成问题就写明理由，要改就改完重跑——**没被任何人处置的告警等于被无声丢掉**。
+
+**复核有收敛条件，不要无限轮下去。** 一轮没有 major 就停；最多两轮，第三轮仍出 major 时把问题交给用户而不是继续循环。返工范围按页算（见[交付契约](references/delivery.md)的"有限继承"），单页修复走 `make_review.cjs --inherit` 继承未变页，不要把整册重新看一遍。真实跑批里出现过 6 轮复核、28.5% 的时间耗在等待复核上，其中四轮是单页修复引发的整册重跑——**那笔开销买不到等值的质量，只是没停**。
 *做完的标志*：审查 status 为 complete，无未解决的 major/blocking，交付 HTML 内嵌的 PDF 与独立 PDF 逐字节一致。
 读[交付契约](references/delivery.md)。未做完就只能用 `--preview`，不能称正式通过。
 
@@ -114,6 +116,8 @@ node scripts/preview_page.cjs /任务/deck.html 3
 node scripts/qa_deck.cjs /任务/deck.html /任务/renders-iter --tier iteration --pages 3
 # 交付前：必须跑默认的验收档，只有它产出可交付的证据清单
 node scripts/qa_deck.cjs /任务/deck.html /任务/renders
+# 出复核骨架：证据 id、告警原文、绑定摘要自动填好，人只填逐页取证与判断
+node scripts/make_review.cjs /任务/renders/audit.json /任务/renders/author.json --role author --reviewer 作者名
 node scripts/aggregate_reviews.cjs /任务/renders/audit.json /任务/renders/review.json /任务/renders/author.json
 # 派生为 independent 的任务再追加 /任务/renders/independent.json。简单任务不传这一项——
 # 缺文件会直接报错，但不要为了凑参数造一个假结果，那是"自检冒充独立"。

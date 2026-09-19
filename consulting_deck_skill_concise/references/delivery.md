@@ -176,6 +176,7 @@ API：`await assemble({pagesFile, outputFile, contractFile?, cssFile?, title?, k
   "status": "incomplete",
   "reviewer": "实际审查者",
   "independence": "author",
+  "isolation": "same-session",
   "htmlSha256": "audit.htmlArtifact.sha256",
   "pdfSha256": "audit.pdfArtifact.sha256",
   "auditSha256": "对 audit 解析对象执行 hash(stable(audit)) 的实际值",
@@ -197,6 +198,20 @@ API：`await assemble({pagesFile, outputFile, contractFile?, cssFile?, title?, k
 - `checks.analysis` 与 `checks.evidence` 为 `pass`，或有实际理由的 `not_applicable`；`checks.visual` **必须是实际看图后的 `pass`**。三项都要有非空 `basis`，写清实际看到什么、依据是什么。
 - **`checks.*.status` 说的是"这一层检查做完了、依据写在 basis 里"，不是"这一层没问题"。** 发现的问题一律进 `issues`，用 severity/status 表达，不要试图用 checks 表达好坏——这里没有 `fail` 取值，硬凑一个只会盖掉问题。`issues` 里的 major/blocking 必须 `resolved` 才能交付，这条由聚合与校验器强制，比 checks 更硬。
 - **`basis` 要写实际做了什么**（看了哪些页、复算了哪些数、核到哪一条），不写"已检查，无问题"。它是复核的取证记录，不是结论摘要。
+
+### isolation：独立性不只是一个名字
+
+`independence` 说的是"挂了谁的身份"，`isolation` 说的是"它在什么上下文里做的"，两者都要写：
+
+| 取值 | 含义 |
+|---|---|
+| `fresh-context` | 独立的执行者，未继承作者的推理与工具历史 |
+| `fork` | 分叉自作者会话，带着作者的判断去找问题 |
+| `same-session` | 作者本人 |
+
+**`independence: "independent"` 要求 `isolation: "fresh-context"`**，其余取值会被拒绝。真实跑批里出现过复核者继承了作者全部上下文、却照样自报 `independent` 的情形——带着作者的结论去找问题，找到的多半只是作者已经怀疑过的那些。
+
+这一条不能机器证明，它是自述。把沉默的疏漏变成一个必须显式写下的取值，意义在于：**"声称独立"由此成为一句可以被人追问的具体话**，而不是一个默认成立的空洞。写 `fork` 时不要硬凑 `independent`——把 `independence` 如实降为 `author`，再说明为什么没做独立复核，比一个假的独立更可信。
 - `independence` 为 `author` 或 `independent`。不能由脚本预填通过判断。
 
 ### coverage
@@ -213,6 +228,22 @@ API：`await assemble({pagesFile, outputFile, contractFile?, cssFile?, title?, k
 - 同一份真实图像可以被作者和独立审查者分别引用，不需要重复生成截图。
 - 复杂任务由作者与独立角色**各自覆盖全页、两种媒介**；简单任务由作者覆盖全页、两种媒介。**作者结果不能填补独立结果的缺失。**
 - 同一角色内部可以合并分工结果，但作者与独立审查者的身份不能重叠。
+
+#### 逐页取证：`attestation`
+
+引用一张哈希正确的图，与真的打开看过它，在校验器眼里原本完全一样——这正是真实跑批中"申报 56 条证据、实际读了 11 张图"能全链绿灯的原因。所以每条 coverage 都要带 `attestation`：
+
+```json
+"attestation": [
+  {"page": 3, "note": "第 3 页三条柱里最右那根明显低一截，页脚来源占了两行"},
+  {"page": 4, "note": "第 4 页四格中左下格是空的，右上格有加底色"}
+]
+```
+
+- **每次覆盖了哪几页，就要逐页写一条**。声称看过却没写、或写了没覆盖到，都会被点名，并把缺的页列出来。
+- **写只能来自实际所见的短记录**——图上哪个位置空着、哪两根柱几乎等高、哪条线断了、标签有没有压到图元。写从 HTML 源码就能读到的东西不算：那证明不了你打开过图。
+- **全篇不得重复**。一条复制到底会被直接拦下——这不是文风要求，是"逐页"的字面含义。
+- 它仍然是自述，校验器不能证明你真的看了。它的作用是把作假的成本抬到"不如真看一遍"，并把一组具体、可被人抽查的断言留在记录里。**抽查由人做，这条不能被自动化替代。**
 
 #### 未变页怎么引用旧审查：`inheritedFrom`
 
@@ -274,10 +305,18 @@ API：`await assemble({pagesFile, outputFile, contractFile?, cssFile?, title?, k
 ### 聚合与打包
 
 ```sh
+# 先出骨架：证据 id、告警原文、绑定摘要由工具填好，人只填判断
+node scripts/make_review.cjs /任务/renders/audit.json /任务/renders/author.json --role author --reviewer 作者名
+node scripts/make_review.cjs /任务/renders/audit.json /任务/renders/independent.json --role independent --reviewer 独立复核者名
+# 只改了几页时，让未变的页继承旧审查；工具会按逐页摘要判出哪些能继承、哪些必须重看
+node scripts/make_review.cjs /任务/renders/audit.json /任务/renders/independent.json --role independent --reviewer 名 --inherit /旧/audit.json /旧/independent.json
+
 node scripts/aggregate_reviews.cjs /任务/renders/audit.json /任务/renders/review.json /任务/renders/author.json
 # 派生为 independent 的任务再追加 /任务/renders/independent.json
 node scripts/package_delivery.cjs /任务/deck.html /任务/renders/deck.pdf /任务/delivery 报告名
 ```
+
+`make_review.cjs` 已经存在的输出不会覆盖，除非加 `--force`——那是一份填过判断的记录，不该被骨架盖掉。骨架里的 `status` 是 `incomplete`、`checks` 是 `not_reviewed`，占位不填会被聚合点名；**它替你做的是抄写，不是判断**。
 
 简单任务不提供独立结果参数。输入必须是真实的结构化 JSON；聚合结果 `incomplete` 时要补查，不能把自然语言、缺项或错误格式当成空问题。作者与独立审查使用同一套结构，**不能用 Markdown 报告替代聚合输入**。
 

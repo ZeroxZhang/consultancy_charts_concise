@@ -16,7 +16,7 @@ try{
   const file=path.join(dir,medium+'.png');fs.writeFileSync(file,'synthetic '+medium+' screenshot bytes');
   audit.evidenceManifest.entries.push({id:medium+':page-1',medium,page:1,pageId:'page-1',path:path.basename(file),sha256:contract.fileHash(file),sourceSha256:audit[medium+'Artifact'].sha256,pageSha256:contract.hash('page-1'),dependenciesSha256:audit.evidenceManifest.dependenciesSha256});
  }
- const response=(a,role)=>({schemaVersion:3,status:'complete',reviewer:role,independence:role,htmlSha256:a.htmlArtifact.sha256,pdfSha256:a.pdfArtifact.sha256,auditSha256:contract.hash(contract.stable(a)),coverage:[{reviewer:role,independence:role,layers:['page','exhibit','annotation','typography'],htmlPages:[1],pdfPages:[1],evidence:a.evidenceManifest.entries.map(e=>({id:e.id}))}],issues:[],checks:Object.fromEntries(['analysis','evidence','visual'].map(k=>[k,{status:'pass',basis:'合成合同测试 '+role+' '+k}]))});
+ const response=(a,role)=>({schemaVersion:3,status:'complete',reviewer:role,independence:role,isolation:'fresh-context',htmlSha256:a.htmlArtifact.sha256,pdfSha256:a.pdfArtifact.sha256,auditSha256:contract.hash(contract.stable(a)),coverage:[{reviewer:role,independence:role,layers:['page','exhibit','annotation','typography'],htmlPages:[1],pdfPages:[1],evidence:a.evidenceManifest.entries.map(e=>({id:e.id})),attestation:[{page:1,note:'合成合同测试第 1 页的可见所见'}]}],issues:[],checks:Object.fromEntries(['analysis','evidence','visual'].map(k=>[k,{status:'pass',basis:'合成合同测试 '+role+' '+k}]))});
  const run=(a,values)=>aggregate(a,values,{baseDir:dir,auditDir:dir});
  const saveAndCheck=(a,review)=>{const file=path.join(dir,'review.json');fs.writeFileSync(file,JSON.stringify(review));return validateReview(file,{audit:a,auditDir:dir,htmlSha256:a.htmlArtifact.sha256,pdfSha256:a.pdfArtifact.sha256,pages:1});};
  check('简单完整报告作者可完成',()=>{const review=run(audit,[response(audit,'author')]);assert.equal(review.status,'complete');assert.doesNotThrow(()=>saveAndCheck(audit,review));});
@@ -34,6 +34,28 @@ try{
  check('同页不同pageId不能借用证据',()=>{const a=structuredClone(audit),extra=structuredClone(a.evidenceManifest.entries[0]);extra.id='html:other';extra.pageId='other';a.evidenceManifest.entries.push(extra);assert.equal(run(a,[response(a,'author')]).status,'incomplete');assert.throws(()=>saveAndCheck(a,response(a,'author')),/重复|身份/);});
  check('manifest缺媒介即使未引用仍拒绝',()=>{const a=structuredClone(audit);a.evidenceManifest.entries=a.evidenceManifest.entries.filter(e=>e.medium==='html');const r=response(a,'author');r.coverage[0].pdfPages=[];assert.equal(run(a,[r]).status,'incomplete');assert.throws(()=>saveAndCheck(a,r),/缺页/);});
  check('自然语言及空输入不放行',()=>{assert.equal(run(audit,['未看PDF']).status,'incomplete');assert.equal(run(audit,[]).status,'incomplete');});
+ // 独立性与逐页取证：两者都只能自述，但空洞的自述要能被当场问住。
+ {
+  const bad=response(audit,'independent');bad.isolation='fork';
+  const r=run(complex,[bad]);
+  assert.equal(r.status,'incomplete');
+  assert.ok(r.aggregationErrors.some(e=>/fresh-context/.test(e)),JSON.stringify(r.aggregationErrors));
+ }
+ {const bad=response(audit,'author');delete bad.isolation;assert.ok(run(audit,[bad]).aggregationErrors.some(e=>/isolation/.test(e)),'isolation 缺失不能默默通过');}
+ {const bad=response(audit,'author');bad.coverage[0].attestation=[{page:1,note:'   '}];assert.ok(run(audit,[bad]).aggregationErrors.some(e=>/attestation/.test(e)),'空取证不能通过');}
+ {const bad=response(audit,'author');bad.coverage[0].attestation=[];assert.ok(run(audit,[bad]).aggregationErrors.some(e=>/attestation/.test(e)),'声称看过却没写取证不能通过');}
+ {
+  // 多页时"同一条复制到底"必须被拦住——否则取证退化成一个占位符。
+  const two=structuredClone(audit);
+  for(const medium of ['html','pdf']){const file=path.join(dir,medium+'-2.png');fs.writeFileSync(file,'synthetic '+medium+' page2');two.evidenceManifest.entries.push({id:medium+':page-2',medium,page:2,pageId:'page-2',path:path.basename(file),sha256:contract.fileHash(file),sourceSha256:two[medium+'Artifact'].sha256,pageSha256:contract.hash('page-2'),dependenciesSha256:two.evidenceManifest.dependenciesSha256});}
+  two.pages=2;two.pdfPages=2;
+  const r=response(two,'author');
+  r.coverage[0].htmlPages=[1,2];r.coverage[0].pdfPages=[1,2];r.coverage[0].evidence=two.evidenceManifest.entries.map(e=>({id:e.id}));
+  r.coverage[0].attestation=[{page:1,note:'同一句话'},{page:2,note:'同一句话'}];
+  assert.ok(run(two,[r]).aggregationErrors.some(e=>/完全相同/.test(e)),'复制粘贴的取证必须被拦下');
+  r.coverage[0].attestation=[{page:1,note:'第 1 页左下象限空着'},{page:2,note:'第 2 页两根柱几乎等高'}];
+  assert.equal(run(two,[r]).status,'complete',JSON.stringify(run(two,[r]).aggregationErrors));
+ }
  check('渲染文件改变同时阻断两入口',()=>{fs.writeFileSync(path.join(dir,'pdf.png'),'changed');const r=response(audit,'author');assert.equal(run(audit,[r]).status,'incomplete');assert.throws(()=>saveAndCheck(audit,r),/改变/);fs.writeFileSync(path.join(dir,'pdf.png'),'synthetic pdf screenshot bytes');});
  check('不同review输出目录保留audit证据根目录',()=>{const output=path.join(dir,'nested');fs.mkdirSync(output);const review=aggregate(audit,[response(audit,'author')],{baseDir:output,auditDir:dir});assert.equal(review.status,'complete');});
  check('audit任务合同必须与HTML一致',()=>{const file=path.join(dir,'audit.json');const options={inputHtml:htmlFile,inputPdf:pdfFile,html,pdf:fs.readFileSync(pdfFile),htmlPages:1,pdfPages:1,pdfSha256:audit.pdfArtifact.sha256};fs.writeFileSync(file,JSON.stringify(audit));assert.doesNotThrow(()=>validateAudit(file,options));const wrong=structuredClone(audit);wrong.taskContract=contract.normalize({kind:'report',complexity:'complex'});fs.writeFileSync(file,JSON.stringify(wrong));assert.throws(()=>validateAudit(file,options),/任务合同/);});
